@@ -32,7 +32,7 @@ export async function createDb(config: Pick<AppConfig, 'databaseUrl' | 'pgliteDi
     const pool = new Pool({
       connectionString: config.databaseUrl,
       max: 10,
-      ssl: config.isProd ? { rejectUnauthorized: false } : undefined,
+      ssl: config.isProd || /\.supabase\.(co|com)/.test(config.databaseUrl) ? { rejectUnauthorized: false } : undefined,
     })
     const db = drizzlePg(pool, { schema })
     handle = { db: db as unknown as Db, close: () => pool.end(), kind: 'postgres' }
