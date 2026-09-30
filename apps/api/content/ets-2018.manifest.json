@@ -1,0 +1,1048 @@
+{
+  "collection": "ets-2018",
+  "generatedAt": "2026-09-30T09:52:34.985Z",
+  "bucket": "toeic-content",
+  "items": [
+    {
+      "objectKey": "ets-2018/test-01/audio/full.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 45039195,
+      "role": "FULL_AUDIO",
+      "testNo": 1,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/Audio File/01-Test1.mp3"
+      ],
+      "sha256": "45650b5011523fbac6befb9c2818b188097d63b5be377bca2a6a8ba6e1fe557c",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-02/audio/full.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 43834636,
+      "role": "FULL_AUDIO",
+      "testNo": 2,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/Audio File/02-Test2.mp3",
+        "ETS 2018/bài tập tách ra/Đề 2 chia nhỏ/02-Test2.mp3"
+      ],
+      "sha256": "1085f4cbefb8b39a520c08a51dacd66aedcd8d7a4b6d4bd055937a1d8158b852",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-03/audio/full.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 44723244,
+      "role": "FULL_AUDIO",
+      "testNo": 3,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/Audio File/03-Test3.mp3"
+      ],
+      "sha256": "4ad894e9db523d6f78632ebf588177a2dbab7836e07278032d59495149f01774",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-04/audio/full.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 44961452,
+      "role": "FULL_AUDIO",
+      "testNo": 4,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/Audio File/04-Test4.mp3"
+      ],
+      "sha256": "013d2100f57c3c879f79cb15f7388b936a8d3fb90e5139e1194fd84d874debe8",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-05/audio/full.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 45209720,
+      "role": "FULL_AUDIO",
+      "testNo": 5,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/Audio File/05-Test5.mp3"
+      ],
+      "sha256": "5c182e5795fbf546fa97960e5d50e45bef23d4e716b5cefb1cdee5f92c41c79d",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-06/audio/full.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 42964443,
+      "role": "FULL_AUDIO",
+      "testNo": 6,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/Audio File/06-Test6.mp3"
+      ],
+      "sha256": "38db4ec08dd63b5d76f808581e2c0f37ab11ba9fe6447bbc486e7819d4d84945",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-07/audio/full.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 43854278,
+      "role": "FULL_AUDIO",
+      "testNo": 7,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/Audio File/07-Test7.mp3"
+      ],
+      "sha256": "da7f0844bb741ab013c53303527880e4b81bc11632bc50db79015b5585e2c9c2",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-08/audio/full.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 43459727,
+      "role": "FULL_AUDIO",
+      "testNo": 8,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/Audio File/08-Test8.mp3"
+      ],
+      "sha256": "4d3b71b0eba925c4eb2c8d54819c1134caf44ef67de19564125323f1bf18aaba",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-09/audio/full.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 43307826,
+      "role": "FULL_AUDIO",
+      "testNo": 9,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/Audio File/09-Test9.mp3"
+      ],
+      "sha256": "72761a2d7071ef6915c0a95a381da54d939484ea4a818ac676bf0eb4f99f3d36",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-10/audio/full.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 43928286,
+      "role": "FULL_AUDIO",
+      "testNo": 10,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/Audio File/10-Test10.mp3"
+      ],
+      "sha256": "5ee89070fde70701a669197ef2eaa22574e67f64e8bb799e063bf190583b8eb2",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/extras/audio-file.rar",
+      "mimeType": "application/vnd.rar",
+      "sizeBytes": 262744822,
+      "role": "ARCHIVE",
+      "testNo": null,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/Audio File.rar"
+      ],
+      "sha256": "56fc8f1b69da427b7a4f951731e6bd000f0523333184bdafab26be58b3eb87c5",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-01/audio/p1-va-p2.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 14381506,
+      "role": "PART_AUDIO",
+      "testNo": 1,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/đỀ 1 CHIA NHỎ/P1 và P2.mp3"
+      ],
+      "sha256": "1b87ef6c89ec6a1e6b8ae58d853fbc9d31f9ea238b49583209aba8e1879226c5",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-01/questions/p1-va-p2.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 3384078,
+      "role": "QUESTION_PDF",
+      "testNo": 1,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/đỀ 1 CHIA NHỎ/P1 và P2.pdf"
+      ],
+      "sha256": "699926642d5aec390426bbc2b5be098620130166993d7481b3a70aa3f96ba3eb",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-01/questions/p1-2.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 4206758,
+      "role": "QUESTION_PDF",
+      "testNo": 1,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/đỀ 1 CHIA NHỎ/P1+2.pdf"
+      ],
+      "sha256": "04e8d48868f793086673314c877218794cf5b2363746bb68483a9b675a8d5de9",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-01/audio/p3.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 16941506,
+      "role": "PART_AUDIO",
+      "testNo": 1,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/đỀ 1 CHIA NHỎ/P3.mp3"
+      ],
+      "sha256": "8359013d68185681998464e12a50351697c1f8ba3204156096f123b7b65cf0b6",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-01/transcripts/transcript-p1-2.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 2770524,
+      "role": "TRANSCRIPT",
+      "testNo": 1,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/đỀ 1 CHIA NHỎ/Transcript P1, 2.pdf"
+      ],
+      "sha256": "1292a33353efea7684b1885018a7ddbe4fc7e8034b82249c3471d2649e309cae",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-01/transcripts/transcript-p3.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 2337183,
+      "role": "TRANSCRIPT",
+      "testNo": 1,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/đỀ 1 CHIA NHỎ/Transcript P3.pdf"
+      ],
+      "sha256": "89bc6c30663682bbe43bd9a419ea2a7c56fe40b800941dbc867740236d8297c6",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-01/transcripts/transcript-p4.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 1578071,
+      "role": "TRANSCRIPT",
+      "testNo": 1,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/đỀ 1 CHIA NHỎ/transcript P4.pdf"
+      ],
+      "sha256": "7ecd42f807406b6d1d971fac1a10e6cfeccd69f52cfcd8fbe475b89f0706064e",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-01/transcripts/transc-2.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 2337183,
+      "role": "TRANSCRIPT",
+      "testNo": 1,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/đỀ 1 CHIA NHỎ/TRANSC~2.PDF"
+      ],
+      "sha256": "6bc3b772b159c94b40341eb89eb30d025ea17d8e3814f35d886d11dff16a7422",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-01/transcripts/transc-3.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 1578071,
+      "role": "TRANSCRIPT",
+      "testNo": 1,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/đỀ 1 CHIA NHỎ/TRANSC~3.PDF"
+      ],
+      "sha256": "999de785496b538c507b9643f899a2b5ccedd0269f5d91fed294e8b0af3b3f29",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-01/answers/dap-an-p3.xlsx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "sizeBytes": 8914,
+      "role": "ANSWER_KEY",
+      "testNo": 1,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/đỀ 1 CHIA NHỎ/Đáp án P3.xlsx"
+      ],
+      "sha256": "378e46fe067a4b3e45c2ba8040c821654a5963d022b38470df2d95937256694d",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-01/answers/dap-an-p4.xlsx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "sizeBytes": 8809,
+      "role": "ANSWER_KEY",
+      "testNo": 1,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/đỀ 1 CHIA NHỎ/Đáp án P4.xlsx"
+      ],
+      "sha256": "6b12ac428ad95345b18a2f6e108a234d5c984875095c7814f3abcbc10145dd5e",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-01/answers/dap-an-tong-4p.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 1099153,
+      "role": "ANSWER_KEY",
+      "testNo": 1,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/đỀ 1 CHIA NHỎ/Đáp án tổng 4P.pdf"
+      ],
+      "sha256": "e6711cbe7699a821035173a83c43705a3db4eaf2e6d77e75ad16930b8c2162d6",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-01/questions/de-nghe-p3.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 2883847,
+      "role": "QUESTION_PDF",
+      "testNo": 1,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/đỀ 1 CHIA NHỎ/Đề nghe P3.pdf"
+      ],
+      "sha256": "ef50db3876109f31bb77a5d546f7fbf6d4747b8c381abf49187dbcf3194b4050",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-01/audio/de-nghe-p4.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 13357507,
+      "role": "PART_AUDIO",
+      "testNo": 1,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/đỀ 1 CHIA NHỎ/Đề nghe P4.mp3"
+      ],
+      "sha256": "8262b2cc640144d3d1822a3beba2cedea540511509286874212d7e9186574f7e",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-01/questions/de-nghe-p4.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 2544387,
+      "role": "QUESTION_PDF",
+      "testNo": 1,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/đỀ 1 CHIA NHỎ/Đề nghe P4.pdf"
+      ],
+      "sha256": "3e5a908f5553cf9ca10c748fc183a1b98d87ac7418aee6c77c4f5c373848b71d",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-10/transcripts/transcript-de-10.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 4597103,
+      "role": "TRANSCRIPT",
+      "testNo": 10,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 10/Transcript Đề 10.pdf"
+      ],
+      "sha256": "ecf00fc9dc1b12ebfc8d8f2256bc435a8a7e327538a332249690e1ce5d3cb5b2",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-10/answers/dap-an-de-10.docx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "sizeBytes": 661217,
+      "role": "ANSWER_KEY",
+      "testNo": 10,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 10/Đáp án Đề 10.docx"
+      ],
+      "sha256": "63fbc49c8f9b700c2731bb2efe24ae32255c67730a1b040a63d716ea91b5da3a",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-10/questions/de-10-nghe.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 8356440,
+      "role": "QUESTION_PDF",
+      "testNo": 10,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 10/Đề 10 nghe.pdf"
+      ],
+      "sha256": "51bc53a3c9998eec6c7367e129afe861d2be6130a447dc8a2e52d305d2f9b182",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-02/questions/p1-2.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 3482802,
+      "role": "QUESTION_PDF",
+      "testNo": 2,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 2 chia nhỏ/P1 - 2.pdf"
+      ],
+      "sha256": "e96757da09d18b2c077bb5d9fd00cde7cda8f43f332a04f891e3e4d0da2efa6d",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-02/transcripts/p1-2-transcript.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 1980444,
+      "role": "TRANSCRIPT",
+      "testNo": 2,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 2 chia nhỏ/P1 -2 Transcript.pdf"
+      ],
+      "sha256": "efe33750500465f7a38371c34898164d0845052d9009a3f720f766e9df4f4bee",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-02/audio/p1-2.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 13929707,
+      "role": "PART_AUDIO",
+      "testNo": 2,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 2 chia nhỏ/P1-2.mp3"
+      ],
+      "sha256": "1cad8dce16c296121f798186c3049196e5c8dfacbd217cedf5850fcdadf2d0e5",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-02/transcripts/transcript-de-2.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 4422976,
+      "role": "TRANSCRIPT",
+      "testNo": 2,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 2 chia nhỏ/Transcript Đề 2.pdf"
+      ],
+      "sha256": "f800666b80975974af4d25e7af331c52a48efa525f8d4f097908dcc12f1532d9",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-02/answers/dap-an-de-2.xlsx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "sizeBytes": 9410,
+      "role": "ANSWER_KEY",
+      "testNo": 2,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 2 chia nhỏ/Đáp án Đề 2.xlsx"
+      ],
+      "sha256": "84a47365df98746daab0d88dfc4f7024589824d3e49d7422961eb5ca4ee431f4",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-02/questions/de-nghe.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 8776842,
+      "role": "QUESTION_PDF",
+      "testNo": 2,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 2 chia nhỏ/Đề nghe.pdf"
+      ],
+      "sha256": "f0f99ffe62fc4e31d42af3ffbc7e953e0eb1286aa06bd19c60e2d0832c4b4a03",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-03/audio/bai-nghe-p1-2.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 13354577,
+      "role": "PART_AUDIO",
+      "testNo": 3,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 3 chia nhỏ/Bài nghe P1, 2.mp3"
+      ],
+      "sha256": "2fe3a972b69c1a394dc417e476d05f19fe06dd8675ff0eda44a8dce00947cfed",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-03/questions/p1-2.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 3393448,
+      "role": "QUESTION_PDF",
+      "testNo": 3,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 3 chia nhỏ/P1, 2.pdf"
+      ],
+      "sha256": "76022e43e02428c03510a711f52303306aadab463ce4d69530325413dcd1ec6a",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-03/audio/p3-4.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 31185552,
+      "role": "PART_AUDIO",
+      "testNo": 3,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 3 chia nhỏ/P3, 4.mp3"
+      ],
+      "sha256": "b46837cdf547b73783ef4a144099da59972f04a89b6e3e9e483193ca11d01d4d",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-03/questions/p3-4.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 5308990,
+      "role": "QUESTION_PDF",
+      "testNo": 3,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 3 chia nhỏ/P3, 4.pdf"
+      ],
+      "sha256": "9343008ec5fa6dbdf5a3ddb0b0d52e46ecef4840cd222d37a658c3c230cab8ca",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-03/transcripts/transcript-p1-2.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 2033898,
+      "role": "TRANSCRIPT",
+      "testNo": 3,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 3 chia nhỏ/transcript P1, 2.pdf"
+      ],
+      "sha256": "8804f9d4436c19d41dd58131485364b3cd22718a5b4e1c7611f61193337efe79",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-03/transcripts/transcript-p3-4.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 3597522,
+      "role": "TRANSCRIPT",
+      "testNo": 3,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 3 chia nhỏ/Transcript P3, 4.pdf"
+      ],
+      "sha256": "d7d29e602ea4fc1f0599fb9531fe69d22317b1130cacb08fb5da2e373574ff5a",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-03/transcripts/transc-2.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 3597522,
+      "role": "TRANSCRIPT",
+      "testNo": 3,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 3 chia nhỏ/TRANSC~2.PDF"
+      ],
+      "sha256": "34db032bebcdeb3fe55cfe646e1d46a8e0237ca554b451b8a06d60ba9bea750a",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-03/answers/dap-an-test-3.docx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "sizeBytes": 454576,
+      "role": "ANSWER_KEY",
+      "testNo": 3,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 3 chia nhỏ/Đáp án Test 3.docx"
+      ],
+      "sha256": "a0994711256658f3d9f7a9b79c01a3325d19970895c2fe9311a78d1227806551",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-04/audio/p1-2-test-4.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 13503789,
+      "role": "PART_AUDIO",
+      "testNo": 4,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 4/P1, 2 Test 4.mp3"
+      ],
+      "sha256": "382444ca942fc7d1d472626b25076e0b1aaa8bff8f402956b9ce1552b55e2aea",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-04/questions/p1-2-test-4.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 1917695,
+      "role": "QUESTION_PDF",
+      "testNo": 4,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 4/P1, 2 Test 4.pdf"
+      ],
+      "sha256": "34b0e713c62441330104d771a630aa6df80fdde48e997b990c58719771f1c51f",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-04/audio/p3-4-test-4.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 31519501,
+      "role": "PART_AUDIO",
+      "testNo": 4,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 4/P3, 4 Test 4.mp3"
+      ],
+      "sha256": "bf78e9cee30f2b099dd67fa5dca7c713b451b326c4023f7d2a120a4bd61320a3",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-04/questions/p3-4-test-4.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 5315069,
+      "role": "QUESTION_PDF",
+      "testNo": 4,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 4/P3, 4 Test 4.pdf"
+      ],
+      "sha256": "ef38f6dc8ae07695f21770d831f651fe1a90884795ceb20021910c6ecf5d2da7",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-04/transcripts/transcript-p1-2.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 2025553,
+      "role": "TRANSCRIPT",
+      "testNo": 4,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 4/Transcript P1, 2.pdf"
+      ],
+      "sha256": "29f3a54b3b0c3540ea82ea54e3dcea72df4057384dc897969928f483de456a2d",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-04/transcripts/transcript-p3-4.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 3151659,
+      "role": "TRANSCRIPT",
+      "testNo": 4,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 4/Transcript P3, 4.pdf"
+      ],
+      "sha256": "1d1acd2895fe673f2477533ba58bab54c2cd2c1220a1490a9d594384830bd0fe",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-04/transcripts/transc-2.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 3151659,
+      "role": "TRANSCRIPT",
+      "testNo": 4,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 4/TRANSC~2.PDF"
+      ],
+      "sha256": "0faf3d724d80f2aceac05cd030f7222435a209b8e8e7c1d5916b0b2b141be86d",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-04/answers/dap-an-p3-4.docx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "sizeBytes": 432995,
+      "role": "ANSWER_KEY",
+      "testNo": 4,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 4/Đáp án P3, 4.docx"
+      ],
+      "sha256": "fd5ccd06e9820461604984386c04e03da15b8ff2c21224044cee55f99d3200a1",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-05/audio/p1-2.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 13271822,
+      "role": "PART_AUDIO",
+      "testNo": 5,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 5/P1, 2.mp3"
+      ],
+      "sha256": "b1a57142a18f6a11649d7054b8e16a2e4e0d58e76a699ff65164a7ffc76ae298",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-05/audio/p3-4.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 32007678,
+      "role": "PART_AUDIO",
+      "testNo": 5,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 5/P3, 4.mp3"
+      ],
+      "sha256": "3a20dbf4cc199a609cddde3000a9b6c92ee917a3c6eff02fa81552a2da6d9fa1",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-05/questions/part-1-2.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 2496089,
+      "role": "QUESTION_PDF",
+      "testNo": 5,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 5/Part 1, 2.pdf"
+      ],
+      "sha256": "15a89ac5f3910ca5c0aa236c9a064c8dbfade1ab9c0673ac1c01261db4ceee7d",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-05/questions/part-3-4.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 5093203,
+      "role": "QUESTION_PDF",
+      "testNo": 5,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 5/Part 3, 4.pdf"
+      ],
+      "sha256": "e0a820118ba7e493015c95a6017db6b240e6bd0af17ecb4a89ccff67be4294a9",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-05/transcripts/transcript-p3-4.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 3495476,
+      "role": "TRANSCRIPT",
+      "testNo": 5,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 5/Transcript P3, 4.pdf"
+      ],
+      "sha256": "f261383eff3196d13a7d23097e35d7750db5fcaeaf7b271fd320e5a0bdb102b1",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-05/transcripts/transcritpt-p1-2.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 2014592,
+      "role": "TRANSCRIPT",
+      "testNo": 5,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 5/Transcritpt P1, 2.pdf"
+      ],
+      "sha256": "25dac4d94ea0f1257cc24ff0708900ccf6a0ecf533abf638760826b7e8e8ff0b",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-05/transcripts/transc-2.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 2014592,
+      "role": "TRANSCRIPT",
+      "testNo": 5,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 5/TRANSC~2.PDF"
+      ],
+      "sha256": "780d18f34890b8e9634659d53702df62af461be6265fbb411e4683aca092f351",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-05/answers/dap-an-full.docx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "sizeBytes": 405252,
+      "role": "ANSWER_KEY",
+      "testNo": 5,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 5/Đáp án full.docx"
+      ],
+      "sha256": "ebc65cbd422e14c38349665852202f42cd12770fbfed61814f141947741cb1ba",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-06/audio/p1-2-test-6.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 13026898,
+      "role": "PART_AUDIO",
+      "testNo": 6,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 6/P1, 2 Test 6.mp3"
+      ],
+      "sha256": "b99ef26c70f6d53603699981de5aee2bf384cd9c81c57341b6f67a4685021588",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-06/questions/p1-2-de-6.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 2394356,
+      "role": "QUESTION_PDF",
+      "testNo": 6,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 6/P1, 2 Đề 6.pdf"
+      ],
+      "sha256": "234dfb55a508c47b72cdd39dc0465a42b45681bdbf92889054104058e1281df9",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-06/audio/p3-4-test-6.mp3",
+      "mimeType": "audio/mpeg",
+      "sizeBytes": 29986427,
+      "role": "PART_AUDIO",
+      "testNo": 6,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 6/P3, 4 Test 6.mp3"
+      ],
+      "sha256": "7a2754fd473e685e74914b7d75d1f58bd9ed47af96a92ecd85db15b3615bfb69",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-06/questions/p3-4-de-6.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 5050429,
+      "role": "QUESTION_PDF",
+      "testNo": 6,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 6/P3, 4 Đề 6.pdf"
+      ],
+      "sha256": "9e5f4a3091bdcd97e0015f60131f59a4f3f8d04b7943ec1878359ea5a12abe5a",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-06/transcripts/transcript-p1-2-test-6.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 1979216,
+      "role": "TRANSCRIPT",
+      "testNo": 6,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 6/Transcript P1, 2 Test 6.pdf"
+      ],
+      "sha256": "c09cc2f0af78f500a3e41f26ece7c3073afb3a024585a2cc6f2893e0276241a5",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-06/transcripts/transcript-p3-4test-6.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 2362911,
+      "role": "TRANSCRIPT",
+      "testNo": 6,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 6/Transcript P3, 4Test 6.pdf"
+      ],
+      "sha256": "952ac0e04203439138044271606fc60183585c3c3ebeda8a6176df319a9a4e8f",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-06/transcripts/transc-2.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 2362911,
+      "role": "TRANSCRIPT",
+      "testNo": 6,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 6/TRANSC~2.PDF"
+      ],
+      "sha256": "52e5114aac1839f041e499e4071d895d7fb1f92b900514664644edd34577937a",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-06/answers/dap-an-de-6.docx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "sizeBytes": 469311,
+      "role": "ANSWER_KEY",
+      "testNo": 6,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 6/Đáp án Đề 6.docx"
+      ],
+      "sha256": "24fab3773da86cb179e69c3f1e5a26dd695d26904de0ff2d3b46faa5222232ab",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-06/questions/de-6.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 7444410,
+      "role": "QUESTION_PDF",
+      "testNo": 6,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 6/Đề 6.pdf"
+      ],
+      "sha256": "8775581b6ae85d418d7f896ea6f7324b5128dd782d81c43d3c9458fed6360b39",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-07/answers/key-test-7.docx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "sizeBytes": 423429,
+      "role": "ANSWER_KEY",
+      "testNo": 7,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 7/Key Test 7.docx"
+      ],
+      "sha256": "482814901db3b4b23771afae145556e5d2b869b2337f2b01c67ce149a1004e90",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-07/transcripts/transcript-de-7.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 4407414,
+      "role": "TRANSCRIPT",
+      "testNo": 7,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 7/Transcript Đề 7.pdf"
+      ],
+      "sha256": "56e374d3ee8fd27b146187c4b35f6466c37b01d64c6376ca0455059cc02dc967",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-07/questions/de-7.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 8608465,
+      "role": "QUESTION_PDF",
+      "testNo": 7,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 7/Đề 7.pdf"
+      ],
+      "sha256": "944ffd25aa8d7136ce56c5e29a548e8591440daf474f79e0787eab71496472f7",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-08/answers/key-de-8.docx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "sizeBytes": 438853,
+      "role": "ANSWER_KEY",
+      "testNo": 8,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 8/Key Đề 8.docx"
+      ],
+      "sha256": "51c91629eed5877d5d2cffad602976f025bac14ab89fffd49cf3266fcf5bb87e",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-08/transcripts/transcript-de-8.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 4322176,
+      "role": "TRANSCRIPT",
+      "testNo": 8,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 8/Transcript Đề 8.pdf"
+      ],
+      "sha256": "b554fd9a7e41de87919d521f1cf183a892dc3e429b355fa3beb643d71492dc46",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-08/questions/de-8.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 9113486,
+      "role": "QUESTION_PDF",
+      "testNo": 8,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 8/Đề 8.pdf"
+      ],
+      "sha256": "d9b651ea7232ddcd29587a57a80157c46aae92d640dfb4d1acdfd777fd830089",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-09/transcripts/transcript-de-9.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 4245073,
+      "role": "TRANSCRIPT",
+      "testNo": 9,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 9/Transcript Đề 9.pdf"
+      ],
+      "sha256": "1904ea6ff9e8ea0a83c93abbf6ad50cb931cd7164fdc020033894a6b322e331c",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-09/answers/dap-an-de-9.docx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "sizeBytes": 460120,
+      "role": "ANSWER_KEY",
+      "testNo": 9,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 9/Đáp án Đề 9.docx"
+      ],
+      "sha256": "48b4e9c52d61aa4fe0f148b99667e4ca8c0ed26fa0299a93b93ddc7b1429a001",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/test-09/questions/de-9.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 8357497,
+      "role": "QUESTION_PDF",
+      "testNo": 9,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/bài tập tách ra/Đề 9/Đề 9.pdf"
+      ],
+      "sha256": "a6c615053047b15e1ad6a8bd30c1004c151452844efbd9e095118a2c7a1c7454",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/books/new-economy-toeic-lc-1000.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 200206532,
+      "role": "BOOK",
+      "testNo": null,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/New Economy TOEIC LC 1000.pdf"
+      ],
+      "sha256": "cb965e3364b39748e42504accdbdf00c1184da94f077b6c50a542193d482e38d",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/books/new-economy-toeic-rc-1000.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 252293433,
+      "role": "BOOK",
+      "testNo": null,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/New economy TOEIC RC 1000.pdf"
+      ],
+      "sha256": "77fe58922d7792e939571b67777c1641054b0a5b2c7af845133a951795ffd148",
+      "uploaded": "uploaded"
+    },
+    {
+      "objectKey": "ets-2018/books/neweco-2.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 252293433,
+      "role": "BOOK",
+      "testNo": null,
+      "collection": "ets-2018",
+      "sources": [
+        "ETS 2018/NEWECO~2.PDF"
+      ],
+      "sha256": "8a7d280beeb82f4fdcbb3d189eb9ae654abc021c7ac9797fafee29361738bd00",
+      "uploaded": "uploaded"
+    }
+  ]
+}

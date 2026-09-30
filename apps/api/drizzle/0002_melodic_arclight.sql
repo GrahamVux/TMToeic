@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "assets_object_uq" ON "assets" USING btree ("provider","bucket","object_key");
