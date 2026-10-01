@@ -1,9 +1,65 @@
 import { z } from 'zod'
 import type { Skill } from './domain'
 
-/** TOEIC L&R scores move in steps of 5; null clears the goal. */
+export const GOAL_TRACKS = ['TWO_SKILL', 'FOUR_SKILL'] as const
+export type GoalTrack = (typeof GOAL_TRACKS)[number]
+
+export const GOAL_TRACK_BOUNDS: Record<
+  GoalTrack,
+  { min: number; max: number; step: number; label: string; hint: string; defaultScore: number }
+> = {
+  TWO_SKILL: {
+    min: 10,
+    max: 990,
+    step: 5,
+    label: '2 kỹ năng',
+    hint: 'Listening & Reading — thang TOEIC L&R (10–990)',
+    defaultScore: 800,
+  },
+  FOUR_SKILL: {
+    min: 10,
+    max: 1390,
+    step: 5,
+    label: '4 kỹ năng',
+    hint: 'Listening, Reading, Speaking & Writing — tổng 4 kỹ năng (10–1390)',
+    defaultScore: 1000,
+  },
+}
+
+export type GoalDto = { track: GoalTrack; score: number } | null
+
+export function goalFromStored(track: string | null | undefined, score: number | null | undefined): GoalDto {
+  if ((track === 'TWO_SKILL' || track === 'FOUR_SKILL') && score != null) return { track, score }
+  if (score != null) return { track: 'TWO_SKILL', score }
+  return null
+}
+
+export function formatGoal(goal: GoalDto): string | null {
+  if (!goal) return null
+  return `${goal.score} (${GOAL_TRACK_BOUNDS[goal.track].label})`
+}
+
+/** Distance to the target. Only 2-skill goals can be compared with an L&R 990-scale mock. */
+export function remainingToGoal(goal: GoalDto, latestLrScore: number | null): number | null {
+  if (!goal || latestLrScore == null || goal.track !== 'TWO_SKILL') return null
+  return Math.max(0, goal.score - latestLrScore)
+}
+
+export const goalSchema = z
+  .object({
+    track: z.enum(GOAL_TRACKS),
+    score: z.number().int(),
+  })
+  .superRefine((v, ctx) => {
+    const b = GOAL_TRACK_BOUNDS[v.track]
+    if (v.score < b.min || v.score > b.max) {
+      ctx.addIssue({ code: 'custom', path: ['score'], message: `Điểm mục tiêu ${b.min}–${b.max}` })
+    }
+  })
+
+/** null clears the goal. Exactly one track may be set at a time. */
 export const setGoalSchema = z.object({
-  targetScore: z.number().int().min(10).max(990).multipleOf(5, 'Điểm mục tiêu phải là bội số của 5').nullable(),
+  goal: goalSchema.nullable(),
 })
 export type SetGoalInput = z.infer<typeof setGoalSchema>
 
@@ -30,6 +86,7 @@ export type LeaderboardEntryDto = {
 /** Everything the student home page shows — computed from real attempts; new accounts get zeros/nulls, never sample data. */
 export type StudentDashboardDto = {
   targetScore: number | null
+  goal: GoalDto
   attemptsFinished: number
   latestScore: ScorePointDto | null
   remainingToTarget: number | null
@@ -65,6 +122,9 @@ export type AttemptSummaryDto = {
   total: number
   accuracy: number
   totalScore: number | null
+  partCodes: string[]
+  /** Set when this sitting was a homework assignment. */
+  assignmentTitle: string | null
 }
 
 /** Below this many answered questions a part is "not enough data" — no weakness is declared from a handful of clicks. */
@@ -72,6 +132,7 @@ export const MIN_ANSWERS_FOR_INSIGHT = 10
 
 export type StudentProgressDto = {
   targetScore: number | null
+  goal: GoalDto
   latestScore: ScorePointDto | null
   remainingToTarget: number | null
   improvement: number | null

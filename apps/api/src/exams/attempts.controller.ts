@@ -42,17 +42,20 @@ export class AttemptsController {
     return this.attempts.submit(actorOf(user, req), id)
   }
 
+  @Roles('STUDENT', 'TEACHER', 'ADMIN')
   @Get(':id/result')
   result(@CurrentUser() user: AuthUser, @Param('id', new ParseUUIDPipe()) id: string, @Req() req: Request) {
     return this.attempts.getResult(actorOf(user, req), id)
   }
 
   /** Fresh signed audio URLs (the player calls this when a long untimed session outlives the previous URLs). */
+  @Roles('STUDENT', 'TEACHER', 'ADMIN')
   @Get(':id/audio')
   audio(@CurrentUser() user: AuthUser, @Param('id', new ParseUUIDPipe()) id: string, @Req() req: Request) {
     return this.attempts.getAudio(actorOf(user, req), id)
   }
 
+  @Roles('STUDENT', 'TEACHER', 'ADMIN')
   @Get(':id/review')
   review(@CurrentUser() user: AuthUser, @Param('id', new ParseUUIDPipe()) id: string, @Req() req: Request) {
     return this.attempts.getReview(actorOf(user, req), id)

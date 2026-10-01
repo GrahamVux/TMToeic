@@ -83,6 +83,8 @@ export class UsersService implements OnModuleInit {
             email: input.email ?? null,
             phone: input.phone ?? null,
             targetScore: input.targetScore ?? null,
+            goalTrack: input.targetScore != null ? 'TWO_SKILL' : null,
+            targetScoreMin: input.targetScore ?? null,
             role: 'STUDENT',
             mustChangePassword: true,
             createdBy: actor.id,

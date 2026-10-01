@@ -1,8 +1,9 @@
 import { Button } from '@/components/ui/Button'
 import { Badge, Card, Input } from '@/components/ui/Primitives'
+import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { useClassReport } from '@/features/progress/progress.queries'
-import { ApiError } from '@/lib/api'
 import type { CredentialsIssuedDto, UserStatus } from '@toeic/shared'
+import { formatGoal } from '@toeic/shared'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { InactiveList } from './ReportsPage'
@@ -42,17 +43,20 @@ export function TeacherDashboardPage() {
     { id: 'DISABLED', label: 'Đã khóa', count: stats.data?.disabled },
   ]
 
+  if (students.isError) return <QueryErrorRedirect error={students.error} />
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Cổng quản lý đào tạo</p>
-          <h1 className="serif mt-2 text-4xl">Quản lý học viên & giám sát tiến độ</h1>
-          <p className="mt-2 text-sm text-ink/60">Tạo tài khoản, cấp lại mật khẩu và theo dõi trạng thái đăng nhập của học viên.</p>
+          <h1 className="serif mt-2 text-3xl sm:text-4xl">Quản lý học viên & giám sát tiến độ</h1>
+          <p className="mt-2 text-sm text-ink/60">Tạo tài khoản, theo dõi tiến độ và xem bài làm chi tiết của từng học viên.</p>
         </div>
-        <div className="flex gap-3">
-          <Link to="/admin/exams"><Button>Import đề mới (PDF)</Button></Link>
-          <Button variant="paper" onClick={() => setCreating(true)}>+ Thêm học viên</Button>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:gap-3">
+          <Link to="/admin/assignments" className="sm:w-auto"><Button className="w-full" variant="paper">Giao bài tập</Button></Link>
+          <Link to="/admin/exams" className="sm:w-auto"><Button className="w-full">Import đề mới</Button></Link>
+          <Button className="w-full sm:w-auto" variant="paper" onClick={() => setCreating(true)}>+ Thêm học viên</Button>
         </div>
       </div>
 
@@ -80,7 +84,7 @@ export function TeacherDashboardPage() {
           ))}
         </div>
         <Input
-          className="max-w-xs"
+          className="w-full sm:max-w-xs"
           placeholder="Tìm theo tên hoặc mã HV (TM-1000)…"
           aria-label="Tìm học viên"
           value={search}
@@ -105,21 +109,14 @@ export function TeacherDashboardPage() {
           <tbody>
             {students.isPending ? (
               <tr><td colSpan={5} className="px-4 py-10 text-center text-ink/50">Đang tải danh sách…</td></tr>
-            ) : students.isError ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-10 text-center">
-                  <p className="text-coral">{students.error instanceof ApiError ? students.error.message : 'Không tải được danh sách.'}</p>
-                  <Button className="mt-3" variant="paper" onClick={() => void students.refetch()}>Thử lại</Button>
-                </td>
-              </tr>
-            ) : students.data.items.length === 0 ? (
+            ) : !students.data?.items.length ? (
               <tr>
                 <td colSpan={5} className="px-4 py-10 text-center text-ink/55">
                   {q || status ? 'Không có học viên khớp bộ lọc.' : 'Chưa có học viên nào. Bấm “+ Thêm học viên” để tạo tài khoản đầu tiên.'}
                 </td>
               </tr>
             ) : (
-              students.data.items.map((u) => (
+              (students.data?.items ?? []).map((u) => (
                 <tr key={u.id} className="border-t border-gold/25">
                   <td className="px-4 py-3">
                     <p className="font-semibold">{u.fullName}</p>
@@ -134,12 +131,13 @@ export function TeacherDashboardPage() {
                       <Badge tone="olive">Hoạt động</Badge>
                     )}
                   </td>
-                  <td className="px-4 py-3">{u.targetScore ?? '—'}</td>
+                  <td className="px-4 py-3">{formatGoal(u.goal) ?? '—'}</td>
                   <td className="px-4 py-3 text-ink/70">{u.lastLoginAt ? dateFmt.format(new Date(u.lastLoginAt)) : 'Chưa đăng nhập'}</td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
                       <AccountActions user={u} compact />
-                      <Link to={`/admin/students/${u.id}`}><Button variant="paper" className="px-3 py-1.5 text-xs">Chi tiết</Button></Link>
+                      <Link to={`/admin/students/${u.id}#bai-lam`}><Button variant="paper" className="px-3 py-1.5 text-xs">Bài làm</Button></Link>
+                      <Link to={`/admin/students/${u.id}`}><Button variant="paper" className="px-3 py-1.5 text-xs">Hồ sơ</Button></Link>
                     </div>
                   </td>
                 </tr>

@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Primitives'
 import { ApiError } from '@/lib/api'
-import { changePasswordSchema, PASSWORD_MIN_LENGTH } from '@toeic/shared'
+import { changePasswordSchema, ERROR_CODES, PASSWORD_MIN_LENGTH } from '@toeic/shared'
 import { useState, type FormEvent } from 'react'
 
 function FieldError({ message }: { message?: string }) {
@@ -52,7 +52,13 @@ export function ChangePasswordForm({
     } catch (err) {
       if (err instanceof ApiError) {
         setErrors(err.fields)
-        if (Object.keys(err.fields).length === 0) setFormError(err.message)
+        if (Object.keys(err.fields).length === 0) {
+          setFormError(
+            err.code === ERROR_CODES.INVALID_CREDENTIALS
+              ? 'Mật khẩu hiện tại không đúng.'
+              : 'Đã có lỗi xảy ra, vui lòng thử lại.',
+          )
+        }
       } else setFormError('Đã có lỗi xảy ra, vui lòng thử lại.')
     } finally {
       setBusy(false)

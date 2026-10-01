@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query, Req } from '@nestjs/common'
-import { createExamSchema, importListeningDraftSchema, listExamsQuerySchema, replaceExamContentSchema, setExamAudioSchema, startAttemptSchema } from '@toeic/shared'
+import { createExamSchema, importAuthoredExamSchema, importListeningDraftSchema, listExamsQuerySchema, replaceExamContentSchema, setExamAudioSchema, startAttemptSchema } from '@toeic/shared'
 import type { Request } from 'express'
 import { clientIp, CurrentUser, OptionalUser, Public, Roles, type AuthUser } from '../common/decorators'
 import { parse } from '../common/zod'
@@ -36,6 +36,12 @@ export class ExamsController {
       return this.exams.importListeningDraft(actorOf(user, req), input)
     }
     return this.exams.importListeningDraftFromLoopback(clientIp(req), input)
+  }
+
+  @Roles('TEACHER', 'ADMIN')
+  @Post('import-authored')
+  importAuthored(@CurrentUser() user: AuthUser, @Body() body: unknown, @Req() req: Request) {
+    return this.exams.importAuthored(actorOf(user, req), parse(importAuthoredExamSchema, body))
   }
 
   @Get(':id')

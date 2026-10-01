@@ -14,12 +14,15 @@ export type DraftQuestion = {
   imageFile?: string
 }
 
+export type DraftPassage = { label: string; title?: string; content: string }
+
 export type DraftGroup = {
   key: string
   partCode: string
   instructions: string
   /** File name of a shared figure (chart, table, sign…). */
   imageFile?: string
+  passages?: DraftPassage[]
 }
 
 export type Draft = {
@@ -42,6 +45,17 @@ export const LISTENING_LAYOUT = [
 
 export function partOfQuestion(n: number): string | null {
   return LISTENING_LAYOUT.find((p) => n >= p.questionStart && n <= p.questionEnd)?.partCode ?? null
+}
+
+/** Reading layout of the 2018 TOEIC format (questions 101–200). */
+export const READING_LAYOUT = [
+  { partCode: 'PART_5', questionStart: 101, questionEnd: 130 },
+  { partCode: 'PART_6', questionStart: 131, questionEnd: 146 },
+  { partCode: 'PART_7', questionStart: 147, questionEnd: 200 },
+] as const
+
+export function partOfReadingQuestion(n: number): string | null {
+  return READING_LAYOUT.find((p) => n >= p.questionStart && n <= p.questionEnd)?.partCode ?? null
 }
 
 /** Options a real answer sheet offers: Part 2 has three (A–C), every other part four. */

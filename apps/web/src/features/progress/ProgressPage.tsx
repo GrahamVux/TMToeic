@@ -1,25 +1,17 @@
 import { Button } from '@/components/ui/Button'
 import { Badge, Card } from '@/components/ui/Primitives'
+import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { partName } from '@/features/exams/exams.queries'
-import { ApiError } from '@/lib/api'
-import { MIN_ANSWERS_FOR_INSIGHT } from '@toeic/shared'
+import { MIN_ANSWERS_FOR_INSIGHT, formatGoal } from '@toeic/shared'
 import { Link } from 'react-router-dom'
 import { AttemptsTable, PartBreakdown, ScoreTrend } from './ProgressParts'
 import { useMyProgress } from './progress.queries'
 
 export function ProgressPage() {
-  const { data: p, isPending, error, refetch } = useMyProgress()
+  const { data: p, isPending, error } = useMyProgress()
 
   if (isPending) return <p className="p-8 text-sm text-ink/55">Đang tải tiến độ…</p>
-  if (error || !p) {
-    return (
-      <Card className="mx-auto mt-10 max-w-lg p-8 text-center">
-        <h1 className="serif text-2xl">Không tải được tiến độ</h1>
-        <p className="mt-2 text-sm text-ink/60">{error instanceof ApiError ? error.message : 'Vui lòng thử lại.'}</p>
-        <Button className="mt-5" variant="navy" onClick={() => void refetch()}>Thử lại</Button>
-      </Card>
-    )
-  }
+  if (error || !p) return <QueryErrorRedirect error={error} />
 
   const weak = p.weakestPart
   const drillPath = weak?.skill === 'LISTENING' ? '/practice/listening' : '/practice/reading'
@@ -31,7 +23,7 @@ export function ProgressPage() {
           <p className="text-xs text-ink/50">Trang chủ / Tiến độ & phân tích năng lực</p>
           <h1 className="serif mt-2 text-4xl">Báo cáo tiến độ & năng lực cá nhân</h1>
           <p className="mt-2 text-sm text-ink/60">
-            {p.targetScore !== null ? `Mục tiêu TOEIC ${p.targetScore}+` : <>Chưa đặt mục tiêu • <Link to="/settings#goal" className="font-semibold text-gold-deep underline">Đặt mục tiêu</Link></>}
+            {formatGoal(p.goal) ? `Mục tiêu ${formatGoal(p.goal)}` : <>Chưa đặt mục tiêu • <Link to="/settings#goal" className="font-semibold text-gold-deep underline">Đặt mục tiêu</Link></>}
             {p.remainingToTarget !== null ? ` • Còn ${p.remainingToTarget} điểm` : ''}
           </p>
         </div>
@@ -67,7 +59,7 @@ export function ProgressPage() {
       <div className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
         <ScoreTrend
           history={p.scoreHistory}
-          target={p.targetScore}
+          target={p.goal}
           subtitle={p.scoreHistory.length >= 2 ? `${p.scoreHistory.length} bài thi thử có điểm quy đổi` : undefined}
         />
         <Card className="bg-teal-soft p-6">

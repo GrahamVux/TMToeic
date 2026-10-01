@@ -1,9 +1,10 @@
 import { AuthProvider, useAuth } from '@/app/AuthContext'
 import { AdminShell, StudentShell } from '@/components/layout/Shell'
+import { AssignmentsPage } from '@/features/assignments/AssignmentsPage'
 import { ChangePasswordPage } from '@/features/auth/ChangePasswordPage'
 import { LoginPage } from '@/features/auth/LoginPage'
-import { AssignmentsPage } from '@/features/assignments/AssignmentsPage'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
+import { NotFoundPage, RouteErrorBoundary, SystemErrorPage } from '@/features/errors/ErrorPages'
 import { ExamPlayerPage } from '@/features/exams/ExamPlayerPage'
 import { ResultPage } from '@/features/exams/ResultPage'
 import { ReviewPage } from '@/features/exams/ReviewPage'
@@ -17,8 +18,12 @@ import { StudyPage } from '@/features/study/StudyPage'
 import { ExamBankPage } from '@/features/teacher/ExamBankPage'
 import { ReportsPage } from '@/features/teacher/ReportsPage'
 import { StudentDetailPage } from '@/features/teacher/StudentDetailPage'
+import { BugReportsPage } from '@/features/bugs/BugReportsPage'
+import { SiteSettingsPage } from '@/features/teacher/SiteSettingsPage'
+import { TeacherAssignmentsPage } from '@/features/teacher/TeacherAssignmentsPage'
 import { TeacherDashboardPage } from '@/features/teacher/TeacherDashboardPage'
 import { NotebookPage } from '@/features/vocabulary/NotebookPage'
+import { SiteSettingsProvider } from '@/features/site/SiteSettingsProvider'
 import { ApiError } from '@/lib/api'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { homePathForRole } from '@toeic/shared'
@@ -60,6 +65,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={status === 'loading' ? <FullPageSpinner /> : user ? <Navigate to={home} replace /> : <LoginPage />} />
       <Route path="/change-password" element={status === 'loading' ? <FullPageSpinner /> : <ChangePasswordPage />} />
+      <Route path="/404" element={<NotFoundPage />} />
+      <Route path="/error" element={<SystemErrorPage />} />
       <Route element={<RequireAuth audience="student" />}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/study" element={<StudyPage />} />
@@ -78,10 +85,15 @@ function AppRoutes() {
       <Route element={<RequireAuth audience="staff" />}>
         <Route path="/admin" element={<TeacherDashboardPage />} />
         <Route path="/admin/students/:studentId" element={<StudentDetailPage />} />
+        <Route path="/admin/students/:studentId/attempts/:attemptId" element={<ResultPage />} />
+        <Route path="/admin/students/:studentId/attempts/:attemptId/review" element={<ReviewPage />} />
         <Route path="/admin/exams" element={<ExamBankPage />} />
+        <Route path="/admin/assignments" element={<TeacherAssignmentsPage />} />
         <Route path="/admin/reports" element={<ReportsPage />} />
+        <Route path="/admin/bugs" element={<BugReportsPage />} />
+        <Route path="/admin/settings" element={<SiteSettingsPage />} />
       </Route>
-      <Route path="*" element={status === 'loading' ? <FullPageSpinner /> : <Navigate to={home} replace />} />
+      <Route path="*" element={status === 'loading' ? <FullPageSpinner /> : <NotFoundPage />} />
     </Routes>
   )
 }
@@ -100,11 +112,15 @@ const queryClient = new QueryClient({
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </AuthProvider>
+      <SiteSettingsProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <RouteErrorBoundary>
+              <AppRoutes />
+            </RouteErrorBoundary>
+          </BrowserRouter>
+        </AuthProvider>
+      </SiteSettingsProvider>
     </QueryClientProvider>
   )
 }

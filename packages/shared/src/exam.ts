@@ -82,6 +82,14 @@ export const replaceExamContentSchema = z.object({
 })
 export type ReplaceExamContentInput = z.infer<typeof replaceExamContentSchema>
 
+/** Staff: import a self-authored exam (no R2 assets) into the bank. Parts become selectable homework groups. */
+export const importAuthoredExamSchema = createExamSchema.extend({
+  groups: z.array(groupInput).max(100).default([]),
+  questions: z.array(questionInput).min(1).max(200),
+  publish: z.boolean().default(true),
+})
+export type ImportAuthoredExamInput = z.infer<typeof importAuthoredExamSchema>
+
 const importAssetInput = z.object({
   objectKey: z.string().trim().min(1).max(500),
   mimeType: z.string().trim().min(1).max(120),
@@ -196,6 +204,7 @@ export type AttemptDto = {
   partCodes: string[]
   totalQuestions: number
   answeredCount: number
+  assignmentId: string | null
 }
 
 /** Returned while IN_PROGRESS — never contains the answer key. */

@@ -2,22 +2,26 @@ import { useAuth } from '@/app/AuthContext'
 import { cn } from '@/lib/cn'
 import { HeaderSearch } from '@/components/layout/HeaderSearch'
 import { UserMenu } from '@/components/layout/UserMenu'
-import { Bell, LogOut, Menu, Settings, X } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { useSite } from '@/features/site/SiteSettingsProvider'
+import { BugReportWidget } from '@/features/bugs/BugReportWidget'
+import { useBugReportSummary } from '@/features/bugs/bugs.queries'
+import { BarChart3, Bell, BookOpen, Bug, ClipboardList, LogOut, Menu, Settings, Users, X } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 
 export function BrandMark({ compact = false }: { compact?: boolean }) {
+  const site = useSite()
   return (
     <div className="flex shrink-0 items-center gap-2.5">
       <img
-        src="/logo.png"
-        alt="MR.MINH TOEIC"
+        src={site.logoUrl || '/logo.png'}
+        alt={site.brandName}
         className="size-9 shrink-0 rounded-full bg-white object-contain shadow-[0_2px_8px_rgba(43,138,156,0.18)]"
       />
       {!compact && (
         <div className="hidden sm:block">
-          <p className="text-[15px] font-bold leading-none tracking-tight text-ink">MR. MINH TOEIC</p>
-          <p className="mt-0.5 text-[9px] font-semibold tracking-[0.2em] text-gold-deep uppercase">Lớp học nội bộ</p>
+          <p className="text-[15px] font-bold leading-none tracking-tight text-ink">{site.brandName}</p>
+          <p className="mt-0.5 text-[9px] font-semibold tracking-[0.2em] text-gold-deep uppercase">{site.slogan}</p>
         </div>
       )}
     </div>
@@ -25,30 +29,27 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
 }
 
 export function SiteFooter() {
+  const site = useSite()
   return (
     <footer className="mt-12 border-t border-gold/40 bg-cream text-ink">
       <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 md:grid-cols-3">
         <div>
           <BrandMark />
-          <p className="mt-4 max-w-sm text-sm leading-6 text-ink/65">
-            Cổng luyện đề và học tập trực tuyến độc quyền cho học viên khoá TOEIC 800+. Tài khoản do Thầy Minh cấp phát và quản lý học vụ.
-          </p>
+          <p className="mt-4 max-w-sm text-sm leading-6 text-ink/65">{site.footerAbout}</p>
         </div>
         <div>
-          <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">Hỗ trợ học tập & trợ giảng</p>
-          <p className="mt-3 text-sm text-ink/70">Thầy Minh (Trực tiếp): giải đáp bài khó & chữa đề chuyên sâu</p>
-          <p className="mt-1 text-sm text-ink/70">Hotline lớp: 0988.xxx.888 (8:00 – 22:00)</p>
+          <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">{site.supportHeading}</p>
+          <p className="mt-3 whitespace-pre-line text-sm text-ink/70">{site.supportDetail}</p>
+          {site.phone ? <p className="mt-1 text-sm text-ink/70">Hotline: {site.phone}{site.hours ? ` (${site.hours})` : ''}</p> : null}
+          {site.address ? <p className="mt-1 text-sm text-ink/70">{site.address}</p> : null}
         </div>
         <div>
-          <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">Kênh trao đổi lớp học</p>
-          <p className="mt-3 text-sm text-ink/70">Group Zalo Lớp K42 (Nhận thông báo)</p>
-          <p className="mt-1 text-sm text-ink/70">Kho tài liệu Drive độc quyền Thầy Minh</p>
-          <p className="mt-4 text-xs text-ink/40">Mã bảo mật lớp: TM-K42-INTERNAL • Hệ thống phân tích chuẩn ETS</p>
+          <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">{site.channelHeading}</p>
+          <p className="mt-3 whitespace-pre-line text-sm text-ink/70">{site.channelDetail}</p>
+          {site.legalNote ? <p className="mt-4 text-xs text-ink/40">{site.legalNote}</p> : null}
         </div>
       </div>
-      <div className="border-t border-gold/30 px-6 py-4 text-center text-xs text-ink/40">
-        © 2026 MR. MINH TOEIC Academy • Cổng học viên nội bộ lớp học.
-      </div>
+      <div className="border-t border-gold/30 px-6 py-4 text-center text-xs text-ink/40">{site.copyright}</div>
     </footer>
   )
 }
@@ -184,33 +185,62 @@ export function StudentShell({ children }: { children: ReactNode }) {
       </header>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">{children}</main>
       <SiteFooter />
+      <BugReportWidget />
     </div>
   )
 }
 
+const adminNav = [
+  { to: '/admin', label: 'Quản lý học viên', short: 'Học viên', icon: Users, end: true },
+  { to: '/admin/exams', label: 'Kho đề', short: 'Kho đề', icon: BookOpen, end: false },
+  { to: '/admin/assignments', label: 'Bài tập', short: 'Bài tập', icon: ClipboardList, end: false },
+  { to: '/admin/reports', label: 'Báo cáo', short: 'Báo cáo', icon: BarChart3, end: false },
+]
+
 export function AdminShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const items = [
-    { to: '/admin', label: 'Quản lý học viên' },
-    { to: '/admin/exams', label: 'Kho đề' },
-    { to: '/admin/reports', label: 'Báo cáo' },
-  ]
+  const location = useLocation()
+  const [open, setOpen] = useState(false)
+  const roleLabel = user?.role === 'ADMIN' ? 'Quản trị viên' : 'Giáo viên'
+  const bugs = useBugReportSummary(user?.role === 'ADMIN')
+  const openCount = bugs.data?.openCount ?? 0
+  const nav =
+    user?.role === 'ADMIN'
+      ? [
+          ...adminNav,
+          { to: '/admin/bugs', label: openCount ? `Báo lỗi (${openCount})` : 'Báo lỗi', short: 'Lỗi', icon: Bug, end: false },
+          { to: '/admin/settings', label: 'Cài đặt', short: 'Cài đặt', icon: Settings, end: false },
+        ]
+      : adminNav
+
+  useEffect(() => {
+    setOpen(false)
+  }, [location.pathname])
+
+  async function signOut() {
+    setOpen(false)
+    await logout()
+    navigate('/login', { replace: true })
+  }
+
   return (
-    <div className="min-h-screen text-ink">
-      <header className="border-b border-gold/30 bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex h-[60px] max-w-[1400px] items-center gap-4 px-6">
-          <Link to="/admin" className="flex shrink-0 items-center no-underline cursor-pointer">
+    <div className="min-h-screen overflow-x-hidden text-ink">
+      <header className="sticky top-0 z-30 border-b border-gold/30 bg-white/95 backdrop-blur-md">
+        <div className="mx-auto flex h-[60px] max-w-[1400px] items-center gap-3 px-4 sm:px-6">
+          <Link to="/admin" className="flex min-w-0 shrink-0 items-center no-underline cursor-pointer">
             <BrandMark />
           </Link>
-          <div className="hidden h-6 w-px shrink-0 bg-gold/40 md:block" />
-          <p className="hidden whitespace-nowrap text-[11px] font-semibold tracking-[0.18em] text-gold-deep uppercase md:block">Cổng quản lý đào tạo</p>
-          <nav className="ml-2 hidden items-center gap-0.5 lg:flex">
-            {items.map((item) => (
+          <div className="hidden h-6 w-px shrink-0 bg-gold/40 lg:block" />
+          <p className="hidden whitespace-nowrap text-[11px] font-semibold tracking-[0.18em] text-gold-deep uppercase xl:block">
+            Cổng quản lý đào tạo
+          </p>
+          <nav className="ml-2 hidden min-w-0 items-center gap-0.5 lg:flex">
+            {nav.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
-                end={item.to === '/admin'}
+                end={item.end}
                 className={({ isActive }) =>
                   cn(
                     'whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors',
@@ -222,26 +252,91 @@ export function AdminShell({ children }: { children: ReactNode }) {
               </NavLink>
             ))}
           </nav>
-          <div className="ml-auto flex shrink-0 items-center gap-3">
-            <div className="leading-none text-right">
-              <p className="whitespace-nowrap text-[13px] font-semibold">{user?.fullName}</p>
-              <p className="mt-0.5 whitespace-nowrap text-[10px] text-gold-deep">{user?.role === 'ADMIN' ? 'Quản trị viên' : 'Giáo viên'}</p>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <div className="hidden leading-none text-right md:block">
+              <p className="max-w-[160px] truncate text-[13px] font-semibold">{user?.fullName}</p>
+              <p className="mt-0.5 text-[10px] text-gold-deep">{roleLabel}</p>
             </div>
-            <div className="h-5 w-px bg-gold/35" />
             <button
-              className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-red-600 px-3 py-1.5 text-[12px] font-semibold text-white shadow-sm transition hover:bg-red-700"
+              className="hidden items-center gap-1.5 whitespace-nowrap rounded-full bg-red-600 px-3 py-1.5 text-[12px] font-semibold text-white shadow-sm transition hover:bg-red-700 lg:flex"
               type="button"
-              onClick={() => {
-                void logout().then(() => navigate('/login', { replace: true }))
-              }}
+              onClick={() => void signOut()}
             >
               <LogOut className="size-3.5" />
               Đăng xuất
             </button>
+            <button
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gold/35 bg-white lg:hidden"
+              type="button"
+              aria-label={open ? 'Đóng menu' : 'Mở menu'}
+              aria-expanded={open}
+              onClick={() => setOpen((v) => !v)}
+            >
+              {open ? <X className="size-4" /> : <Menu className="size-4" />}
+            </button>
           </div>
         </div>
+
+        {open ? (
+          <div className="border-t border-gold/25 bg-white px-4 pb-3 pt-2 lg:hidden">
+            <p className="px-3 py-2 text-xs text-ink/50">
+              {user?.fullName}
+              {user?.username ? ` · ${user.username}` : ''}
+            </p>
+            {nav.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium',
+                    isActive ? 'bg-gold-deep text-white' : 'text-ink/75 hover:bg-paper',
+                  )
+                }
+              >
+                <item.icon className="size-4" />
+                {item.label}
+              </NavLink>
+            ))}
+            <hr className="my-2 border-gold/20" />
+            <button
+              className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
+              type="button"
+              onClick={() => void signOut()}
+            >
+              <LogOut className="size-4" />
+              Đăng xuất
+            </button>
+          </div>
+        ) : null}
       </header>
-      <main className="mx-auto max-w-[1400px] px-6 py-8">{children}</main>
+
+      <main className="mx-auto max-w-[1400px] px-4 py-6 pb-24 sm:px-6 sm:py-8 lg:pb-8">{children}</main>
+
+      <nav
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-gold/30 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+        aria-label="Menu quản lý"
+      >
+        <div className={cn('mx-auto grid max-w-[1400px]', nav.length >= 6 ? 'grid-cols-6' : nav.length > 4 ? 'grid-cols-5' : 'grid-cols-4')}>
+          {nav.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                cn(
+                  'flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold transition-colors',
+                  isActive ? 'text-gold-deep' : 'text-ink/50 hover:text-ink',
+                )
+              }
+            >
+              <item.icon className="size-5" />
+              {item.short}
+            </NavLink>
+          ))}
+        </div>
+      </nav>
     </div>
   )
 }

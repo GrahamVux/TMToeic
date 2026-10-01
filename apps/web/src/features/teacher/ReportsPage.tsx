@@ -1,30 +1,23 @@
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Primitives'
+import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { useClassReport } from '@/features/progress/progress.queries'
-import { ApiError } from '@/lib/api'
 import { INACTIVE_AFTER_DAYS } from '@toeic/shared'
 import { Link } from 'react-router-dom'
 
 const dateFmt = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
 
 export function ReportsPage() {
-  const { data: r, isPending, error, refetch } = useClassReport()
+  const { data: r, isPending, error } = useClassReport()
 
   if (isPending) return <p className="py-16 text-center text-ink/55" role="status">Đang tải báo cáo…</p>
-  if (error || !r) {
-    return (
-      <div className="space-y-4 py-16 text-center">
-        <p className="text-coral">{error instanceof ApiError ? error.message : 'Không tải được báo cáo.'}</p>
-        <Button variant="paper" onClick={() => void refetch()}>Thử lại</Button>
-      </div>
-    )
-  }
+  if (error || !r) return <QueryErrorRedirect error={error} />
 
   const [y, m, d] = r.week.start.split('-')
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="serif text-4xl">Báo cáo tổng hợp lớp</h1>
+        <h1 className="serif text-3xl sm:text-4xl">Báo cáo tổng hợp lớp</h1>
         <p className="mt-2 text-sm text-ink/60">Tuần bắt đầu thứ Hai {d}/{m}/{y} • giờ Việt Nam</p>
       </header>
 

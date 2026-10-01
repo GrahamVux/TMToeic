@@ -1,28 +1,39 @@
 import { BrandMark } from '@/components/layout/Shell'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Primitives'
 import { useAuth } from '@/app/AuthContext'
+import { useSite } from '@/features/site/SiteSettingsProvider'
 import { ApiError } from '@/lib/api'
-import { homePathForRole, loginSchema } from '@toeic/shared'
+import { ERROR_CODES, homePathForRole, loginSchema } from '@toeic/shared'
 import { useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
+const LOGIN_DENIED = new Set<string>([
+  ERROR_CODES.INVALID_CREDENTIALS,
+  ERROR_CODES.TOO_MANY_REQUESTS,
+  ERROR_CODES.ACCOUNT_DISABLED,
+  ERROR_CODES.UNAUTHENTICATED,
+])
+
 export function LoginPage() {
   const { login } = useAuth()
+  const site = useSite()
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as { from?: string } | null)?.from
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [fieldError, setFieldError] = useState<string | null>(null)
+  const [denied, setDenied] = useState(false)
   const [busy, setBusy] = useState(false)
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    setError(null)
+    setFieldError(null)
     const parsed = loginSchema.safeParse({ identifier, password })
     if (!parsed.success) {
-      setError(parsed.error.issues[0].message)
+      setFieldError(parsed.error.issues[0].message)
       return
     }
     setBusy(true)
@@ -30,7 +41,11 @@ export function LoginPage() {
       const user = await login(parsed.data)
       navigate(user.mustChangePassword ? '/change-password' : (from ?? homePathForRole(user.role)), { replace: true })
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Đã có lỗi xảy ra, vui lòng thử lại.')
+      const deniedLogin =
+        err instanceof ApiError &&
+        (LOGIN_DENIED.has(err.code) || err.status === 401 || err.status === 403 || err.status === 429)
+      if (deniedLogin) setDenied(true)
+      else navigate('/error', { replace: true })
     } finally {
       setBusy(false)
     }
@@ -38,16 +53,14 @@ export function LoginPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-paper text-ink">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(185,228,236,0.7),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(232,246,249,0.95),transparent_40%)]" />
+      <div className="pointer-events-none absolute inset-0 site-wash" />
       <div className="relative mx-auto grid min-h-screen max-w-6xl items-center gap-12 px-6 py-12 lg:grid-cols-2">
         <div>
           <BrandMark />
-          <h1 className="serif mt-10 max-w-xl text-5xl leading-tight">Cổng học viên nội bộ lớp TOEIC 800+</h1>
-          <p className="mt-5 max-w-lg text-base leading-7 text-ink/65">
-            Tài khoản do Thầy Minh cấp phát — không đăng ký công khai. Luyện Listening, Reading, từ vựng, ngữ pháp và theo dõi tiến độ theo lộ trình lớp K42.
-          </p>
+          <h1 className="serif mt-10 max-w-xl text-5xl leading-tight">{site.loginHeadline}</h1>
+          <p className="mt-5 max-w-lg text-base leading-7 text-ink/65">{site.loginIntro}</p>
           <p className="mt-8 max-w-md text-sm text-ink/55">
-            Quên mật khẩu hoặc tài khoản bị khóa? Liên hệ Thầy Minh / trợ giảng để được cấp lại mật khẩu tạm.
+            Quên mật khẩu hoặc tài khoản bị khóa? Liên hệ{site.phone ? ` ${site.phone}` : ' Thầy Minh'} để được cấp lại mật khẩu tạm.
           </p>
         </div>
         <form
@@ -76,16 +89,29 @@ export function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          {error && (
+          {fieldError ? (
             <p role="alert" className="mt-4 rounded-xl bg-[#f8dcd8] px-3 py-2 text-sm text-coral">
-              {error}
+              {fieldError}
             </p>
-          )}
+          ) : null}
           <Button className="mt-6 w-full" type="submit" disabled={busy}>
             {busy ? 'Đang đăng nhập…' : 'Đăng nhập'}
           </Button>
         </form>
       </div>
+
+      {denied ? (
+        <Modal title="Đăng nhập không thành công" onClose={() => setDenied(false)}>
+          <p className="text-sm leading-7 text-ink/70">
+            Bạn đã nhập sai tên đăng nhập hoặc mật khẩu. Nếu không nhớ, xin vui lòng liên hệ{site.phone ? ` ${site.phone}` : ' Thầy Minh'} để được hỗ trợ.
+          </p>
+          <div className="mt-5 flex justify-end">
+            <Button type="button" onClick={() => setDenied(false)}>
+              Đã hiểu
+            </Button>
+          </div>
+        </Modal>
+      ) : null}
     </div>
   )
 }

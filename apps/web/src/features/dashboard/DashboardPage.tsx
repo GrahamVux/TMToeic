@@ -1,8 +1,9 @@
 import { useAuth } from '@/app/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Badge, Card } from '@/components/ui/Primitives'
-import { ApiError } from '@/lib/api'
-import type { LeaderboardEntryDto, SkillStatDto, StudentDashboardDto } from '@toeic/shared'
+import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
+import { useAssignments } from '@/features/assignments/assignments.queries'
+import { formatGoal, type GoalDto, type LeaderboardEntryDto, type SkillStatDto, type StudentDashboardDto } from '@toeic/shared'
 import type { ReactNode } from 'react'
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Link } from 'react-router-dom'
@@ -13,20 +14,20 @@ const dayMonth = (iso: string) => {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
+function chartGoalLines(goal: GoalDto) {
+  if (goal?.track !== 'TWO_SKILL') return null
+  return <ReferenceLine y={goal.score} stroke="#b9860b" strokeDasharray="6 4" label={{ value: `Mục tiêu ${goal.score}`, fontSize: 11, position: 'insideTopLeft' }} />
+}
+
 export function DashboardPage() {
   const { user } = useAuth()
-  const { data, isPending, error, refetch } = useDashboard()
+  const { data, isPending, error } = useDashboard()
+  const homework = useAssignments()
 
   if (isPending) return <p className="p-8 text-sm text-ink/55">Đang tải tổng quan…</p>
-  if (error || !data) {
-    return (
-      <Card className="mx-auto mt-10 max-w-lg p-8 text-center">
-        <h1 className="serif text-2xl">Không tải được tổng quan</h1>
-        <p className="mt-2 text-sm text-ink/60">{error instanceof ApiError ? error.message : 'Vui lòng thử lại.'}</p>
-        <Button className="mt-5" variant="navy" onClick={() => void refetch()}>Thử lại</Button>
-      </Card>
-    )
-  }
+  if (error || !data) return <QueryErrorRedirect error={error} />
+
+  const due = (homework.data ?? []).filter((a) => a.myProgress?.status !== 'COMPLETED').slice(0, 3)
 
   return (
     <div className="space-y-8">
@@ -36,10 +37,29 @@ export function DashboardPage() {
         <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">Nhiệm vụ học vụ & bài về nhà</p>
         <h2 className="serif mt-1 text-2xl">Bài tập Thầy giao</h2>
         <Card className="mt-4 p-6">
-          <p className="text-sm text-ink/65">Hiện chưa có bài tập nào được giao cho bạn. Khi giáo viên giao bài, bài sẽ xuất hiện tại đây kèm hạn nộp.</p>
-          <Link to="/practice" className="mt-4 inline-block">
-            <Button variant="navy">Tự luyện đề trong lúc chờ</Button>
-          </Link>
+          {homework.isPending ? <p className="text-sm text-ink/55">Đang tải bài tập…</p> : null}
+          {!homework.isPending && due.length === 0 ? (
+            <>
+              <p className="text-sm text-ink/65">Hiện chưa có bài tập nào được giao cho bạn. Khi giáo viên giao bài, bài sẽ xuất hiện tại đây kèm hạn nộp.</p>
+              <Link to="/practice" className="mt-4 inline-block">
+                <Button variant="navy">Tự luyện đề trong lúc chờ</Button>
+              </Link>
+            </>
+          ) : null}
+          {due.map((a) => (
+            <div key={a.id} className="border-t border-gold/20 py-3 first:border-t-0 first:pt-0">
+              <p className="font-semibold">{a.title}</p>
+              <p className="text-sm text-ink/55">
+                {a.parts.map((p) => p.code.replace('PART_', 'Part ')).join(', ')}
+                {a.dueAt ? ` • hạn ${new Date(a.dueAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}` : ''}
+              </p>
+            </div>
+          ))}
+          {due.length > 0 ? (
+            <Link to="/assignments" className="mt-2 inline-block">
+              <Button variant="navy">Vào danh sách bài tập</Button>
+            </Link>
+          ) : null}
         </Card>
       </section>
 
@@ -76,20 +96,23 @@ export function DashboardPage() {
 }
 
 function Hero({ d, name }: { d: StudentDashboardDto; name: string }) {
-  const { targetScore, latestScore, remainingToTarget, streak } = d
+  const { goal, latestScore, remainingToTarget, streak } = d
+  const goalLabel = formatGoal(goal)
   let message: ReactNode
-  if (targetScore === null) {
+  if (!goal || !goalLabel) {
     message = (
       <>
         Bạn chưa đặt mục tiêu điểm số. <Link to="/settings#goal" className="font-semibold text-gold-deep underline">Đặt mục tiêu</Link> để theo dõi mình còn cách đích bao xa.
       </>
     )
+  } else if (goal.track === 'FOUR_SKILL') {
+    message = <>Mục tiêu của bạn là {goalLabel}. Điểm thi thử L&R (thang 990) không so sánh trực tiếp với tổng 4 kỹ năng.</>
   } else if (!latestScore) {
-    message = <>Mục tiêu của bạn là {targetScore}+ TOEIC. Hoàn thành một đề thi thử đủ 200 câu để biết mình đang ở mức nào.</>
+    message = <>Mục tiêu của bạn là {goalLabel}. Hoàn thành một đề thi thử đủ 200 câu để biết mình đang ở mức nào.</>
   } else if (remainingToTarget === 0) {
-    message = <>Chúc mừng! Điểm gần nhất của bạn ({latestScore.totalScore}) đã đạt mục tiêu {targetScore}+. Hãy duy trì phong độ.</>
+    message = <>Chúc mừng! Điểm gần nhất của bạn ({latestScore.totalScore}) đã đạt mục tiêu {goal.score}+.</>
   } else {
-    message = <>Bạn còn cách mục tiêu {targetScore}+ TOEIC đúng {remainingToTarget} điểm. Duy trì luyện tập đều đặn nhé!</>
+    message = <>Bạn còn cách mục tiêu {goal.score}+ đúng {remainingToTarget} điểm. Duy trì luyện tập đều đặn nhé!</>
   }
 
   return (
@@ -111,7 +134,7 @@ function Hero({ d, name }: { d: StudentDashboardDto; name: string }) {
             hint={streak.days === 0 ? 'Làm bài hôm nay để bắt đầu' : streak.activeToday ? 'Đã luyện hôm nay 🔥' : 'Luyện hôm nay để giữ chuỗi'}
           />
           <Stat label="Mock test gần nhất" value={latestScore ? String(latestScore.totalScore) : '—'} hint={latestScore ? '/ 990' : 'Chưa có bài đủ 200 câu'} />
-          <Stat label="Mục tiêu cá nhân" value={targetScore !== null ? `${targetScore}+` : 'Chưa đặt'} hint={targetScore !== null ? 'Target band' : undefined} to="/settings#goal" />
+          <Stat label="Mục tiêu cá nhân" value={goalLabel ?? 'Chưa đặt'} hint={goal ? (goal.track === 'FOUR_SKILL' ? '4 kỹ năng' : '2 kỹ năng') : undefined} to="/settings#goal" />
         </div>
       </div>
     </section>
@@ -130,7 +153,7 @@ function ScoreChart({ d }: { d: StudentDashboardDto }) {
           : d.improvement === null
             ? 'Mới có 1 bài thi thử — làm thêm để thấy xu hướng.'
             : `${d.improvement >= 0 ? 'Tăng' : 'Giảm'} ${Math.abs(d.improvement)} điểm so với bài thi thử đầu tiên`}
-        {d.targetScore !== null ? ` • Mục tiêu ${d.targetScore}+` : ''}
+        {formatGoal(d.goal) ? ` • Mục tiêu ${formatGoal(d.goal)}` : ''}
       </p>
       {data.length === 0 ? (
         <div className="mt-6 grid h-72 place-items-center rounded-2xl bg-paper p-6 text-center text-sm text-ink/60">
@@ -149,7 +172,7 @@ function ScoreChart({ d }: { d: StudentDashboardDto }) {
               <XAxis dataKey="label" tick={{ fontSize: 12 }} />
               <YAxis domain={[0, 990]} tick={{ fontSize: 12 }} />
               <Tooltip />
-              {d.targetScore !== null ? <ReferenceLine y={d.targetScore} stroke="#b9860b" strokeDasharray="6 4" label={{ value: `Mục tiêu ${d.targetScore}`, fontSize: 11, position: 'insideTopLeft' }} /> : null}
+              {chartGoalLines(d.goal)}
               <Line type="monotone" dataKey="score" name="Điểm" stroke="#2b8a9c" strokeWidth={3} dot={{ r: 5, fill: '#b9e4ec' }} />
             </LineChart>
           </ResponsiveContainer>

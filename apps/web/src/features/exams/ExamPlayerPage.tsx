@@ -1,16 +1,17 @@
 import { Button } from '@/components/ui/Button'
 import { Badge, Card } from '@/components/ui/Primitives'
-import { ApiError } from '@/lib/api'
+import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { cn } from '@/lib/cn'
 import type { AttemptPlayerDto } from '@toeic/shared'
 import { AlertTriangle, Headphones } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { trackForPart } from './audio'
 import { AudioPlayer } from './AudioPlayer'
 import { AutosaveStore, type SaveStatus } from './autosave'
 import { formatClock, isListeningPart, partName, useAttemptPlayer, useSubmitAttempt } from './exams.queries'
 import { PassageView } from './PassageView'
+import { examTextStyle, TextZoomBar, ZoomableImage } from './ZoomableImage'
 
 const MODE_LABEL: Record<string, string> = {
   PRACTICE: 'Luyện tập',
@@ -24,18 +25,7 @@ export function ExamPlayerPage() {
   const { data, isPending, error } = useAttemptPlayer(attemptId)
 
   if (isPending) return <p className="p-8 text-sm text-ink/55">Đang tải đề…</p>
-  if (error || !data) {
-    const notFound = error instanceof ApiError && error.status === 404
-    return (
-      <Card className="mx-auto mt-10 max-w-lg p-8 text-center">
-        <h1 className="serif text-2xl">{notFound ? 'Không tìm thấy bài làm' : 'Không tải được bài làm'}</h1>
-        <p className="mt-2 text-sm text-ink/60">{error instanceof ApiError ? error.message : 'Vui lòng thử lại.'}</p>
-        <Link to="/practice" className="mt-5 inline-block">
-          <Button variant="navy">Về danh sách đề</Button>
-        </Link>
-      </Card>
-    )
-  }
+  if (error || !data) return <QueryErrorRedirect error={error} />
   if (data.attempt.status !== 'IN_PROGRESS') return <Navigate to={`/attempts/${data.attempt.id}/result`} replace />
   return <Player key={data.attempt.id} data={data} />
 }
@@ -62,6 +52,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
   const [confirm, setConfirm] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [finishing, setFinishing] = useState(false)
+  const [textZoom, setTextZoom] = useState(1)
 
   const question = questions[index]
   const groupById = useMemo(() => new Map(groups.map((g) => [g.id, g])), [groups])
@@ -103,9 +94,9 @@ function Player({ data }: { data: AttemptPlayerDto }) {
     try {
       await submit.mutateAsync(attempt.id)
       navigate(`/attempts/${attempt.id}/result`, { replace: true })
-    } catch (err) {
+    } catch {
       setFinishing(false)
-      setSubmitError(err instanceof ApiError ? err.message : 'Không nộp được bài. Vui lòng thử lại.')
+      setSubmitError('Không nộp được bài. Vui lòng thử lại.')
     }
   }
 
@@ -126,6 +117,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
           <h1 className="serif text-2xl">{attempt.examTitle}</h1>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <TextZoomBar scale={textZoom} onChange={setTextZoom} />
           <SaveIndicator status={save.status} pending={save.pending} />
           <Badge tone="gold">{answered}/{questions.length} đã chọn</Badge>
           {attempt.remainingSeconds !== null ? (
@@ -154,14 +146,19 @@ function Player({ data }: { data: AttemptPlayerDto }) {
 
           {group ? (
             <Card className="p-5">
-              <PassageView group={group} />
+              <div style={examTextStyle(textZoom)}>
+                <PassageView group={group} />
+              </div>
             </Card>
           ) : null}
 
           <Card className="p-6">
+            <div style={examTextStyle(textZoom)}>
             <p className="text-sm text-ink/50">{partName(question.partCode)} • Câu {question.number}</p>
             {question.imageUrl ? (
-              <img src={question.imageUrl} alt={`Hình minh họa câu ${question.number}`} className="mt-3 max-h-[26rem] w-full rounded-2xl border border-ink/10 bg-white object-contain" />
+              <div className="mt-3">
+                <ZoomableImage src={question.imageUrl} alt={`Hình minh họa câu ${question.number}`} compact />
+              </div>
             ) : null}
             {question.prompt ? <h2 className="mt-3 text-xl leading-8 font-medium">{question.prompt}</h2> : null}
             <div className="mt-6 grid gap-3" role="radiogroup" aria-label={`Đáp án câu ${question.number}`}>
@@ -186,6 +183,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
             <div className="mt-6 flex justify-between">
               <Button variant="ghost" disabled={index === 0} onClick={() => setIndex((i) => i - 1)}>Câu trước</Button>
               <Button variant="navy" disabled={index === questions.length - 1} onClick={() => setIndex((i) => i + 1)}>Câu tiếp</Button>
+            </div>
             </div>
           </Card>
         </div>

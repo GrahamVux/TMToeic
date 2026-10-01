@@ -14,7 +14,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { ASSET_PROVIDERS, ATTEMPT_STATUSES, EXAM_MODES, EXAM_STATUSES, ROLES, SKILLS, USER_STATUSES } from '@toeic/shared'
+import { ASSET_PROVIDERS, ASSIGNMENT_LIFECYCLES, ATTEMPT_STATUSES, EXAM_MODES, EXAM_STATUSES, ROLES, SKILLS, USER_STATUSES } from '@toeic/shared'
 
 export const roleEnum = pgEnum('role', ROLES)
 export const userStatusEnum = pgEnum('user_status', USER_STATUSES)
@@ -42,7 +42,11 @@ export const users = pgTable(
     role: roleEnum('role').notNull(),
     status: userStatusEnum('status').notNull().default('ACTIVE'),
     avatarUrl: text('avatar_url'),
+    /** Upper bound of the student's score band; kept for list/sort compatibility. */
     targetScore: integer('target_score'),
+    /** TWO_SKILL | FOUR_SKILL; null when the student has no goal. */
+    goalTrack: text('goal_track'),
+    targetScoreMin: integer('target_score_min'),
     mustChangePassword: boolean('must_change_password').notNull().default(true),
     failedLoginCount: integer('failed_login_count').notNull().default(0),
     lockedUntil: timestamp('locked_until', { withTimezone: true }),
@@ -129,6 +133,7 @@ export const examStatusEnum = pgEnum('exam_status', EXAM_STATUSES)
 export const examModeEnum = pgEnum('exam_mode', EXAM_MODES)
 export const attemptStatusEnum = pgEnum('attempt_status', ATTEMPT_STATUSES)
 export const assetProviderEnum = pgEnum('asset_provider', ASSET_PROVIDERS)
+export const assignmentLifecycleEnum = pgEnum('assignment_lifecycle', ASSIGNMENT_LIFECYCLES)
 
 /** File metadata only (PDF/audio/images live in Cloudflare R2; videos on Google Drive). Wired up in the asset epic. */
 export const assets = pgTable('assets', {
@@ -256,6 +261,43 @@ export const questionOptions = pgTable(
   (t) => [uniqueIndex('question_options_uq').on(t.questionId, t.optionKey)],
 ).enableRLS()
 
+// ====================================================================== Homework assignments (composed from exam parts in the bank)
+export const assignments = pgTable(
+  'assignments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    title: text('title').notNull(),
+    description: text('description'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    examId: uuid('exam_id')
+      .notNull()
+      .references(() => exams.id, { onDelete: 'restrict' }),
+    partCodes: jsonb('part_codes').$type<string[]>().notNull(),
+    durationSeconds: integer('duration_seconds').notNull(),
+    dueAt: timestamp('due_at', { withTimezone: true }),
+    status: assignmentLifecycleEnum('status').notNull().default('DRAFT'),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index('assignments_exam_idx').on(t.examId), index('assignments_status_idx').on(t.status, t.dueAt)],
+).enableRLS()
+
+export const assignmentStudents = pgTable(
+  'assignment_students',
+  {
+    assignmentId: uuid('assignment_id')
+      .notNull()
+      .references(() => assignments.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    uniqueIndex('assignment_students_uq').on(t.assignmentId, t.userId),
+    index('assignment_students_user_idx').on(t.userId),
+  ],
+).enableRLS()
+
 // ====================================================================== Attempts
 export const attempts = pgTable(
   'attempts',
@@ -267,6 +309,7 @@ export const attempts = pgTable(
     examId: uuid('exam_id')
       .notNull()
       .references(() => exams.id, { onDelete: 'restrict' }),
+    assignmentId: uuid('assignment_id').references(() => assignments.id, { onDelete: 'set null' }),
     mode: examModeEnum('mode').notNull(),
     status: attemptStatusEnum('status').notNull().default('IN_PROGRESS'),
     /** Part codes in scope (whole exam when it lists every part). */
@@ -288,10 +331,13 @@ export const attempts = pgTable(
   (t) => [
     index('attempts_user_idx').on(t.userId, t.startedAt),
     index('attempts_exam_idx').on(t.examId),
-    // One live attempt per (user, exam, mode, scope): starting again resumes instead of duplicating.
+    index('attempts_assignment_idx').on(t.assignmentId),
     uniqueIndex('attempts_one_active_uq')
       .on(t.userId, t.examId, t.mode, t.scopeKey)
-      .where(sql`${t.status} = 'IN_PROGRESS'`),
+      .where(sql`${t.status} = 'IN_PROGRESS' AND ${t.assignmentId} is null`),
+    uniqueIndex('attempts_one_assignment_active_uq')
+      .on(t.userId, t.assignmentId)
+      .where(sql`${t.status} = 'IN_PROGRESS' AND ${t.assignmentId} is not null`),
   ],
 ).enableRLS()
 
@@ -314,8 +360,59 @@ export const attemptAnswers = pgTable(
   (t) => [uniqueIndex('attempt_answers_uq').on(t.attemptId, t.questionId)],
 ).enableRLS()
 
+export const siteSettings = pgTable('site_settings', {
+  id: text('id').primaryKey(),
+  brandName: text('brand_name').notNull(),
+  slogan: text('slogan').notNull(),
+  loginHeadline: text('login_headline').notNull(),
+  loginIntro: text('login_intro').notNull(),
+  footerAbout: text('footer_about').notNull(),
+  supportHeading: text('support_heading').notNull(),
+  supportDetail: text('support_detail').notNull(),
+  phone: text('phone').notNull(),
+  address: text('address').notNull(),
+  hours: text('hours').notNull(),
+  channelHeading: text('channel_heading').notNull(),
+  channelDetail: text('channel_detail').notNull(),
+  legalNote: text('legal_note').notNull(),
+  copyright: text('copyright').notNull(),
+  logoDataUrl: text('logo_data_url'),
+  faviconDataUrl: text('favicon_data_url'),
+  themePrimary: text('theme_primary').notNull(),
+  themePrimarySoft: text('theme_primary_soft').notNull(),
+  themePaper: text('theme_paper').notNull(),
+  ...timestamps,
+}).enableRLS()
+
+/** Student-submitted issues for the admin inbox. */
+export const bugReports = pgTable(
+  'bug_reports',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    reporterId: uuid('reporter_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    category: text('category').notNull(),
+    message: text('message').notNull(),
+    pagePath: text('page_path').notNull(),
+    userAgent: text('user_agent'),
+    status: text('status').notNull().default('OPEN'),
+    adminNote: text('admin_note'),
+    resolvedBy: uuid('resolved_by').references(() => users.id, { onDelete: 'set null' }),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index('bug_reports_status_created_idx').on(t.status, t.createdAt),
+    index('bug_reports_reporter_idx').on(t.reporterId, t.createdAt),
+  ],
+).enableRLS()
+
 export type ExamRow = typeof exams.$inferSelect
 export type AttemptRow = typeof attempts.$inferSelect
+export type AssignmentRow = typeof assignments.$inferSelect
 export type UserRow = typeof users.$inferSelect
 export type NewUserRow = typeof users.$inferInsert
 export type SessionRow = typeof sessions.$inferSelect
+export type SiteSettingsRow = typeof siteSettings.$inferSelect
+export type BugReportRow = typeof bugReports.$inferSelect

@@ -4,20 +4,25 @@ import {
   INACTIVE_AFTER_DAYS,
   MIN_ANSWERS_FOR_INSIGHT,
   PART_SEED,
+  type AttemptSummaryDto,
   type ClassReportDto,
   type LeaderboardEntryDto,
   type PartStatDto,
   type ScorePointDto,
+  type SetGoalInput,
   type SkillStatDto,
   type StudentDashboardDto,
   type StudentProgressDto,
+  type UpdateProfileInput,
   type UserDto,
+  remainingToGoal,
+  goalFromStored,
 } from '@toeic/shared'
 import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { AuditService } from '../audit/audit.service'
 import { AppException } from '../common/app-exception'
 import { DB, type Db } from '../db/database.module'
-import { attempts, exams, users } from '../db/schema'
+import { attempts, assignments, exams, users } from '../db/schema'
 import { toUserDto } from '../users/user.mapper'
 
 /** Class is in Vietnam: "today" and "this week" follow local time, not the server's. */
@@ -55,6 +60,33 @@ export function computeStreak(activeDays: string[], today: string): { days: numb
 
 const pct = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 100) : null)
 
+function toAttemptSummary(r: {
+  attemptId: string
+  examTitle: string
+  mode: string
+  status: string
+  at: Date | null
+  correct: number | null
+  total: number
+  totalScore: number | null
+  partCodes: string[]
+  assignmentTitle: string | null
+}): AttemptSummaryDto {
+  return {
+    attemptId: r.attemptId,
+    examTitle: r.examTitle,
+    mode: r.mode,
+    status: r.status,
+    at: r.at!.toISOString(),
+    correct: r.correct ?? 0,
+    total: r.total,
+    accuracy: pct(r.correct ?? 0, r.total) ?? 0,
+    totalScore: r.totalScore,
+    partCodes: r.partCodes,
+    assignmentTitle: r.assignmentTitle,
+  }
+}
+
 @Injectable()
 export class ProgressService {
   constructor(
@@ -63,7 +95,11 @@ export class ProgressService {
   ) {}
 
   async studentDashboard(userId: string, now = new Date()): Promise<StudentDashboardDto> {
-    const [me] = await this.db.select({ targetScore: users.targetScore }).from(users).where(eq(users.id, userId)).limit(1)
+    const [me] = await this.db
+      .select({ targetScore: users.targetScore, goalTrack: users.goalTrack, targetScoreMin: users.targetScoreMin })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1)
     if (!me) throw AppException.notFound('Không tìm thấy tài khoản')
 
     const [scored, finishedRows, dayRows, skillRows, weekRows, weekStartRows] = await Promise.all([
@@ -143,11 +179,13 @@ export class ProgressService {
       you: r.id === userId,
     }))
 
+    const goal = goalFromStored(me.goalTrack, me.targetScore)
     return {
       targetScore: me.targetScore,
+      goal,
       attemptsFinished: finishedRows[0]?.n ?? 0,
       latestScore: latest,
-      remainingToTarget: me.targetScore !== null && latest ? Math.max(0, me.targetScore - latest.totalScore) : null,
+      remainingToTarget: remainingToGoal(goal, latest?.totalScore ?? null),
       improvement: history.length >= 2 ? history[history.length - 1].totalScore - history[0].totalScore : null,
       scoreHistory: history,
       streak: computeStreak(
@@ -172,7 +210,11 @@ export class ProgressService {
   }
 
   async studentProgress(userId: string, now = new Date()): Promise<StudentProgressDto> {
-    const [me] = await this.db.select({ targetScore: users.targetScore }).from(users).where(eq(users.id, userId)).limit(1)
+    const [me] = await this.db
+      .select({ targetScore: users.targetScore, goalTrack: users.goalTrack, targetScoreMin: users.targetScoreMin })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1)
     if (!me) throw AppException.notFound('Không tìm thấy học viên')
 
     const [scored, partRows, recent, dayRows, lastRows] = await Promise.all([
@@ -206,9 +248,12 @@ export class ProgressService {
           correct: attempts.correctCount,
           total: attempts.totalQuestions,
           totalScore: attempts.totalScore,
+          partCodes: attempts.partCodes,
+          assignmentTitle: assignments.title,
         })
         .from(attempts)
         .innerJoin(exams, eq(exams.id, attempts.examId))
+        .leftJoin(assignments, eq(assignments.id, attempts.assignmentId))
         .where(and(eq(attempts.userId, userId), inArray(attempts.status, ['SUBMITTED', 'EXPIRED'])))
         .orderBy(desc(attempts.submittedAt))
         .limit(10),
@@ -247,10 +292,12 @@ export class ProgressService {
     const weakest = candidates.length ? candidates.reduce((w, p) => (p.accuracy! < w.accuracy! ? p : w)) : null
 
     const lastAt = lastRows.rows[0]?.last_at
+    const goal = goalFromStored(me.goalTrack, me.targetScore)
     return {
       targetScore: me.targetScore,
+      goal,
       latestScore: latest,
-      remainingToTarget: me.targetScore !== null && latest ? Math.max(0, me.targetScore - latest.totalScore) : null,
+      remainingToTarget: remainingToGoal(goal, latest?.totalScore ?? null),
       improvement: history.length >= 2 ? history[history.length - 1].totalScore - history[0].totalScore : null,
       scoreHistory: history,
       parts,
@@ -264,20 +311,32 @@ export class ProgressService {
       },
       streak: computeStreak(dayRows, localDay(now)),
       lastActivityAt: lastAt ? new Date(lastAt).toISOString() : null,
-      recentAttempts: recent
-        .filter((r) => r.at !== null)
-        .map((r) => ({
-          attemptId: r.attemptId,
-          examTitle: r.examTitle,
-          mode: r.mode,
-          status: r.status,
-          at: r.at!.toISOString(),
-          correct: r.correct ?? 0,
-          total: r.total,
-          accuracy: pct(r.correct ?? 0, r.total) ?? 0,
-          totalScore: r.totalScore,
-        })),
+      recentAttempts: recent.filter((r) => r.at !== null).map(toAttemptSummary),
     }
+  }
+
+  /** Full finished-attempt history for the teacher’s student profile. */
+  async listStudentAttempts(userId: string): Promise<AttemptSummaryDto[]> {
+    const rows = await this.db
+      .select({
+        attemptId: attempts.id,
+        examTitle: exams.title,
+        mode: attempts.mode,
+        status: attempts.status,
+        at: attempts.submittedAt,
+        correct: attempts.correctCount,
+        total: attempts.totalQuestions,
+        totalScore: attempts.totalScore,
+        partCodes: attempts.partCodes,
+        assignmentTitle: assignments.title,
+      })
+      .from(attempts)
+      .innerJoin(exams, eq(exams.id, attempts.examId))
+      .leftJoin(assignments, eq(assignments.id, attempts.assignmentId))
+      .where(and(eq(attempts.userId, userId), inArray(attempts.status, ['SUBMITTED', 'EXPIRED'])))
+      .orderBy(desc(attempts.submittedAt))
+      .limit(100)
+    return rows.filter((r) => r.at !== null).map(toAttemptSummary)
   }
 
   async classReport(now = new Date()): Promise<ClassReportDto> {
@@ -342,10 +401,37 @@ export class ProgressService {
     return r?.n ?? 0
   }
 
-  async setGoal(userId: string, targetScore: number | null, ip?: string): Promise<UserDto> {
-    const [row] = await this.db.update(users).set({ targetScore, updatedAt: new Date() }).where(eq(users.id, userId)).returning()
+  async setGoal(userId: string, input: SetGoalInput, ip?: string): Promise<UserDto> {
+    const goal = input.goal
+    const [row] = await this.db
+      .update(users)
+      .set({
+        goalTrack: goal?.track ?? null,
+        targetScoreMin: goal?.score ?? null,
+        targetScore: goal?.score ?? null,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning()
     if (!row) throw AppException.notFound('Không tìm thấy tài khoản')
-    await this.audit.log({ action: 'GOAL_UPDATED', actorId: userId, entityType: 'user', entityId: userId, metadata: { targetScore }, ip })
+    await this.audit.log({ action: 'GOAL_UPDATED', actorId: userId, entityType: 'user', entityId: userId, metadata: { goal }, ip })
     return toUserDto(row)
+  }
+
+  async updateProfile(userId: string, input: UpdateProfileInput, ip?: string): Promise<UserDto> {
+    try {
+      const [row] = await this.db
+        .update(users)
+        .set({ fullName: input.fullName, email: input.email, phone: input.phone, updatedAt: new Date() })
+        .where(eq(users.id, userId))
+        .returning()
+      if (!row) throw AppException.notFound('Không tìm thấy tài khoản')
+      await this.audit.log({ action: 'PROFILE_UPDATED', actorId: userId, entityType: 'user', entityId: userId, ip })
+      return toUserDto(row)
+    } catch (err) {
+      const e = err as { code?: string; cause?: { code?: string } }
+      if (e?.code === '23505' || e?.cause?.code === '23505') throw AppException.conflict('Email đã được sử dụng bởi tài khoản khác')
+      throw err
+    }
   }
 }

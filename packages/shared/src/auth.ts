@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { ROLES, USER_STATUSES, type Role, type UserStatus } from './domain'
+import type { GoalDto } from './progress'
 
 /** Machine-readable error codes returned by the API (`{ error: { code, message } }`). */
 export const ERROR_CODES = {
@@ -99,6 +100,8 @@ export type UserDto = {
   status: UserStatus
   avatarUrl: string | null
   targetScore: number | null
+  /** 2-skill or 4-skill band the student chose; null when no goal is set. */
+  goal: GoalDto
   mustChangePassword: boolean
   lastLoginAt: string | null
   createdAt: string

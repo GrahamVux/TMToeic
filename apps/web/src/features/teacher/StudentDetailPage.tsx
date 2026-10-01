@@ -1,36 +1,34 @@
 import { Button } from '@/components/ui/Button'
 import { Badge, Card } from '@/components/ui/Primitives'
+import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { partName } from '@/features/exams/exams.queries'
 import { AttemptsTable, PartBreakdown, ScoreTrend } from '@/features/progress/ProgressParts'
-import { useStudentProgress } from '@/features/progress/progress.queries'
-import { ApiError } from '@/lib/api'
-import { Link, useParams } from 'react-router-dom'
+import { useStudentAttempts, useStudentProgress } from '@/features/progress/progress.queries'
+import { formatGoal } from '@toeic/shared'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { AccountActions } from './StudentDialogs'
 import { useUser } from './users.queries'
+import { useEffect } from 'react'
 
 const dateFmt = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium', timeStyle: 'short' })
 
 export function StudentDetailPage() {
   const { studentId } = useParams()
-  const { data: user, isPending, error, refetch } = useUser(studentId)
+  const location = useLocation()
+  const { data: user, isPending, error } = useUser(studentId)
   const progress = useStudentProgress(studentId)
+  const sittings = useStudentAttempts(studentId)
   const p = progress.data
 
-  if (isPending) return <p className="py-16 text-center text-ink/55" role="status">Đang tải hồ sơ…</p>
-  if (error || !user) {
-    const notFound = error instanceof ApiError && error.status === 404
-    return (
-      <div className="space-y-4 py-16 text-center">
-        <p className="text-coral">{notFound ? 'Không tìm thấy học viên.' : 'Không tải được hồ sơ học viên.'}</p>
-        <div className="flex justify-center gap-3">
-          <Link to="/admin"><Button variant="paper">← Danh sách học viên</Button></Link>
-          {!notFound && <Button variant="paper" onClick={() => void refetch()}>Thử lại</Button>}
-        </div>
-      </div>
-    )
-  }
+  useEffect(() => {
+    if (location.hash !== '#bai-lam') return
+    document.getElementById('bai-lam')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [location.hash, sittings.data])
 
-  const target = user.targetScore
+  if (isPending) return <p className="py-16 text-center text-ink/55" role="status">Đang tải hồ sơ…</p>
+  if (error || !user) return <QueryErrorRedirect error={error} />
+
+  const target = user.goal
   return (
     <div className="space-y-6">
       <Link to="/admin" className="text-sm text-gold-deep">
@@ -53,7 +51,7 @@ export function StudentDetailPage() {
         <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
           <Info label="Email" value={user.email} />
           <Info label="Số điện thoại" value={user.phone} />
-          <Info label="Điểm mục tiêu" value={target?.toString()} />
+          <Info label="Điểm mục tiêu" value={formatGoal(target)} />
           <Info label="Ngày tạo" value={dateFmt.format(new Date(user.createdAt))} />
           <Info label="Đăng nhập gần nhất" value={user.lastLoginAt ? dateFmt.format(new Date(user.lastLoginAt)) : 'Chưa đăng nhập'} />
           <Info label="Làm bài gần nhất" value={p ? (p.lastActivityAt ? dateFmt.format(new Date(p.lastActivityAt)) : 'Chưa làm bài') : undefined} />
@@ -65,7 +63,7 @@ export function StudentDetailPage() {
       {progress.isPending ? <p className="text-sm text-ink/55">Đang tải số liệu…</p> : null}
       {progress.error ? (
         <div className="rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral" role="alert">
-          {progress.error instanceof ApiError ? progress.error.message : 'Không tải được số liệu học tập.'}
+          Không tải được số liệu học tập.
           <Button className="ml-3" variant="paper" onClick={() => void progress.refetch()}>Thử lại</Button>
         </div>
       ) : null}
@@ -94,23 +92,34 @@ export function StudentDetailPage() {
               </p>
             </Card>
             <Card className="p-5">
-              <p className="text-xs text-ink/50">{target !== null ? `So với mục tiêu ${target}` : 'Mục tiêu'}</p>
+              <p className="text-xs text-ink/50">{target ? `So với mục tiêu ${formatGoal(target)}` : 'Mục tiêu'}</p>
               <p className="serif mt-2 text-4xl">{p.remainingToTarget ?? '—'}</p>
               <p className="mt-1 text-xs text-ink/50">
-                {target === null ? 'Học viên chưa đặt mục tiêu' : p.latestScore ? 'điểm còn lại' : 'chưa có điểm để so sánh'}
+                {!target ? 'Học viên chưa đặt mục tiêu' : target.track === 'FOUR_SKILL' ? 'Không so sánh với mock L&R' : p.latestScore ? 'điểm còn lại đến mục tiêu' : 'chưa có điểm để so sánh'}
               </p>
             </Card>
           </div>
 
           <ScoreTrend history={p.scoreHistory} target={target} />
           <PartBreakdown parts={p.parts} />
-
-          <section>
-            <h3 className="serif text-2xl">Bài làm gần đây</h3>
-            <div className="mt-3"><AttemptsTable attempts={p.recentAttempts} reviewLinks={false} /></div>
-          </section>
         </>
       ) : null}
+
+      <section id="bai-lam">
+        <h3 className="serif text-2xl">Kết quả & bài làm chi tiết</h3>
+        <p className="mt-1 text-sm text-ink/55">Mỗi lần nộp: điểm tổng, đúng/sai theo part, và từng câu học viên đã chọn.</p>
+        {sittings.isPending ? <p className="mt-3 text-sm text-ink/55">Đang tải bài làm…</p> : null}
+        {sittings.error ? (
+          <div className="mt-3 rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral" role="alert">
+            Không tải được danh sách bài làm.
+            <Button className="ml-3" variant="paper" onClick={() => void sittings.refetch()}>Thử lại</Button>
+          </div>
+        ) : (
+          <div className="mt-3">
+            <AttemptsTable attempts={sittings.data ?? []} staffStudentId={user.id} />
+          </div>
+        )}
+      </section>
     </div>
   )
 }

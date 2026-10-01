@@ -5,6 +5,7 @@ import {
   type ExamPartDto,
   type ExamStatus,
   type ExamSummaryDto,
+  type ImportAuthoredExamInput,
   type ImportListeningDraftInput,
   type ReplaceExamContentInput,
   type Skill,
@@ -333,6 +334,17 @@ export class ExamsService {
     const [admin] = await this.db.select({ id: users.id, role: users.role }).from(users).where(eq(users.role, 'ADMIN')).limit(1)
     if (!admin) throw AppException.unauthenticated()
     return this.importListeningDraft({ id: admin.id, role: admin.role, ip }, input)
+  }
+
+  /** Self-authored exam → bank. Parts are stored as exam_parts so the teacher can pick them for homework. */
+  async importAuthored(actor: Actor, input: ImportAuthoredExamInput): Promise<ExamSummaryDto> {
+    const { groups, questions, publish, ...examInput } = input
+    const [existing] = await this.db.select({ id: exams.id }).from(exams).where(eq(exams.code, examInput.code)).limit(1)
+    if (existing) throw AppException.conflict('Mã đề đã tồn tại trong ngân hàng. Hãy dùng mã khác.')
+    const created = await this.create(actor, examInput)
+    await this.replaceContent(actor, created.id, { groups, questions })
+    if (publish) return this.publish(actor, created.id)
+    return this.getSummary(created.id)
   }
 
   // ---------------------------------------------------------------- publish / archive

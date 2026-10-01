@@ -21,6 +21,8 @@ import { DB, type Db } from '../db/database.module'
 import {
   attemptAnswers,
   attempts,
+  assignments,
+  assignmentStudents,
   examParts,
   exams,
   parts,
@@ -29,6 +31,7 @@ import {
   questionOptions,
   questions,
   skills,
+  users,
   type AttemptRow,
   type ExamRow,
 } from '../db/schema'
@@ -129,6 +132,95 @@ export class AttemptsService {
     }
   }
 
+  /** Start or resume the student's sitting of a published assignment. */
+  async startFromAssignment(actor: Actor, assignmentId: string): Promise<AttemptDto> {
+    const [asg] = await this.db.select().from(assignments).where(eq(assignments.id, assignmentId)).limit(1)
+    if (!asg) throw AppException.notFound('Không tìm thấy bài tập')
+    if (asg.status === 'DRAFT') throw AppException.notFound('Không tìm thấy bài tập')
+
+    const [assigned] = await this.db
+      .select({ userId: assignmentStudents.userId })
+      .from(assignmentStudents)
+      .where(and(eq(assignmentStudents.assignmentId, assignmentId), eq(assignmentStudents.userId, actor.id)))
+      .limit(1)
+    if (!assigned) throw AppException.forbidden('Bài tập này không được giao cho bạn')
+
+    const [latest] = await this.db
+      .select()
+      .from(attempts)
+      .where(and(eq(attempts.assignmentId, assignmentId), eq(attempts.userId, actor.id)))
+      .orderBy(desc(attempts.startedAt))
+      .limit(1)
+    if (latest) {
+      const current = await this.expireIfNeeded(latest)
+      if (current.status === 'IN_PROGRESS') {
+        const exam = await this.requireExam(current.examId)
+        return this.toDto(current, exam.title)
+      }
+      if (current.status === 'SUBMITTED' || current.status === 'EXPIRED') {
+        throw AppException.conflict('Bài tập đã được nộp')
+      }
+    }
+
+    if (asg.status === 'CLOSED') throw AppException.forbidden('Bài tập đã đóng')
+    if (asg.dueAt && asg.dueAt.getTime() < Date.now()) throw AppException.forbidden('Đã hết hạn nộp bài')
+
+    const [exam] = await this.db.select().from(exams).where(eq(exams.id, asg.examId)).limit(1)
+    if (!exam || exam.status !== 'PUBLISHED') throw AppException.notFound('Không tìm thấy đề thi')
+
+    const examParts_ = await this.db
+      .select({ code: parts.code, order: examParts.displayOrder })
+      .from(examParts)
+      .innerJoin(parts, eq(parts.id, examParts.partId))
+      .where(eq(examParts.examId, exam.id))
+      .orderBy(asc(examParts.displayOrder))
+    const allCodes = examParts_.map((p) => p.code)
+    const requested = asg.partCodes
+    const bad = requested.filter((c) => !allCodes.includes(c))
+    if (bad.length) throw AppException.badRequest(`Đề không có part: ${bad.join(', ')}`)
+    const partCodes = allCodes.filter((c) => requested.includes(c))
+    const scopeKey = partCodes.length === allCodes.length ? 'ALL' : [...partCodes].sort().join(',')
+    const scope = await this.scopeQuestions(this.db, exam.id, partCodes)
+    if (scope.length === 0) throw AppException.badRequest('Đề chưa có câu hỏi trong phạm vi đã chọn')
+
+    const now = new Date()
+    const deadlineAt = new Date(now.getTime() + asg.durationSeconds * 1000)
+    try {
+      const [row] = await this.db
+        .insert(attempts)
+        .values({
+          userId: actor.id,
+          examId: exam.id,
+          assignmentId,
+          mode: 'TIMED',
+          partCodes,
+          scopeKey,
+          startedAt: now,
+          deadlineAt,
+          totalQuestions: scope.length,
+        })
+        .returning()
+      await this.audit.log({
+        action: 'ASSIGNMENT_STARTED',
+        actorId: actor.id,
+        entityType: 'attempt',
+        entityId: row.id,
+        metadata: { assignmentId, examId: exam.id },
+        ip: actor.ip,
+      })
+      return this.toDto(row, exam.title)
+    } catch (err) {
+      if (!isUniqueViolation(err)) throw err
+      const [winner] = await this.db
+        .select()
+        .from(attempts)
+        .where(and(eq(attempts.userId, actor.id), eq(attempts.assignmentId, assignmentId), eq(attempts.status, 'IN_PROGRESS')))
+        .limit(1)
+      if (!winner) throw err
+      return this.toDto(winner, exam.title)
+    }
+  }
+
   // ---------------------------------------------------------------- read
   async list(actor: Actor): Promise<AttemptResultDto[]> {
     const rows = await this.db.select().from(attempts).where(eq(attempts.userId, actor.id)).orderBy(desc(attempts.startedAt)).limit(100)
@@ -151,7 +243,7 @@ export class AttemptsService {
   }
 
   async getAudio(actor: Actor, attemptId: string): Promise<AttemptAudioDto> {
-    const attempt = await this.requireOwn(actor, attemptId)
+    const attempt = await this.requireReadable(actor, attemptId)
     return { audio: await this.examAudio.tracksFor(attempt.examId, attempt.partCodes) }
   }
 
@@ -202,14 +294,14 @@ export class AttemptsService {
   }
 
   async getResult(actor: Actor, attemptId: string): Promise<AttemptResultDto> {
-    const attempt = await this.expireIfNeeded(await this.requireOwn(actor, attemptId))
+    const attempt = await this.expireIfNeeded(await this.requireReadable(actor, attemptId))
     if (attempt.status === 'IN_PROGRESS') throw AppException.conflict('Bài làm chưa nộp nên chưa có kết quả')
     return this.buildResult(attempt, false)
   }
 
   /** Review with the answer key — only after the attempt is finished. */
   async getReview(actor: Actor, attemptId: string): Promise<AttemptReviewDto> {
-    const attempt = await this.expireIfNeeded(await this.requireOwn(actor, attemptId))
+    const attempt = await this.expireIfNeeded(await this.requireReadable(actor, attemptId))
     if (attempt.status === 'IN_PROGRESS') throw AppException.conflict('Chỉ xem được đáp án sau khi nộp bài')
     const { questions: qs, groups } = await this.loadPlayerContent(attempt)
     const correct = await this.db
@@ -332,6 +424,19 @@ export class AttemptsService {
     return row
   }
 
+  /** Owner, or staff viewing a student's sitting (results / review / audio only). */
+  private async requireReadable(actor: Actor, id: string): Promise<AttemptRow> {
+    if (actor.role !== 'TEACHER' && actor.role !== 'ADMIN') return this.requireOwn(actor, id)
+    const [row] = await this.db
+      .select({ attempt: attempts })
+      .from(attempts)
+      .innerJoin(users, eq(users.id, attempts.userId))
+      .where(and(eq(attempts.id, id), eq(users.role, 'STUDENT')))
+      .limit(1)
+    if (!row) throw AppException.notFound('Không tìm thấy bài làm')
+    return row.attempt
+  }
+
   private async requireExam(id: string): Promise<ExamRow> {
     const [row] = await this.db.select().from(exams).where(eq(exams.id, id)).limit(1)
     if (!row) throw AppException.notFound('Không tìm thấy đề thi')
@@ -445,6 +550,7 @@ export class AttemptsService {
       startedAt: a.startedAt.toISOString(),
       submittedAt: a.submittedAt?.toISOString() ?? null,
       deadlineAt: a.deadlineAt?.toISOString() ?? null,
+      assignmentId: a.assignmentId ?? null,
       remainingSeconds: a.status === 'IN_PROGRESS' && a.deadlineAt ? Math.max(0, Math.floor((a.deadlineAt.getTime() - Date.now()) / 1000)) : null,
       partCodes: a.partCodes,
       totalQuestions: a.totalQuestions,

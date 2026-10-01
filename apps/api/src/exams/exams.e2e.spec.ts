@@ -285,6 +285,16 @@ describe('Exam engine (e2e on PGlite)', () => {
       expect(byNum[103]).toMatchObject({ correctKey: 'A', selectedKey: null, isCorrect: null })
     })
 
+    it('staff can read a student’s result and review but cannot play, change answers, or submit', async () => {
+      expect((await admin.get(`/attempts/${attemptId}/result`)).status).toBe(200)
+      const review = await admin.get(`/attempts/${attemptId}/review`)
+      expect(review.status).toBe(200)
+      expect(review.body.questions[0]).toMatchObject({ correctKey: 'A' })
+      expect((await admin.get(`/attempts/${attemptId}`)).status).toBe(403)
+      expect((await put(admin, `/attempts/${attemptId}/answers/${qs[0].id}`, { selectedKey: 'C' })).status).toBe(403)
+      expect((await admin.post(`/attempts/${attemptId}/submit`)).status).toBe(403)
+    })
+
     it('history lists own attempts only; a finished attempt does not block a fresh start', async () => {
       const mine = await student.get('/attempts')
       expect(mine.status).toBe(200)

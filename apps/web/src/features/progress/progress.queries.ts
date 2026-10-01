@@ -1,5 +1,5 @@
 import { api } from '@/lib/api'
-import type { ClassReportDto, StudentProgressDto } from '@toeic/shared'
+import type { AttemptSummaryDto, ClassReportDto, StudentProgressDto } from '@toeic/shared'
 import { useQuery } from '@tanstack/react-query'
 
 export function useMyProgress() {
@@ -9,6 +9,14 @@ export function useMyProgress() {
 /** Teacher/admin view of one student. */
 export function useStudentProgress(id: string | undefined) {
   return useQuery({ queryKey: ['students', id, 'progress'], queryFn: () => api<StudentProgressDto>(`/students/${id}/progress`), enabled: !!id })
+}
+
+export function useStudentAttempts(id: string | undefined) {
+  return useQuery({
+    queryKey: ['students', id, 'attempts'],
+    queryFn: () => api<AttemptSummaryDto[]>(`/students/${id}/attempts`),
+    enabled: !!id,
+  })
 }
 
 export function useClassReport() {

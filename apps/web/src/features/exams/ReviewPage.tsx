@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/Button'
 import { Badge, Card } from '@/components/ui/Primitives'
+import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { ApiError } from '@/lib/api'
 import { cn } from '@/lib/cn'
 import { useMemo, useState } from 'react'
@@ -7,43 +8,53 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { AudioPlayer } from './AudioPlayer'
 import { partName, useAttemptReview } from './exams.queries'
 import { PassageView } from './PassageView'
+import { examTextStyle, TextZoomBar, ZoomableImage } from './ZoomableImage'
 
 type Filter = 'all' | 'wrong' | 'blank'
 
 export function ReviewPage() {
-  const { attemptId } = useParams()
+  const { attemptId, studentId } = useParams()
+  const staffView = Boolean(studentId)
   const { data, isPending, error } = useAttemptReview(attemptId)
   const [filter, setFilter] = useState<Filter>('all')
+  const [textZoom, setTextZoom] = useState(1)
 
   const groups = useMemo(() => new Map((data?.groups ?? []).map((g) => [g.id, g])), [data])
 
   if (isPending) return <p className="p-8 text-sm text-ink/55">Đang tải…</p>
-  if (error instanceof ApiError && error.status === 409) return <Navigate to={`/attempts/${attemptId}/play`} replace />
-  if (error || !data) {
-    return (
-      <Card className="mx-auto mt-10 max-w-lg p-8 text-center">
-        <h1 className="serif text-2xl">Không tải được màn chữa đề</h1>
-        <p className="mt-2 text-sm text-ink/60">{error instanceof ApiError ? error.message : 'Vui lòng thử lại.'}</p>
-      </Card>
-    )
+  if (error instanceof ApiError && error.status === 409) {
+    if (staffView) return <p className="p-8 text-sm text-ink/60">Học viên chưa nộp bài này nên chưa xem được bài làm chi tiết.</p>
+    return <Navigate to={`/attempts/${attemptId}/play`} replace />
   }
+  if (error || !data) return <QueryErrorRedirect error={error} />
+
+  const resultTo = staffView ? `/admin/students/${studentId}/attempts/${data.result.attempt.id}` : `/attempts/${data.result.attempt.id}/result`
 
   const visible = data.questions.filter((q) => (filter === 'wrong' ? q.isCorrect === false : filter === 'blank' ? q.isCorrect === null : true))
   const shownGroups = new Set<string>()
 
   return (
     <div className="space-y-6">
+      {staffView ? (
+        <Link to={`/admin/students/${studentId}`} className="text-sm text-gold-deep">
+          ← Quay lại hồ sơ học viên
+        </Link>
+      ) : null}
+
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs text-ink/50">Chữa đề</p>
+          <p className="text-xs text-ink/50">{staffView ? 'Bài làm của học viên' : 'Chữa đề'}</p>
           <h1 className="serif mt-1 text-3xl">{data.result.attempt.examTitle}</h1>
           <p className="mt-1 text-sm text-ink/60">
             Đúng {data.result.correctCount} • Sai {data.result.incorrectCount} • Bỏ trống {data.result.unansweredCount}
           </p>
         </div>
-        <Link to={`/attempts/${data.result.attempt.id}/result`}>
-          <Button variant="navy">Về kết quả</Button>
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <TextZoomBar scale={textZoom} onChange={setTextZoom} />
+          <Link to={resultTo}>
+            <Button variant="navy">Về kết quả</Button>
+          </Link>
+        </div>
       </header>
 
       {data.audio.length > 0 ? (
@@ -76,6 +87,7 @@ export function ReviewPage() {
           if (group) shownGroups.add(group.id)
           return (
             <Card key={q.id} className="p-5">
+              <div style={examTextStyle(textZoom)}>
               {showPassage ? (
                 <div className="mb-4">
                   <PassageView group={group} />
@@ -86,7 +98,9 @@ export function ReviewPage() {
                 {q.isCorrect === true ? <Badge tone="olive">Đúng</Badge> : q.isCorrect === false ? <Badge tone="danger">Sai</Badge> : <Badge tone="paper">Bỏ trống</Badge>}
               </div>
               {q.imageUrl ? (
-                <img src={q.imageUrl} alt={`Hình minh họa câu ${q.number}`} loading="lazy" className="mt-2 max-h-80 rounded-xl border border-ink/10 bg-white object-contain" />
+                <div className="mt-2">
+                  <ZoomableImage src={q.imageUrl} alt={`Hình minh họa câu ${q.number}`} compact />
+                </div>
               ) : null}
               {q.prompt ? <p className="mt-2 text-lg leading-8 font-medium">{q.prompt}</p> : null}
               <ul className="mt-3 grid gap-2">
@@ -104,11 +118,14 @@ export function ReviewPage() {
                       <span className="mr-2 font-bold">{o.key}.</span>
                       {o.text}
                       {isCorrect ? <span className="ml-2 text-xs font-semibold text-olive">Đáp án đúng</span> : null}
-                      {isPicked && !isCorrect ? <span className="ml-2 text-xs font-semibold text-coral">Bạn chọn</span> : null}
+                      {isPicked && !isCorrect ? (
+                        <span className="ml-2 text-xs font-semibold text-coral">{staffView ? 'Học viên chọn' : 'Bạn chọn'}</span>
+                      ) : null}
                     </li>
                   )
                 })}
               </ul>
+              </div>
             </Card>
           )
         })}

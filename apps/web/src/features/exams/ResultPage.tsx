@@ -1,31 +1,32 @@
 import { Button } from '@/components/ui/Button'
 import { Badge, Card, ProgressBar } from '@/components/ui/Primitives'
+import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { ApiError } from '@/lib/api'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { formatClock, partName, useAttemptResult } from './exams.queries'
 
 export function ResultPage() {
-  const { attemptId } = useParams()
+  const { attemptId, studentId } = useParams()
+  const staffView = Boolean(studentId)
   const { data: r, isPending, error } = useAttemptResult(attemptId)
 
   if (isPending) return <p className="p-8 text-sm text-ink/55">Đang tải kết quả…</p>
-  if (error instanceof ApiError && error.status === 409) return <Navigate to={`/attempts/${attemptId}/play`} replace />
-  if (error || !r) {
-    return (
-      <Card className="mx-auto mt-10 max-w-lg p-8 text-center">
-        <h1 className="serif text-2xl">Không tải được kết quả</h1>
-        <p className="mt-2 text-sm text-ink/60">{error instanceof ApiError ? error.message : 'Vui lòng thử lại.'}</p>
-        <Link to="/practice" className="mt-5 inline-block">
-          <Button variant="navy">Về danh sách đề</Button>
-        </Link>
-      </Card>
-    )
+  if (error instanceof ApiError && error.status === 409) {
+    if (staffView) return <p className="p-8 text-sm text-ink/60">Học viên chưa nộp bài này nên chưa có kết quả.</p>
+    return <Navigate to={`/attempts/${attemptId}/play`} replace />
   }
+  if (error || !r) return <QueryErrorRedirect error={error} />
 
   const answeredTotal = r.correctCount + r.incorrectCount + r.unansweredCount
   const scaled = r.totalScore !== null
+  const reviewTo = staffView ? `/admin/students/${studentId}/attempts/${r.attempt.id}/review` : `/attempts/${r.attempt.id}/review`
   return (
     <div className="space-y-6">
+      {staffView ? (
+        <Link to={`/admin/students/${studentId}`} className="text-sm text-gold-deep">
+          ← Quay lại hồ sơ học viên
+        </Link>
+      ) : null}
       <Card className="bg-teal-soft p-8">
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-gold-deep">{r.attempt.examTitle}</p>
@@ -75,15 +76,23 @@ export function ResultPage() {
       </Card>
 
       <div className="flex flex-wrap gap-3">
-        <Link to={`/attempts/${r.attempt.id}/review`}>
-          <Button>Chữa đề chi tiết</Button>
+        <Link to={reviewTo}>
+          <Button>Xem bài làm chi tiết</Button>
         </Link>
-        <Link to="/practice">
-          <Button variant="navy">Làm đề khác</Button>
-        </Link>
-        <Link to="/progress">
-          <Button variant="ghost">Xem tiến độ cá nhân</Button>
-        </Link>
+        {staffView ? (
+          <Link to={`/admin/students/${studentId}`}>
+            <Button variant="navy">Hồ sơ học viên</Button>
+          </Link>
+        ) : (
+          <>
+            <Link to="/practice">
+              <Button variant="navy">Làm đề khác</Button>
+            </Link>
+            <Link to="/progress">
+              <Button variant="ghost">Xem tiến độ cá nhân</Button>
+            </Link>
+          </>
+        )}
       </div>
     </div>
   )

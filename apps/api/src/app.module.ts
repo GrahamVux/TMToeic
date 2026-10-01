@@ -5,6 +5,7 @@ import { AllExceptionsFilter } from './common/all-exceptions.filter'
 import { CsrfGuard } from './common/csrf.guard'
 import { LoggingInterceptor } from './common/logging.interceptor'
 import { AuditModule } from './audit/audit.service'
+import { AssignmentsModule } from './assignments/assignments.module'
 import { AuthModule } from './auth/auth.module'
 import { JwtAuthGuard, PasswordChangeGuard, RolesGuard } from './auth/guards'
 import { UserAwareThrottlerGuard } from './auth/throttler.guard'
@@ -13,6 +14,8 @@ import { ConfigModule } from './config/app-config'
 import { DatabaseModule } from './db/database.module'
 import { ExamsModule } from './exams/exams.module'
 import { ProgressModule } from './progress/progress.module'
+import { SiteModule } from './site/site.module'
+import { BugReportsModule } from './bugs/bug-reports.module'
 import { StorageModule } from './storage/storage.service'
 import { HealthController } from './health/health.controller'
 import { UsersModule } from './users/users.module'
@@ -27,7 +30,10 @@ import { UsersModule } from './users/users.module'
     AuthModule,
     UsersModule,
     ExamsModule,
+    AssignmentsModule,
     ProgressModule,
+    SiteModule,
+    BugReportsModule,
   ],
   controllers: [CatalogController, HealthController],
   providers: [

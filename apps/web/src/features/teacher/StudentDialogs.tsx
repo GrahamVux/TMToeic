@@ -79,7 +79,7 @@ export function CreateStudentDialog({ onClose, onCreated }: { onClose: () => voi
     } catch (err) {
       if (err instanceof ApiError) {
         setErrors(err.fields)
-        if (Object.keys(err.fields).length === 0) setFormError(err.message)
+        if (Object.keys(err.fields).length === 0) setFormError('Không tạo được học viên. Vui lòng thử lại.')
       } else setFormError('Đã có lỗi xảy ra, vui lòng thử lại.')
     }
   }
@@ -105,8 +105,9 @@ export function CreateStudentDialog({ onClose, onCreated }: { onClose: () => voi
           </div>
         </div>
         <div>
-          <label htmlFor="cs-target" className="text-sm font-medium">Điểm mục tiêu</label>
+          <label htmlFor="cs-target" className="text-sm font-medium">Điểm mục tiêu 2 kỹ năng (tuỳ chọn)</label>
           <Input id="cs-target" className="mt-1" inputMode="numeric" placeholder="VD: 850" value={form.targetScore} onChange={set('targetScore')} />
+          <p className="mt-1 text-xs text-ink/50">Gán mức Listening & Reading ban đầu. Học viên tự chọn 2 hoặc 4 kỹ năng và điểm mục tiêu trong cài đặt.</p>
           <FieldError message={errors.targetScore} />
         </div>
         <p className="text-xs text-ink/50">Mã học viên và mật khẩu tạm sẽ được hệ thống tạo tự động.</p>
@@ -136,8 +137,8 @@ export function AccountActions({ user, compact = false }: { user: UserDto; compa
       if (confirm === 'reset') setIssued(await reset.mutateAsync(user.id))
       else await setStatus.mutateAsync({ id: user.id, status: disabled ? 'ACTIVE' : 'DISABLED' })
       setConfirm(null)
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Đã có lỗi xảy ra, vui lòng thử lại.')
+    } catch {
+      setError('Không thực hiện được. Vui lòng thử lại.')
     }
   }
 

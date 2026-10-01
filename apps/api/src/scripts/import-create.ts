@@ -81,7 +81,7 @@ function buildPayload(opts: {
       partCode: g.partCode,
       instructions: g.instructions,
       imageObjectKey: g.imageFile ? `${collection}/${testDir}/images/${g.imageFile}` : undefined,
-      passages: [],
+      passages: g.passages ?? [],
     })),
     questions: draft.questions.map((q) => ({
       number: q.number,
@@ -100,8 +100,9 @@ async function main() {
   loadDotEnv()
   const [collection, testArg] = process.argv.slice(2).filter((a) => !a.startsWith('--'))
   const testNo = Number(testArg)
-  if (!collection || !Number.isInteger(testNo)) throw new Error('Usage: import-create <collection> <testNo>')
-  const testDir = `test-${String(testNo).padStart(2, '0')}`
+  const isRc = process.argv.includes('--rc')
+  if (!collection || !Number.isInteger(testNo)) throw new Error('Usage: import-create <collection> <testNo> [--rc]')
+  const testDir = `test-${String(testNo).padStart(2, '0')}${isRc ? '-rc' : ''}`
   const dir = resolve('content', 'drafts', collection, testDir)
   const draft = JSON.parse(readFileSync(join(dir, 'draft.json'), 'utf8')) as Draft
   if (draft.warnings.length && !process.argv.includes('--force')) {
@@ -136,7 +137,7 @@ async function main() {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as {
       items: Array<{ objectKey: string; mimeType: string; sizeBytes: number; sha256?: string; role?: string; testNo?: number; sources?: string[] }>
     }
-    const item = manifest.items.find((i) => i.role === 'FULL_AUDIO' && i.testNo === testNo)
+    const item = isRc ? undefined : manifest.items.find((i) => i.role === 'FULL_AUDIO' && i.testNo === testNo)
     if (item?.sha256) {
       audio = {
         objectKey: item.objectKey,

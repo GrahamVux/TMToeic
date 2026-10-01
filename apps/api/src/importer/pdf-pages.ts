@@ -10,6 +10,15 @@ export function groupStripsIntoPages(strips: PdfImage[]): PdfImage[][] {
   let cur: PdfImage[] = []
   const modalHeight = mode(strips.map((s) => s.height))
   for (const s of strips) {
+    // Full-page scans (RC book, typeset keys) are already one JPEG per page — do not stack them.
+    if (s.height >= s.width * 0.75) {
+      if (cur.length) {
+        pages.push(cur)
+        cur = []
+      }
+      pages.push([s])
+      continue
+    }
     if (cur.length && s.width !== cur[0].width) {
       pages.push(cur)
       cur = []

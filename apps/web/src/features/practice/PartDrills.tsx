@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/Button'
 import { Badge, Card } from '@/components/ui/Primitives'
+import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { useExams, useStartAttempt } from '@/features/exams/exams.queries'
-import { ApiError } from '@/lib/api'
 import type { Skill } from '@toeic/shared'
 import { useNavigate } from 'react-router-dom'
 
@@ -12,6 +12,8 @@ export function PartDrills({ skill, title, subtitle }: { skill: Skill; title: st
   const navigate = useNavigate()
 
   const cards = (exams.data ?? []).flatMap((exam) => exam.parts.filter((p) => p.skill === skill).map((part) => ({ exam, part })))
+
+  if (exams.error) return <QueryErrorRedirect error={exams.error} />
 
   async function begin(examId: string, partCode: string) {
     try {
@@ -31,7 +33,7 @@ export function PartDrills({ skill, title, subtitle }: { skill: Skill; title: st
       </header>
       {start.error ? (
         <p className="rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral" role="alert">
-          {start.error instanceof ApiError ? start.error.message : 'Không bắt đầu được bài luyện.'}
+          Không bắt đầu được bài luyện.
         </p>
       ) : null}
       {exams.isPending ? <p className="text-sm text-ink/55">Đang tải…</p> : null}

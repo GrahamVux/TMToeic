@@ -109,7 +109,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     corsOrigins: e.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean),
     databaseUrl: e.DATABASE_URL || undefined,
     pgliteDir: e.PGLITE_DIR === 'memory' || isAbsolute(e.PGLITE_DIR) ? e.PGLITE_DIR : resolve(join(__dirname, '..', '..'), e.PGLITE_DIR),
-    autoMigrate: e.AUTO_MIGRATE ?? !e.DATABASE_URL,
+    autoMigrate: e.AUTO_MIGRATE ?? true,
     jwtAccessSecret: e.JWT_ACCESS_SECRET || DEV_JWT_SECRET,
     accessTtlSeconds: e.ACCESS_TTL_SECONDS,
     refreshTtlDays: e.REFRESH_TTL_DAYS,

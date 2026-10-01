@@ -88,7 +88,7 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
 
   it('is student-only', async () => {
     expect((await admin.get('/me/dashboard')).status).toBe(403)
-    expect((await patch(admin, '/me/goal', { targetScore: 800 })).status).toBe(403)
+    expect((await patch(admin, '/me/goal', { goal: { track: 'TWO_SKILL', score: 800 } })).status).toBe(403)
   })
 
   it('a brand-new account sees zeros and nulls — no sample data', async () => {
@@ -96,6 +96,7 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     const d = await dash(s)
     expect(d).toMatchObject({
       targetScore: null,
+      goal: null,
       attemptsFinished: 0,
       latestScore: null,
       remainingToTarget: null,
@@ -114,19 +115,57 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
   it('uses the goal set by the teacher at creation and lets the student change or clear it', async () => {
     const s = await newStudent('Có Mục Tiêu', 850)
     expect((await dash(s)).targetScore).toBe(850)
+    expect((await dash(s)).goal).toEqual({ track: 'TWO_SKILL', score: 850 })
 
-    const changed = await patch(s, '/me/goal', { targetScore: 900 })
+    const changed = await patch(s, '/me/goal', { goal: { track: 'TWO_SKILL', score: 900 } })
     expect(changed.status).toBe(200)
-    expect(changed.body.user.targetScore).toBe(900)
-    expect((await dash(s)).targetScore).toBe(900)
-    expect((await s.get('/auth/me')).body.user.targetScore).toBe(900)
+    expect(changed.body.user).toMatchObject({ targetScore: 900, goal: { track: 'TWO_SKILL', score: 900 } })
+    expect((await dash(s)).goal).toEqual({ track: 'TWO_SKILL', score: 900 })
+    expect((await s.get('/auth/me')).body.user.goal).toEqual({ track: 'TWO_SKILL', score: 900 })
 
-    for (const bad of [903, 5, 1000, -5, 'abc', 850.5]) expect((await patch(s, '/me/goal', { targetScore: bad })).status).toBe(400)
+    const four = await patch(s, '/me/goal', { goal: { track: 'FOUR_SKILL', score: 1100 } })
+    expect(four.status).toBe(200)
+    expect(four.body.user.goal).toEqual({ track: 'FOUR_SKILL', score: 1100 })
+    expect((await dash(s)).remainingToTarget).toBeNull()
+
+    for (const bad of [
+      { goal: { track: 'TWO_SKILL', score: 1000 } },
+      { goal: { track: 'FOUR_SKILL', score: 2000 } },
+      { goal: { track: 'TWO_SKILL', score: 5 } },
+      { goal: { track: 'TWO_SKILL', score: 800.5 } },
+      { goal: {} },
+    ]) {
+      expect((await patch(s, '/me/goal', bad)).status).toBe(400)
+    }
     expect((await patch(s, '/me/goal', {})).status).toBe(400)
 
-    const cleared = await patch(s, '/me/goal', { targetScore: null })
+    const cleared = await patch(s, '/me/goal', { goal: null })
+    expect(cleared.body.user.goal).toBeNull()
     expect(cleared.body.user.targetScore).toBeNull()
     expect((await dash(s)).targetScore).toBeNull()
+  })
+
+  it('lets a student update name, email and phone; student code stays fixed', async () => {
+    const s = await newStudent('Tên Cũ')
+    const other = await newStudent('Bạn Khác')
+    await patch(other, '/me/profile', { fullName: 'Bạn Khác', email: 'taken@example.com', phone: '0900000001' })
+
+    const ok = await patch(s, '/me/profile', { fullName: 'Nguyễn Văn Mới', email: 'moi@example.com', phone: '0912345678' })
+    expect(ok.status).toBe(200)
+    expect(ok.body.user).toMatchObject({ fullName: 'Nguyễn Văn Mới', email: 'moi@example.com', phone: '0912345678' })
+    expect(ok.body.user.studentCode).toMatch(/^TM-/)
+    expect((await s.get('/auth/me')).body.user.fullName).toBe('Nguyễn Văn Mới')
+
+    const dup = await patch(s, '/me/profile', { fullName: 'Nguyễn Văn Mới', email: 'TAKEN@example.com', phone: '0912345678' })
+    expect(dup.status).toBe(409)
+
+    const cleared = await patch(s, '/me/profile', { fullName: 'Nguyễn Văn Mới', email: '', phone: '' })
+    expect(cleared.status).toBe(200)
+    expect(cleared.body.user.email).toBeNull()
+    expect(cleared.body.user.phone).toBeNull()
+
+    expect((await patch(s, '/me/profile', { fullName: 'x', email: '', phone: '' })).status).toBe(400)
+    expect((await admin.agent.patch('/api/v1/me/profile').set('x-toeic-client', 'web').send({ fullName: 'Admin', email: '', phone: '' })).status).toBe(403)
   })
 
   it('practising starts a streak and puts the student on the weekly leaderboard', async () => {
@@ -288,6 +327,19 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
       expect((await teacher.get(`/students/${me}/progress`)).status).toBe(404) // an admin account
       expect((await teacher.get('/students/3fa85f64-5717-4562-b3fc-2c963f66afa6/progress')).status).toBe(404)
       expect((await teacher.get('/students/not-a-uuid/progress')).status).toBe(400)
+    })
+
+    it('teachers can list a student’s finished attempts; students cannot hit the staff list', async () => {
+      const examId = await publishedExam([{ partCode: 'PART_5', questionStart: 101, questionEnd: 103 }] as typeof FULL)
+      const s = await newStudent('Danh Sách Bài')
+      const id = await practice(s, examId, 3, true)
+      const found = await admin.get('/users?role=STUDENT&q=Danh%20Sách')
+      const sid = found.body.items.find((u: { fullName: string }) => u.fullName === 'Danh Sách Bài').id as string
+      const res = await teacher.get(`/students/${sid}/attempts`)
+      expect(res.status).toBe(200)
+      expect(res.body).toHaveLength(1)
+      expect(res.body[0]).toMatchObject({ attemptId: id, status: 'SUBMITTED', assignmentTitle: null, partCodes: ['PART_5'] })
+      expect((await s.get(`/students/${sid}/attempts`)).status).toBe(403)
     })
 
     it('class report: staff only; counts, weekly activity, accuracy and inactive students', async () => {

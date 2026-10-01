@@ -14,6 +14,12 @@ export class ReportsController {
     return this.progress.studentProgress(id)
   }
 
+  @Get('students/:id/attempts')
+  async studentAttempts(@Param('id', new ParseUUIDPipe()) id: string) {
+    await this.progress.assertStudent(id)
+    return this.progress.listStudentAttempts(id)
+  }
+
   @Get('reports/class')
   classReport() {
     return this.progress.classReport()

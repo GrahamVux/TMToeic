@@ -41,7 +41,7 @@ const PAGE_PROMPT = `You are digitising a scanned page of a TOEIC Listening test
 Ignore page headers/footers, watermarks, running titles such as "New Economy TOEIC LC 1000", "Actual Test 07", "GO ON TO THE NEXT PAGE", and page numbers. If the page has none of a category, return an empty array for it. Never invent content that is not visible.`
 
 /** Models tried in order; the newest are sometimes overloaded (503) or not offered to every account (404). */
-export const DEFAULT_MODELS = ['gemini-2.0-flash', 'gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.8-flash']
+export const DEFAULT_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-3.5-flash', 'gemini-3.8-flash']
 
 export type ModelUse = { model: string; calls: number; promptTokens: number; outputTokens: number }
 
@@ -72,7 +72,9 @@ export class ModelRunner {
       } catch (err) {
         last = err
         // Daily quota only — a "Please retry in Ns" 429 is per-minute and generateJson already waited.
-        if (err instanceof GeminiError && err.status === 429 && /PerDay/i.test(err.message)) this.quotaExhausted.add(model)
+        if (err instanceof GeminiError && err.status === 429 && /PerDay|free_tier_requests/i.test(err.message)) this.quotaExhausted.add(model)
+        // Per-minute 429 already waited inside generateJson — falling through to more models burns the quota.
+        if (err instanceof GeminiError && err.status === 429 && !/PerDay|free_tier_requests/i.test(err.message)) throw err
         if (err instanceof GeminiError && (err.status === 404 || err.status === 429 || err.status >= 500 || err.status === 200)) continue
         throw err
       }

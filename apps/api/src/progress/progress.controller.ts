@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Patch, Req } from '@nestjs/common'
-import { setGoalSchema } from '@toeic/shared'
+import { setGoalSchema, updateProfileSchema } from '@toeic/shared'
 import type { Request } from 'express'
 import { clientIp, CurrentUser, Roles, type AuthUser } from '../common/decorators'
 import { parse } from '../common/zod'
@@ -23,7 +23,11 @@ export class ProgressController {
 
   @Patch('goal')
   async setGoal(@CurrentUser() user: AuthUser, @Body() body: unknown, @Req() req: Request) {
-    const { targetScore } = parse(setGoalSchema, body)
-    return { user: await this.progress.setGoal(user.id, targetScore, clientIp(req)) }
+    return { user: await this.progress.setGoal(user.id, parse(setGoalSchema, body), clientIp(req)) }
+  }
+
+  @Patch('profile')
+  async updateProfile(@CurrentUser() user: AuthUser, @Body() body: unknown, @Req() req: Request) {
+    return { user: await this.progress.updateProfile(user.id, parse(updateProfileSchema, body), clientIp(req)) }
   }
 }

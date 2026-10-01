@@ -15,8 +15,17 @@ export const ENABLED_SKILLS: readonly Skill[] = ['LISTENING', 'READING']
 export const USER_STATUSES = ['ACTIVE', 'DISABLED'] as const
 export type UserStatus = (typeof USER_STATUSES)[number]
 
-export const ASSIGNMENT_STATUSES = ['DUE_SOON', 'IN_PROGRESS', 'COMPLETED'] as const
-export type AssignmentStatus = (typeof ASSIGNMENT_STATUSES)[number]
+/** Teacher-side lifecycle of a homework assignment. */
+export const ASSIGNMENT_LIFECYCLES = ['DRAFT', 'PUBLISHED', 'CLOSED'] as const
+export type AssignmentLifecycle = (typeof ASSIGNMENT_LIFECYCLES)[number]
+
+/** Student-facing progress on one assignment (derived from attempt + due date). */
+export const STUDENT_ASSIGNMENT_STATUSES = ['ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'OVERDUE'] as const
+export type StudentAssignmentStatus = (typeof STUDENT_ASSIGNMENT_STATUSES)[number]
+
+/** @deprecated use STUDENT_ASSIGNMENT_STATUSES */
+export const ASSIGNMENT_STATUSES = STUDENT_ASSIGNMENT_STATUSES
+export type AssignmentStatus = StudentAssignmentStatus
 
 export const RISK_LEVELS = ['NORMAL', 'NEEDS_ATTENTION', 'AT_RISK', 'EXCELLENT'] as const
 export type RiskLevel = (typeof RISK_LEVELS)[number]

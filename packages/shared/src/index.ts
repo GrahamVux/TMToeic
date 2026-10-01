@@ -1,4 +1,7 @@
 export * from './domain'
 export * from './auth'
 export * from './exam'
+export * from './assignment'
 export * from './progress'
+export * from './site'
+export * from './bugs'

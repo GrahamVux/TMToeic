@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/Button'
 import { Badge, Card } from '@/components/ui/Primitives'
+import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { useAttempts, useExams, useStartAttempt } from '@/features/exams/exams.queries'
-import { ApiError } from '@/lib/api'
 import type { AttemptResultDto, ExamSummaryDto } from '@toeic/shared'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -19,6 +19,8 @@ export function PracticePage() {
   const correct = finished.reduce((s, a) => s + a.correctCount, 0)
   const accuracy = questionsDone ? Math.round((correct / questionsDone) * 1000) / 10 : null
   const lastScaled = finished.find((a) => a.totalScore !== null)
+
+  if (exams.error) return <QueryErrorRedirect error={exams.error} />
 
   async function begin(exam: ExamSummaryDto, mode: 'PRACTICE' | 'FULL_TEST') {
     try {
@@ -61,14 +63,13 @@ export function PracticePage() {
 
       {start.error ? (
         <p className="rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral" role="alert">
-          {start.error instanceof ApiError ? start.error.message : 'Không bắt đầu được bài làm.'}
+          Không bắt đầu được bài làm.
         </p>
       ) : null}
 
       <section className="grid gap-4">
         <h2 className="serif text-2xl">Kho đề</h2>
         {exams.isPending ? <p className="text-sm text-ink/55">Đang tải…</p> : null}
-        {exams.error ? <p className="text-sm text-coral">Không tải được danh sách đề.</p> : null}
         {exams.data?.length === 0 ? <Card className="p-6 text-sm text-ink/60">Chưa có đề nào được mở. Giáo viên sẽ publish đề sớm.</Card> : null}
         {exams.data?.map((exam) => (
           <ExamCard key={exam.id} exam={exam} attempts={all.filter((a) => a.attempt.examId === exam.id)} busy={start.isPending} onStart={begin} />

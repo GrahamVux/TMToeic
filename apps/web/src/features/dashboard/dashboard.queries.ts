@@ -13,7 +13,7 @@ export function useSetGoal() {
   const qc = useQueryClient()
   const { updateUser } = useAuth()
   return useMutation({
-    mutationFn: (targetScore: number | null) => api<SessionDto>('/me/goal', { method: 'PATCH', body: { targetScore } }),
+    mutationFn: (goal: import('@toeic/shared').SetGoalInput['goal']) => api<SessionDto>('/me/goal', { method: 'PATCH', body: { goal } }),
     onSuccess: (s) => {
       updateUser(s.user)
       void qc.invalidateQueries({ queryKey: dashboardKey })
