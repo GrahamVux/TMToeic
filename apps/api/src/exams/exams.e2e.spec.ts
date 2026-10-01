@@ -393,4 +393,43 @@ describe('Exam engine (e2e on PGlite)', () => {
       expect(r.parts.reduce((s: number, p: { correct: number }) => s + p.correct, 0)).toBe(170)
     })
   })
+
+  describe('import-draft on production (cookie auth, no loopback)', () => {
+    const draft = {
+      exam: {
+        code: 'PROD-IMPORT-RC',
+        title: 'Prod import RC',
+        durationSeconds: 600,
+        parts: [{ partCode: 'PART_5', questionStart: 101, questionEnd: 101 }],
+      },
+      questions: [
+        {
+          number: 101,
+          partCode: 'PART_5',
+          type: 'MULTIPLE_CHOICE',
+          prompt: 'Stem',
+          options: [
+            { key: 'A', text: 'a', correct: true },
+            { key: 'B', text: 'b', correct: false },
+          ],
+        },
+      ],
+    }
+
+    it('rejects anonymous import and accepts a logged-in admin', async () => {
+      const prodApp = await createTestApp({}, { config: { isProd: true } })
+      try {
+        const denied = await client(prodApp).post('/exams/import-draft').send(draft)
+        expect(denied.status).toBe(401)
+
+        const { c } = await login(prodApp, ADMIN.username, ADMIN.password)
+        await c.post('/auth/change-password').send({ currentPassword: ADMIN.password, newPassword: 'AdminPass123' })
+        const authed = await c.post('/exams/import-draft').send(draft)
+        expect(authed.status).toBe(400)
+        expect(authed.body.error.message).toMatch(/Object storage is not configured/)
+      } finally {
+        await prodApp.close()
+      }
+    })
+  })
 })

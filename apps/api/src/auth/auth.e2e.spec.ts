@@ -57,6 +57,7 @@ describe('Auth, RBAC & account management (e2e on PGlite)', () => {
       const blocked = await c.get('/users')
       expect(blocked.status).toBe(403)
       expect(blocked.body.error.code).toBe(ERROR_CODES.PASSWORD_CHANGE_REQUIRED)
+      expect((await c.get('/site-settings')).status).toBe(200)
 
       const me = await c.get('/auth/me')
       expect(me.status).toBe(200)

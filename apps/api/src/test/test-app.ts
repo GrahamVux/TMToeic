@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing'
 import { CSRF_HEADER, CSRF_HEADER_VALUE } from '@toeic/shared'
 import request from 'supertest'
 import { AppModule } from '../app.module'
-import { APP_CONFIG, loadConfig } from '../config/app-config'
+import { APP_CONFIG, loadConfig, type AppConfig } from '../config/app-config'
 import { configureApp } from '../setup'
 import { StorageService } from '../storage/storage.service'
 
@@ -11,18 +11,21 @@ export const ADMIN = { username: 'admin', password: 'Bootstrap123' }
 
 export async function createTestApp(
   overrides: Record<string, string> = {},
-  extra: { storage?: Pick<StorageService, 'enabled' | 'signedGetUrl'> } = {},
+  extra: { storage?: Pick<StorageService, 'enabled' | 'signedGetUrl'>; config?: Partial<AppConfig> } = {},
 ): Promise<INestApplication> {
   process.env.LOGIN_RATE_LIMIT = '100000' // per-IP throttle is covered separately from account lockout
-  const config = loadConfig({
-    NODE_ENV: 'test',
-    PGLITE_DIR: 'memory',
-    AUTO_MIGRATE: 'true',
-    BOOTSTRAP_ADMIN_USERNAME: ADMIN.username,
-    BOOTSTRAP_ADMIN_PASSWORD: ADMIN.password,
-    LOGIN_LOCKOUT_THRESHOLD: '3',
-    ...overrides,
-  } as NodeJS.ProcessEnv)
+  const config = {
+    ...loadConfig({
+      NODE_ENV: 'test',
+      PGLITE_DIR: 'memory',
+      AUTO_MIGRATE: 'true',
+      BOOTSTRAP_ADMIN_USERNAME: ADMIN.username,
+      BOOTSTRAP_ADMIN_PASSWORD: ADMIN.password,
+      LOGIN_LOCKOUT_THRESHOLD: '3',
+      ...overrides,
+    } as NodeJS.ProcessEnv),
+    ...extra.config,
+  }
 
   const builder = Test.createTestingModule({ imports: [AppModule] }).overrideProvider(APP_CONFIG).useValue(config)
   if (extra.storage) builder.overrideProvider(StorageService).useValue(extra.storage)

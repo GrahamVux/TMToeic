@@ -6,7 +6,7 @@ import { ALLOW_PASSWORD_CHANGE_PENDING, type AuthedRequest, IS_PUBLIC, ROLES_KEY
 import { AuthCookies } from './auth.cookies'
 import { AuthService } from './auth.service'
 
-/** Authenticates every request unless the handler/controller is @Public(). Populates `req.user` from live DB state. */
+/** Authenticates every request unless the handler/controller is @Public(). Public routes still populate `req.user` from a valid cookie. */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
@@ -16,9 +16,22 @@ export class JwtAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    if (this.reflector.getAllAndOverride<boolean>(IS_PUBLIC, [context.getHandler(), context.getClass()])) return true
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC, [context.getHandler(), context.getClass()])
     const req = context.switchToHttp().getRequest<AuthedRequest>()
     const token = this.cookies.accessToken(req)
+    if (isPublic) {
+      // Public routes still attach req.user when a valid session cookie is present
+      // (e.g. POST /exams/import-draft as a logged-in teacher on production).
+      if (token) {
+        try {
+          const { user } = await this.auth.authenticate(token)
+          req.user = user
+        } catch {
+          // Expired/invalid cookie on a public route is ignored.
+        }
+      }
+      return true
+    }
     if (!token) throw AppException.unauthenticated()
     const { user } = await this.auth.authenticate(token)
     req.user = user
@@ -32,6 +45,7 @@ export class PasswordChangeGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    if (this.reflector.getAllAndOverride<boolean>(IS_PUBLIC, [context.getHandler(), context.getClass()])) return true
     const req = context.switchToHttp().getRequest<AuthedRequest>()
     if (!req.user?.mustChangePassword) return true
     if (this.reflector.getAllAndOverride<boolean>(ALLOW_PASSWORD_CHANGE_PENDING, [context.getHandler(), context.getClass()])) return true
