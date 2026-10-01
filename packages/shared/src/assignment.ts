@@ -30,6 +30,8 @@ export type AssignmentProgressDto = {
   attemptId: string | null
   answeredCount: number
   totalQuestions: number
+  /** Null until the sitting is submitted or expired. */
+  correctCount: number | null
   submittedAt: string | null
   totalScore: number | null
 }

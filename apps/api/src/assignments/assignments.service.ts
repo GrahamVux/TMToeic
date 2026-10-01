@@ -255,20 +255,19 @@ export class AssignmentsService {
 
     return roster.map((s) => {
       const t = latest.get(s.id)
-      const answered =
-        t && t.status !== 'IN_PROGRESS'
-          ? (t.correctCount ?? 0) + (t.incorrectCount ?? 0) + (t.unansweredCount ?? 0)
-          : 0
+      const done = t?.status === 'SUBMITTED' || t?.status === 'EXPIRED'
+      const answered = done ? (t!.correctCount ?? 0) + (t!.incorrectCount ?? 0) + (t!.unansweredCount ?? 0) : 0
       return {
         studentId: s.id,
         fullName: s.fullName,
         studentCode: s.studentCode,
         status: this.deriveStatus(t?.status ?? null, asg?.dueAt ?? null),
         attemptId: t?.id ?? null,
-        answeredCount: t?.status === 'IN_PROGRESS' ? 0 : answered,
+        answeredCount: done ? answered : 0,
         totalQuestions: t?.totalQuestions ?? totalQuestions,
+        correctCount: done ? (t!.correctCount ?? 0) : null,
         submittedAt: t?.submittedAt?.toISOString() ?? null,
-        totalScore: t?.totalScore ?? null,
+        totalScore: done ? (t!.totalScore ?? null) : null,
       }
     })
   }

@@ -1,16 +1,31 @@
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { Badge, Card, Input } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { partName, useExams } from '@/features/exams/exams.queries'
 import { useStudents } from '@/features/teacher/users.queries'
-import type { ExamSummaryDto } from '@toeic/shared'
+import type { AssignmentDetailDto, ExamSummaryDto, StudentAssignmentStatus } from '@toeic/shared'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { useAssignments, useCloseAssignment, useCreateAssignment } from '@/features/assignments/assignments.queries'
+import { useAssignment, useAssignments, useCloseAssignment, useCreateAssignment } from '@/features/assignments/assignments.queries'
 
 function toLocalInput(d: Date) {
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+const STATUS_LABEL: Record<StudentAssignmentStatus, string> = {
+  ASSIGNED: 'Chưa làm',
+  IN_PROGRESS: 'Đang làm',
+  COMPLETED: 'Đã nộp',
+  OVERDUE: 'Quá hạn',
+}
+
+const STATUS_TONE: Record<StudentAssignmentStatus, 'paper' | 'warn' | 'olive' | 'danger'> = {
+  ASSIGNED: 'paper',
+  IN_PROGRESS: 'warn',
+  COMPLETED: 'olive',
+  OVERDUE: 'danger',
 }
 
 export function TeacherAssignmentsPage() {
@@ -31,6 +46,7 @@ export function TeacherAssignmentsPage() {
   const [allStudents, setAllStudents] = useState(true)
   const [picked, setPicked] = useState<string[]>([])
   const [formError, setFormError] = useState<string | null>(null)
+  const [checkingId, setCheckingId] = useState<string | null>(null)
 
   const exam = published.find((e) => e.id === examId) ?? null
 
@@ -192,17 +208,79 @@ export function TeacherAssignmentsPage() {
                     {a.dueAt ? ` • hạn ${new Date(a.dueAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}` : ''}
                   </p>
                 </div>
-                {a.status === 'PUBLISHED' ? (
-                  <Button variant="paper" disabled={close.isPending} onClick={() => void close.mutateAsync(a.id).catch(() => undefined)}>
-                    Đóng bài
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="navy" onClick={() => setCheckingId(a.id)}>
+                    Kiểm tra bài làm
                   </Button>
-                ) : null}
+                  {a.status === 'PUBLISHED' ? (
+                    <Button variant="paper" disabled={close.isPending} onClick={() => void close.mutateAsync(a.id).catch(() => undefined)}>
+                      Đóng bài
+                    </Button>
+                  ) : null}
+                </div>
               </div>
             </Card>
           ))}
         </div>
       </section>
+
+      {checkingId ? <AssignmentCheckModal assignmentId={checkingId} onClose={() => setCheckingId(null)} /> : null}
     </div>
+  )
+}
+
+function scoreLabel(s: AssignmentDetailDto['students'][number]) {
+  if (s.correctCount === null) return '—'
+  const raw = `${s.correctCount}/${s.totalQuestions} câu đúng`
+  return s.totalScore !== null ? `${s.totalScore}/990 · ${raw}` : raw
+}
+
+function AssignmentCheckModal({ assignmentId, onClose }: { assignmentId: string; onClose: () => void }) {
+  const q = useAssignment(assignmentId)
+  const students = q.data?.students ?? []
+  const done = students.filter((s) => s.status === 'COMPLETED').length
+
+  return (
+    <Modal wide title={q.data?.title ?? 'Bài làm học viên'} onClose={onClose}>
+      {q.isPending ? <p className="text-sm text-ink/55">Đang tải danh sách…</p> : null}
+      {q.error ? <p className="text-sm text-coral">Không tải được danh sách bài làm.</p> : null}
+      {q.data ? (
+        <>
+          <p className="text-sm text-ink/60">
+            {q.data.examTitle} · {done}/{students.length} học viên đã nộp
+          </p>
+          {students.length === 0 ? (
+            <p className="mt-3 text-sm text-ink/55">Chưa giao cho học viên nào.</p>
+          ) : (
+            <ul className="mt-4 max-h-[60vh] space-y-2 overflow-y-auto">
+              {students.map((s) => (
+                <li key={s.studentId} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold/25 bg-white px-3 py-2.5">
+                  <div>
+                    <p className="font-medium">
+                      {s.fullName} <span className="text-xs font-normal text-ink/45">{s.studentCode}</span>
+                    </p>
+                    <p className="text-sm text-ink/60">{scoreLabel(s)}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge tone={STATUS_TONE[s.status]}>{STATUS_LABEL[s.status]}</Badge>
+                    {s.attemptId && s.status === 'COMPLETED' ? (
+                      <Link to={`/admin/students/${s.studentId}/attempts/${s.attemptId}`} className="text-sm font-semibold text-gold-deep">
+                        Xem điểm
+                      </Link>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-5 flex justify-end">
+            <Button type="button" variant="paper" onClick={onClose}>
+              Đóng
+            </Button>
+          </div>
+        </>
+      ) : null}
+    </Modal>
   )
 }
 

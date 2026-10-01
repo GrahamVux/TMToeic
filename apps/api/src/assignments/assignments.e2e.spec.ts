@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common'
-import { ERROR_CODES } from '@toeic/shared'
+import { CSRF_HEADER, CSRF_HEADER_VALUE, ERROR_CODES } from '@toeic/shared'
 import { ADMIN, client, createTestApp, login, type TestClient } from '../test/test-app'
 
 const P5 = [{ partCode: 'PART_5', questionStart: 1, questionEnd: 3 }]
@@ -99,6 +99,35 @@ describe('Assignments (e2e)', () => {
     const listAdmin = await admin.get(`/assignments/${created.body.id}`)
     expect(listAdmin.status).toBe(200)
     expect(listAdmin.body.students).toHaveLength(1)
+    expect(listAdmin.body.students[0]).toMatchObject({
+      studentId,
+      status: 'IN_PROGRESS',
+      correctCount: null,
+      totalScore: null,
+    })
+
+    const player = await student.get(`/attempts/${start.body.id}`)
+    expect(player.status).toBe(200)
+    const qs = player.body.questions as Array<{ id: string }>
+    expect(qs).toHaveLength(3)
+    for (const q of qs) {
+      const saved = await student.agent
+        .put(`/api/v1/attempts/${start.body.id}/answers/${q.id}`)
+        .set(CSRF_HEADER, CSRF_HEADER_VALUE)
+        .send({ selectedKey: 'A' })
+      expect(saved.status).toBe(200)
+    }
+    expect((await student.post(`/attempts/${start.body.id}/submit`)).status).toBe(200)
+
+    const scored = await admin.get(`/assignments/${created.body.id}`)
+    expect(scored.body.students[0]).toMatchObject({
+      studentId,
+      status: 'COMPLETED',
+      correctCount: 3,
+      totalQuestions: 3,
+      totalScore: null,
+    })
+    expect(scored.body.submittedCount).toBe(1)
   })
 
   it('rejects assigning unpublished exams and unknown parts', async () => {
