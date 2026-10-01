@@ -11,7 +11,7 @@ export default defineConfig({
     },
   },
   server: {
-    // Same-origin in dev: cookies are first-party, no CORS/SameSite headaches.
+    // Same-origin in dev: cookies are first-party. Production uses a Pages Function at /api.
     proxy: {
       '/api': { target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:3001', changeOrigin: false },
     },

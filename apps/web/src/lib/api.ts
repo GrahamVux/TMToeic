@@ -1,7 +1,17 @@
 import { CSRF_HEADER, CSRF_HEADER_VALUE, ERROR_CODES, type ApiErrorBody, type ErrorCode } from '@toeic/shared'
 
-/** `/api/v1` via the Vite proxy in dev; set VITE_API_URL (e.g. https://api.example.com/api/v1) for a separate API origin. */
-const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1'
+/**
+ * Always same-origin `/api/v1` in the browser (Vite proxy in dev, Cloudflare Pages Function in prod).
+ * Absolute `VITE_API_URL` values are ignored: a separate API host makes login cookies third-party,
+ * which iOS Safari blocks.
+ */
+export function resolveApiBase(raw: string | undefined): string {
+  const v = raw?.trim()
+  if (!v || /^https?:\/\//i.test(v)) return '/api/v1'
+  return v.replace(/\/$/, '')
+}
+
+const BASE = resolveApiBase(import.meta.env.VITE_API_URL as string | undefined)
 
 export class ApiError extends Error {
   readonly status: number

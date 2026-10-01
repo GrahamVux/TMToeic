@@ -76,6 +76,8 @@ export function LoginPage() {
             className="mt-2"
             autoComplete="username"
             autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             placeholder="VD: TM-1000"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
