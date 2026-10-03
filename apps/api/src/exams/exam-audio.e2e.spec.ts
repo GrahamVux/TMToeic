@@ -52,9 +52,15 @@ describe('Listening audio (e2e on PGlite, fake R2 signer)', () => {
   let fullAudioId: string
   let part2AudioId: string
   let pdfId: string
+  const uploaded: string[] = []
   const storage = {
     enabled: true,
+    bucket: 'toeic-content',
     signedGetUrl: (key: string, ttl: number) => Promise.resolve(`https://r2.test/${key}?X-Amz-Expires=${ttl}&X-Amz-Signature=fake`),
+    putObject: (key: string) => {
+      uploaded.push(key)
+      return Promise.resolve()
+    },
   }
 
   const put = (c: TestClient, url: string, body: object) => c.agent.put(`/api/v1${url}`).set('x-toeic-client', 'web').send(body)
@@ -141,10 +147,10 @@ describe('Listening audio (e2e on PGlite, fake R2 signer)', () => {
     // Only the signed URL is exposed — never bucket/object key fields.
     expect(JSON.stringify(player.body)).not.toMatch(/objectKey|"bucket"/)
 
-    // A refresh endpoint exists for long untimed sessions, and is private to the owner.
+    // A refresh endpoint exists for long untimed sessions. Another student cannot see it; staff can, for review.
     expect(audioOf((await student.get(`/attempts/${attemptId}/audio`)).body)).toHaveLength(1)
     expect((await other.get(`/attempts/${attemptId}/audio`)).status).toBe(404)
-    expect((await admin.get(`/attempts/${attemptId}/audio`)).status).toBe(403)
+    expect(audioOf((await admin.get(`/attempts/${attemptId}/audio`)).body)).toHaveLength(1)
 
     // Review after submitting keeps the recording for listening back.
     expect((await student.post(`/attempts/${attemptId}/submit`)).status).toBe(200)
@@ -217,6 +223,54 @@ describe('Listening audio (e2e on PGlite, fake R2 signer)', () => {
     expect(q1.imageUrl).toMatch(/^https:\/\/r2\.test\/ets-2018\/test-01\/images\/q-001\.jpg\?/)
     expect(player.body.groups[0].imageUrl).toMatch(/fig-63\.jpg\?/)
     expect(JSON.stringify(player.body)).not.toMatch(/imageAssetId|objectKey/)
+  })
+
+  it('uploads a listening file onto the exam, and rejects reading exams and non-audio', async () => {
+    uploaded.length = 0
+    const clip = Buffer.from('ID3-fake-mp3')
+    const postFile = (id: string, type: string, name = 'clip.mp3', partCode?: string) => {
+      const q = new URLSearchParams({ filename: name })
+      if (partCode) q.set('partCode', partCode)
+      return admin.agent.post(`/api/v1/exams/${id}/audio/file?${q}`).set('x-toeic-client', 'web').set('content-type', type).send(clip)
+    }
+
+    const reading = await admin.post('/exams').send({
+      code: 'AUDIO-RC',
+      title: 'Reading only',
+      durationSeconds: 600,
+      parts: [{ partCode: 'PART_5', questionStart: 101, questionEnd: 101 }],
+    })
+    expect(reading.status).toBe(201)
+    expect((await postFile(reading.body.id, 'audio/mpeg')).status).toBe(400)
+
+    expect((await postFile(examId, 'application/pdf', 'notes.pdf')).status).toBe(400)
+    expect(uploaded).toHaveLength(0)
+
+    expect((await postFile(examId, 'audio/mpeg', 'full.mp3')).status).toBe(200)
+    expect(uploaded[0]).toMatch(new RegExp(`^authored/${examId}/audio/full-\\d+\\.mp3$`))
+    expect((await admin.get(`/exams/${examId}`)).body.hasAudio).toBe(true)
+
+    expect((await postFile(examId, 'audio/wav', 'part2.wav', 'PART_2')).status).toBe(200)
+    expect(uploaded.at(-1)).toMatch(/\/PART_2-\d+\.wav$/)
+
+    const mixed = await admin.post('/exams/import-authored').send({
+      code: 'MIX-1',
+      title: 'Listening and reading',
+      durationSeconds: 600,
+      publish: false,
+      parts: [
+        { partCode: 'PART_2', questionStart: 1, questionEnd: 1 },
+        { partCode: 'PART_5', questionStart: 2, questionEnd: 2 },
+      ],
+      groups: [],
+      questions: ['PART_2', 'PART_5'].map((partCode, i) => ({
+        partCode,
+        number: i + 1,
+        prompt: 'Q',
+        options: ['A', 'B', 'C', 'D'].map((key) => ({ key, text: key, correct: key === 'A' })),
+      })),
+    })
+    expect(mixed.status).toBe(400)
   })
 
   it('returns no audio when storage is disabled, and after detaching', async () => {

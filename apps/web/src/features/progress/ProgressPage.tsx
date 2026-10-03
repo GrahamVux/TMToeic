@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/Button'
+import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Badge, Card } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { partName } from '@/features/exams/exams.queries'
@@ -10,7 +11,7 @@ import { useMyProgress } from './progress.queries'
 export function ProgressPage() {
   const { data: p, isPending, error } = useMyProgress()
 
-  if (isPending) return <p className="p-8 text-sm text-ink/55">Đang tải tiến độ…</p>
+  if (isPending) return <PageLoading message="Đang tải tiến độ…" />
   if (error || !p) return <QueryErrorRedirect error={error} />
 
   const weak = p.weakestPart

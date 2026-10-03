@@ -11,7 +11,7 @@ export const ADMIN = { username: 'admin', password: 'Bootstrap123' }
 
 export async function createTestApp(
   overrides: Record<string, string> = {},
-  extra: { storage?: Pick<StorageService, 'enabled' | 'signedGetUrl'>; config?: Partial<AppConfig> } = {},
+  extra: { storage?: Pick<StorageService, 'enabled' | 'bucket' | 'signedGetUrl' | 'putObject'>; config?: Partial<AppConfig> } = {},
 ): Promise<INestApplication> {
   process.env.LOGIN_RATE_LIMIT = '100000' // per-IP throttle is covered separately from account lockout
   const config = {
@@ -39,11 +39,11 @@ export async function createTestApp(
 /** supertest agent that keeps cookies and always sends the CSRF header like the web client does. */
 export function client(app: INestApplication) {
   const agent = request.agent(app.getHttpServer())
-  const wrap = (method: 'get' | 'post' | 'delete') => (url: string) => {
+  const wrap = (method: 'get' | 'post' | 'patch' | 'delete') => (url: string) => {
     const t = agent[method](`/api/v1${url}`)
     return method === 'get' ? t : t.set(CSRF_HEADER, CSRF_HEADER_VALUE)
   }
-  return { get: wrap('get'), post: wrap('post'), delete: wrap('delete'), agent }
+  return { get: wrap('get'), post: wrap('post'), patch: wrap('patch'), delete: wrap('delete'), agent }
 }
 
 export type TestClient = ReturnType<typeof client>

@@ -1,45 +1,87 @@
 import { useImportAuthoredExam } from '@/features/assignments/assignments.queries'
 import { Button } from '@/components/ui/Button'
+import { FilePick } from '@/components/ui/FilePick'
 import { Badge, Card, Input } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
-import { partName, useArchiveExam, useExams, usePublishExam } from '@/features/exams/exams.queries'
+import { partName, useArchiveExam, useExams, usePublishExam, useUploadExamAudio } from '@/features/exams/exams.queries'
 import { ApiError } from '@/lib/api'
-import { ERROR_CODES, OPTION_KEYS, PART_SEED, type ExamStatus, type ImportAuthoredExamInput } from '@toeic/shared'
+import { ERROR_CODES, OPTION_KEYS, PART_SEED, type ExamStatus, type ExamSummaryDto, type ImportAuthoredExamInput, type Skill } from '@toeic/shared'
 import { FileUp } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
+const MAX_AUDIO_BYTES = 80 * 1024 * 1024
+
 export function ExamBankPage() {
+  const [skill, setSkill] = useState<Skill>('LISTENING')
   return (
     <div className="space-y-6">
       <div>
         <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Kho đề & ngân hàng câu hỏi</p>
         <h1 className="serif mt-2 text-3xl sm:text-4xl">Ngân hàng đề — mỗi part là một nhóm giao bài</h1>
-        <p className="mt-2 text-sm text-ink/60">
-          Import đề ETS hoặc đề tự soạn. Hệ thống tách theo part; giáo viên chọn part để tạo bài tập.
-        </p>
+        <p className="mt-2 text-sm text-ink/60">Import đề Listening và đề Reading riêng. Đề Listening có thể gắn file nghe sau khi vào ngân hàng.</p>
       </div>
-      <AuthoredImport />
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className={tabClass(skill === 'LISTENING')} onClick={() => setSkill('LISTENING')}>
+          Import đề Listening
+        </button>
+        <button type="button" className={tabClass(skill === 'READING')} onClick={() => setSkill('READING')}>
+          Import đề Reading
+        </button>
+      </div>
+      <AuthoredImport key={skill} skill={skill} />
       <ExamList />
     </div>
   )
+}
+
+function tabClass(active: boolean) {
+  return active
+    ? 'rounded-full bg-gold-deep px-4 py-2 text-sm font-semibold text-white'
+    : 'rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink/70 ring-1 ring-ink/10'
 }
 
 function newExamCode() {
   return `GV-${Date.now().toString(36).toUpperCase()}`
 }
 
-function AuthoredImport() {
+function foreignPartCodes(raw: ImportAuthoredExamInput, skill: Skill) {
+  const codes = [
+    ...(raw.parts ?? []).map((p) => p.partCode),
+    ...(raw.groups ?? []).map((g) => g.partCode),
+    ...(raw.questions ?? []).map((q) => q.partCode),
+  ]
+  return [...new Set(codes.filter((code) => PART_SEED.find((p) => p.code === code)?.skill !== skill))]
+}
+
+function AuthoredImport({ skill }: { skill: Skill }) {
   const importExam = useImportAuthoredExam()
+  const uploadAudio = useUploadExamAudio()
+  const parts = PART_SEED.filter((p) => p.skill === skill)
   const [title, setTitle] = useState('')
   const [minutes, setMinutes] = useState(20)
-  const [partCode, setPartCode] = useState('PART_5')
+  const [partCode, setPartCode] = useState(skill === 'LISTENING' ? 'PART_2' : 'PART_5')
   const [rows, setRows] = useState([{ prompt: '', a: '', b: '', c: '', d: '', correct: 'A' }])
+  const [audio, setAudio] = useState<File | null>(null)
   const [jsonError, setJsonError] = useState<string | null>(null)
   const [ok, setOk] = useState<string | null>(null)
+  const sampleHref = skill === 'LISTENING' ? '/mau-import-listening.json' : '/mau-import-de.json'
+  const busy = importExam.isPending || uploadAudio.isPending
 
   function addRow() {
     setRows((r) => [...r, { prompt: '', a: '', b: '', c: '', d: '', correct: 'A' }])
+  }
+
+  async function attachAudio(examId: string) {
+    if (skill !== 'LISTENING' || !audio) return null
+    if (audio.size > MAX_AUDIO_BYTES) return 'File nghe quá lớn (tối đa 80MB). Đề đã vào ngân hàng; hãy gắn lại bằng nút Thêm file nghe.'
+    try {
+      await uploadAudio.mutateAsync({ examId, file: audio })
+      return null
+    } catch (e) {
+      const detail = e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Không tải được file nghe.'
+      return `Đề đã vào ngân hàng nhưng chưa gắn được file nghe. ${detail}`
+    }
   }
 
   async function submitBuilder() {
@@ -76,11 +118,17 @@ function AuthoredImport() {
     }
     try {
       const exam = await importExam.mutateAsync(payload)
-      setOk(`Đã thêm “${exam.title}” vào ngân hàng (${exam.parts.map((p) => partName(p.code).split(' — ')[0]).join(', ')}).`)
+      const audioError = await attachAudio(exam.id)
+      if (audioError) {
+        setJsonError(audioError)
+        return
+      }
+      setOk(`Đã thêm “${exam.title}” vào ngân hàng (${exam.parts.map((p) => partName(p.code).split(' — ')[0]).join(', ')})${audio ? ' và đã gắn file nghe.' : '.'}`)
       setTitle('')
+      setAudio(null)
       setRows([{ prompt: '', a: '', b: '', c: '', d: '', correct: 'A' }])
-    } catch {
-      setJsonError('Không import được đề. Kiểm tra mỗi câu có 4 lựa chọn và đúng 1 đáp án.')
+    } catch (e) {
+      setJsonError(e instanceof ApiError ? e.message : 'Không import được đề. Kiểm tra mỗi câu có 4 lựa chọn và đúng 1 đáp án.')
     }
   }
 
@@ -89,10 +137,25 @@ function AuthoredImport() {
     setOk(null)
     try {
       const raw = JSON.parse(await file.text()) as ImportAuthoredExamInput
+      const foreign = foreignPartCodes(raw, skill)
+      if (foreign.length > 0) {
+        setJsonError(
+          skill === 'LISTENING'
+            ? 'File này có part Reading. Hãy mở tab Import đề Reading.'
+            : 'File này có part Listening. Hãy mở tab Import đề Listening.',
+        )
+        return
+      }
       const exam = await importExam.mutateAsync({ ...raw, publish: raw.publish !== false })
-      setOk(`Đã cập nhật ngân hàng: “${exam.title}”.`)
-    } catch {
-      setJsonError('File JSON không hợp lệ hoặc mã đề đã tồn tại.')
+      const audioError = await attachAudio(exam.id)
+      if (audioError) {
+        setJsonError(audioError)
+        return
+      }
+      setOk(`Đã cập nhật ngân hàng: “${exam.title}”${audio ? ' và đã gắn file nghe.' : '.'}`)
+      setAudio(null)
+    } catch (e) {
+      setJsonError(e instanceof ApiError ? e.message : 'File JSON không hợp lệ hoặc mã đề đã tồn tại.')
     }
   }
 
@@ -100,31 +163,33 @@ function AuthoredImport() {
     <div className="grid gap-4 lg:grid-cols-2">
       <Card className="border-dashed border-gold/30 p-6">
         <FileUp className="size-8 text-gold-deep" />
-        <h2 className="serif mt-2 text-2xl">Import JSON đề tự soạn</h2>
+        <h2 className="serif mt-2 text-2xl">{skill === 'LISTENING' ? 'Import JSON đề Listening' : 'Import JSON đề Reading'}</h2>
         <p className="mt-2 text-sm text-ink/60">
-          File gồm mã đề, tiêu đề, thời gian, danh sách part và câu hỏi. Sau khi import, các part xuất hiện trong ngân hàng để giao bài.
+          {skill === 'LISTENING'
+            ? 'File gồm Part 1–4. File nghe (mp3, m4a, wav) chọn riêng bên dưới, tối đa 80MB.'
+            : 'File gồm Part 5–7. Mỗi đề chỉ thuộc một kỹ năng.'}
         </p>
-        <label className="mt-4 inline-flex">
-          <input
-            className="hidden"
-            type="file"
+        <a className="mt-2 inline-block text-sm font-semibold text-gold-deep underline" href={sampleHref} download>
+          Tải file mẫu
+        </a>
+        <div className="mt-4">
+          <FilePick
+            label="Chọn file JSON"
             accept="application/json,.json"
-            onChange={(e) => {
-              const file = e.target.files?.[0]
+            onFiles={(files) => {
+              const file = files[0]
               if (file) void onJsonFile(file)
-              e.target.value = ''
             }}
           />
-          <span className="inline-flex cursor-pointer rounded-full bg-gold-deep px-4 py-2 text-sm font-semibold text-white">Chọn file JSON</span>
-        </label>
+        </div>
       </Card>
 
       <Card className="p-6">
-        <h2 className="serif text-2xl">Soạn nhanh một part</h2>
+        <h2 className="serif text-2xl">{skill === 'LISTENING' ? 'Soạn nhanh một part Listening' : 'Soạn nhanh một part Reading'}</h2>
         <label className="mt-3 block text-sm font-medium" htmlFor="au-title">
           Tên đề
         </label>
-        <Input id="au-title" className="mt-1" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="VD: Part 5 — mệnh đề quan hệ" />
+        <Input id="au-title" className="mt-1" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={skill === 'LISTENING' ? 'VD: Part 2 — hỏi đáp' : 'VD: Part 5 — mệnh đề quan hệ'} />
         <div className="mt-3 grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium" htmlFor="au-part">
@@ -136,7 +201,7 @@ function AuthoredImport() {
               value={partCode}
               onChange={(e) => setPartCode(e.target.value)}
             >
-              {PART_SEED.filter((p) => p.skill === 'LISTENING' || p.skill === 'READING').map((p) => (
+              {parts.map((p) => (
                 <option key={p.code} value={p.code}>
                   {p.name}
                 </option>
@@ -186,11 +251,29 @@ function AuthoredImport() {
           <Button variant="paper" type="button" onClick={addRow}>
             + Thêm câu
           </Button>
-          <Button type="button" disabled={importExam.isPending} onClick={() => void submitBuilder()}>
-            {importExam.isPending ? 'Đang lưu…' : 'Thêm vào ngân hàng'}
+          <Button type="button" disabled={busy} onClick={() => void submitBuilder()}>
+            {busy ? 'Đang lưu…' : 'Thêm vào ngân hàng'}
           </Button>
         </div>
       </Card>
+
+      {skill === 'LISTENING' ? (
+        <Card className="p-6 lg:col-span-2">
+          <h2 className="serif text-2xl">File nghe cho lần import này</h2>
+          <p className="mt-2 text-sm text-ink/60">
+            Chọn mp3, m4a hoặc wav trước khi import. File gắn cho cả phần nghe, và phát khi bài làm gồm mọi part Listening của đề. Muốn giao từng part, hãy gắn file theo part trên thẻ đề bên dưới.
+          </p>
+          <div className="mt-4">
+            <FilePick
+              label="Chọn file nghe"
+              accept="audio/mpeg,audio/mp4,audio/wav,audio/x-m4a,.mp3,.m4a,.wav"
+              chosen={audio?.name ?? null}
+              hint="Gắn cho cả phần nghe của đề đang import."
+              onFiles={(files) => setAudio(files[0] ?? null)}
+            />
+          </div>
+        </Card>
+      ) : null}
 
       {jsonError ? (
         <p className="rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral lg:col-span-2" role="alert">
@@ -229,11 +312,7 @@ function ExamList() {
       <h2 className="serif text-2xl">Kho đề ({exams.data?.length ?? 0})</h2>
       {error ? (
         <div className="mt-3 rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral" role="alert">
-          <p>
-            {error instanceof ApiError && error.code === ERROR_CODES.EXAM_NOT_READY
-              ? 'Đề chưa sẵn sàng để xuất bản.'
-              : 'Thao tác thất bại.'}
-          </p>
+          <p>{error instanceof ApiError && error.code === ERROR_CODES.EXAM_NOT_READY ? 'Đề chưa sẵn sàng để xuất bản.' : 'Thao tác thất bại.'}</p>
           {problems.length > 0 ? (
             <ul className="mt-1 list-disc pl-5">
               {problems.slice(0, 8).map((p) => (
@@ -249,7 +328,10 @@ function ExamList() {
           <Card key={exam.id} className="p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <Badge tone={STATUS_TONE[exam.status]}>{exam.status}</Badge>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge tone={STATUS_TONE[exam.status]}>{exam.status}</Badge>
+                  {exam.parts.some((p) => p.skill === 'LISTENING') && exam.hasAudio ? <Badge tone="teal">Có file nghe</Badge> : null}
+                </div>
                 <h3 className="mt-2 font-semibold">{exam.title}</h3>
                 <p className="text-sm text-ink/55">
                   {exam.code} • {Math.round(exam.durationSeconds / 60)} phút • {exam.totalQuestions} câu
@@ -280,9 +362,73 @@ function ExamList() {
                 ) : null}
               </div>
             </div>
+            <ListeningAudioControl exam={exam} />
           </Card>
         ))}
       </div>
     </section>
+  )
+}
+
+function ListeningAudioControl({ exam }: { exam: ExamSummaryDto }) {
+  const upload = useUploadExamAudio()
+  const listening = exam.parts.filter((p) => p.skill === 'LISTENING')
+  const [partCode, setPartCode] = useState('')
+  const [message, setMessage] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
+  if (listening.length === 0) return null
+
+  async function onFile(file: File) {
+    setMessage(null)
+    setFailed(false)
+    if (file.size > MAX_AUDIO_BYTES) {
+      setFailed(true)
+      setMessage('File nghe quá lớn (tối đa 80MB).')
+      return
+    }
+    try {
+      await upload.mutateAsync({ examId: exam.id, file, partCode: partCode || undefined })
+      setMessage(partCode ? `Đã gắn file nghe cho ${partName(partCode).split(' — ')[0]}.` : 'Đã gắn file nghe cho cả phần Listening.')
+    } catch (e) {
+      setFailed(true)
+      setMessage(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Không tải được file nghe.')
+    }
+  }
+
+  return (
+    <div className="mt-4 border-t border-ink/8 pt-3">
+      <p className="text-xs text-ink/55">
+        Gắn file cho cả phần nghe khi bài làm gồm mọi part Listening. Gắn theo từng part khi giao bài một part.
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <select
+          className="h-10 rounded-xl border border-ink/12 bg-white px-3 text-sm"
+          value={partCode}
+          aria-label="Chỗ gắn file nghe"
+          onChange={(e) => setPartCode(e.target.value)}
+        >
+          <option value="">Cả phần nghe</option>
+          {listening.map((p) => (
+            <option key={p.code} value={p.code}>
+              {partName(p.code).split(' — ')[0]}
+            </option>
+          ))}
+        </select>
+        <FilePick
+          label={upload.isPending ? 'Đang tải file nghe…' : exam.hasAudio ? 'Đổi file nghe' : 'Thêm file nghe'}
+          accept="audio/mpeg,audio/mp4,audio/wav,audio/x-m4a,.mp3,.m4a,.wav"
+          disabled={upload.isPending}
+          onFiles={(files) => {
+            const file = files[0]
+            if (file) void onFile(file)
+          }}
+        />
+      </div>
+      {message ? (
+        <p className={`mt-2 text-sm ${failed ? 'text-coral' : 'text-olive'}`} role={failed ? 'alert' : 'status'}>
+          {message}
+        </p>
+      ) : null}
+    </div>
   )
 }

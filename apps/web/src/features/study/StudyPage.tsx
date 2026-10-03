@@ -1,112 +1,162 @@
 import { Button } from '@/components/ui/Button'
 import { Badge, Card, ProgressBar } from '@/components/ui/Primitives'
-import { dailyVocabPlan, grammarTopics, vocabTopics } from '@/data/mock'
-import { Link } from 'react-router-dom'
+import { PageLoading } from '@/components/ui/LoadingScreen'
+import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
+import { ApiError } from '@/lib/api'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { notebookSavedMessage, useGrammarLessons, useSaveNotebookWord, useStudyOverview, useVocabSearch } from './study.queries'
 
 export function StudyPage() {
-  const [tab, setTab] = useState<'all' | 'vocab' | 'grammar'>('all')
+  const [tab, setTab] = useState<'vocab' | 'grammar'>('vocab')
+  const overview = useStudyOverview()
+  if (overview.isPending) return <PageLoading message="Đang tải mục học tập…" />
+  if (overview.error) return <QueryErrorRedirect error={overview.error} />
+  const data = overview.data!
+
   return (
     <div className="space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs text-ink/50">Trang chủ / Học tập / Kho chuyên đề K42</p>
-          <h1 className="serif mt-2 text-4xl">Kho học liệu & chuyên đề TOEIC Thầy Minh</h1>
-          <p className="mt-2 text-sm text-ink/60">Mục tiêu 850+ • Tổng tiến độ học 32/54 bài • Vượt 12% so với lộ trình tuần</p>
+          <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Học tập</p>
+          <h1 className="serif mt-2 text-3xl sm:text-4xl">Ngữ pháp và từ vựng</h1>
+          <p className="mt-2 max-w-2xl text-sm text-ink/60">Ôn flashcard từ kho từ chung, hoặc lưu từ vào sổ tay khi đang làm bài.</p>
         </div>
-        <Link to="/study/notebook"><Button>Sổ tay từ vựng cá nhân (48)</Button></Link>
+        <Link to="/study/notebook">
+          <Button>Sổ tay ({data.notebookTotal})</Button>
+        </Link>
       </header>
 
       <div className="flex flex-wrap gap-2">
-        {[
-          { id: 'all', label: 'Tổng hợp' },
-          { id: 'vocab', label: 'Từ vựng (Vocabulary)' },
-          { id: 'grammar', label: 'Ngữ pháp (Grammar)' },
-        ].map((item) => (
-          <button key={item.id} className={`rounded-full px-4 py-2 text-sm font-semibold ${tab === item.id ? 'bg-gold-deep text-white' : 'bg-paper-2 text-ink'}`} onClick={() => setTab(item.id as typeof tab)}>
-            {item.label}
-          </button>
-        ))}
+        <button type="button" className={tabClass(tab === 'vocab')} onClick={() => setTab('vocab')}>
+          Từ vựng
+        </button>
+        <button type="button" className={tabClass(tab === 'grammar')} onClick={() => setTab('grammar')}>
+          Ngữ pháp
+        </button>
       </div>
 
-      {(tab === 'all' || tab === 'vocab') && (
-        <>
-          <Card className="grid gap-6 p-6 lg:grid-cols-[1.1fr_0.9fr]">
-            <div>
-              <Badge>Từ vựng của ngày • Hôm nay</Badge>
-              <h2 className="serif mt-3 text-4xl">Substantial</h2>
-              <p className="mt-1 text-ink/55">/səbˈstæn.ʃəl/ • adjective</p>
-              <p className="mt-4 text-sm"><span className="font-semibold">Nghĩa tiếng Việt trọng tâm:</span> Đáng kể, quan trọng, lớn lao, có giá trị thực chất</p>
-              <ul className="mt-4 space-y-1 text-sm text-ink/70">
-                <li>• a substantial increase in profit</li>
-                <li>• substantial evidence</li>
-                <li>• substantial difference</li>
-              </ul>
-            </div>
-            <div className="rounded-2xl bg-teal-soft p-5 text-ink">
-              <p className="text-gold-deep">Thầy Minh nhắc nhở</p>
-              <p className="mt-2 text-sm leading-6">Lưu lại để làm flashcard tối nay. Đã có 418/450 học viên hoàn thành từ này.</p>
-              <p className="mt-4 text-sm italic text-ink/70">“The newly implemented marketing strategy resulted in a substantial increase in quarterly sales.”</p>
-              <Button className="mt-5">Đã lưu vào sổ tay</Button>
-            </div>
-          </Card>
-
-          <section>
-            <h2 className="serif text-2xl">Lộ trình 30 ngày bứt phá</h2>
-            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {dailyVocabPlan.map((day) => (
-                <Card key={day.day} className="p-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold tracking-wide uppercase">Ngày {String(day.day).padStart(2, '0')}</p>
-                    <Badge tone={day.status === 'DONE' ? 'olive' : day.status === 'TODAY' ? 'gold' : 'paper'}>
-                      {day.status === 'DONE' ? 'Đã học' : day.status === 'TODAY' ? 'Hôm nay' : 'Chưa mở'}
-                    </Badge>
-                  </div>
-                  <h3 className="mt-2 font-semibold">{day.title}</h3>
-                  <p className="mt-1 text-xs text-ink/55">{day.words}</p>
-                  {day.status === 'TODAY' ? <ProgressBar className="mt-3" value={70} /> : null}
-                </Card>
-              ))}
-            </div>
-          </section>
-
-          <section>
-            <h2 className="serif text-2xl">600 Essential Words — theo chủ đề</h2>
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {vocabTopics.map((topic) => (
-                <Card key={topic.id} className="flex items-center justify-between p-4">
-                  <div>
-                    <h3 className="font-semibold">{topic.title}</h3>
-                    <p className="text-sm text-ink/55">{topic.progress} • Master {topic.mastery}%</p>
-                  </div>
-                  <Button variant={topic.status === 'NEW' ? 'navy' : 'ghost'}>{topic.status === 'NEW' ? 'Bắt đầu' : 'Flashcard'}</Button>
-                </Card>
-              ))}
-            </div>
-          </section>
-        </>
-      )}
-
-      {(tab === 'all' || tab === 'grammar') && (
-        <section>
-          <h2 className="serif text-2xl">Ngữ pháp chuyên đề & tuyệt kỹ giải đề</h2>
-          <div className="mt-4 space-y-3">
-            {grammarTopics.map((topic) => (
-              <Card key={topic.id} className="grid gap-4 p-5 md:grid-cols-[80px_1fr_auto]">
-                <div className="serif text-3xl text-gold-deep">{topic.order}</div>
-                <div>
-                  <h3 className="font-semibold">{topic.title}</h3>
-                  <p className="mt-1 text-sm text-ink/60">{topic.note}</p>
-                  <ProgressBar className="mt-3 max-w-sm" value={topic.progress} />
-                </div>
-                <Link to={`/grammar/${topic.id}`}>
-                  <Button variant={topic.status === 'LOCKED' ? 'ghost' : 'navy'}>{topic.status === 'DONE' ? 'Học lại' : topic.status === 'LEARNING' ? 'Học tiếp' : 'Bắt đầu'}</Button>
-                </Link>
-              </Card>
-            ))}
-          </div>
-        </section>
-      )}
+      {tab === 'vocab' ? <VocabHome catalogDue={data.catalogDue} catalogNew={data.catalogNew} notebookDue={data.notebookDue} /> : <GrammarHome completed={data.grammarCompleted} total={data.grammarTotal} />}
     </div>
+  )
+}
+
+function tabClass(active: boolean) {
+  return active ? 'rounded-full bg-gold-deep px-4 py-2 text-sm font-semibold text-white' : 'rounded-full bg-paper-2 px-4 py-2 text-sm font-semibold text-ink'
+}
+
+function VocabHome({ catalogDue, catalogNew, notebookDue }: { catalogDue: number; catalogNew: number; notebookDue: number }) {
+  const [draft, setDraft] = useState('')
+  const [q, setQ] = useState('')
+  const vocab = useVocabSearch(q)
+  const save = useSaveNotebookWord()
+  const [note, setNote] = useState<string | null>(null)
+
+  return (
+    <>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="p-5">
+          <Badge>Kho từ</Badge>
+          <h2 className="serif mt-3 text-2xl">Flashcard cả lớp</h2>
+          <p className="mt-2 text-sm text-ink/60">
+            {catalogDue} thẻ đến hạn ôn • {catalogNew} từ chưa học
+          </p>
+          <Link to="/study/flashcards?deck=catalog" className="mt-4 inline-block">
+            <Button>Học kho từ</Button>
+          </Link>
+        </Card>
+        <Card className="p-5">
+          <Badge tone="teal">Sổ tay</Badge>
+          <h2 className="serif mt-3 text-2xl">Từ của bạn</h2>
+          <p className="mt-2 text-sm text-ink/60">{notebookDue} thẻ cần ôn. Bôi một từ khi làm đề để thêm vào đây.</p>
+          <Link to="/study/flashcards?deck=notebook" className="mt-4 inline-block">
+            <Button variant="navy">Ôn sổ tay</Button>
+          </Link>
+        </Card>
+      </div>
+
+      <Card className="p-5">
+        <h2 className="serif text-2xl">Tìm trong kho từ</h2>
+        <form
+          className="mt-3 flex flex-wrap gap-2"
+          onSubmit={(event) => {
+            event.preventDefault()
+            setQ(draft.trim())
+          }}
+        >
+          <input
+            className="h-10 min-w-0 flex-1 rounded-xl border border-ink/12 bg-white px-3 text-sm"
+            value={draft}
+            placeholder="Nhập từ hoặc nghĩa"
+            onChange={(event) => setDraft(event.target.value)}
+          />
+          <Button type="submit" variant="navy">
+            Tìm
+          </Button>
+        </form>
+        {note ? <p className="mt-3 text-sm text-olive">{note}</p> : null}
+        {vocab.isPending ? <p className="mt-4 text-sm text-ink/55">Đang tải…</p> : null}
+        <ul className="mt-4 divide-y divide-ink/8">
+          {(vocab.data?.items ?? []).map((item) => (
+            <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+              <div>
+                <p className="font-semibold">{item.word}</p>
+                <p className="text-sm text-ink/55">
+                  {item.partOfSpeech} • {item.meaning}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="text-sm font-semibold text-gold-deep underline decoration-2 underline-offset-4 hover:text-navy"
+                disabled={save.isPending}
+                onClick={() => {
+                  void save.mutateAsync({ vocabEntryId: item.id }).then(
+                    (result) => setNote(notebookSavedMessage(result)),
+                    (error) => setNote(error instanceof ApiError ? error.message : 'Không thêm được.'),
+                  )
+                }}
+              >
+                Thêm vào sổ tay
+              </button>
+            </li>
+          ))}
+        </ul>
+        {vocab.data && vocab.data.items.length === 0 ? <p className="mt-3 text-sm text-ink/55">Chưa có từ nào khớp.</p> : null}
+      </Card>
+    </>
+  )
+}
+
+function GrammarHome({ completed, total }: { completed: number; total: number }) {
+  const lessons = useGrammarLessons()
+  if (lessons.error) return <QueryErrorRedirect error={lessons.error} />
+  return (
+    <section>
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <h2 className="serif text-2xl">Chuyên đề ngữ pháp</h2>
+        <p className="text-sm text-ink/55">
+          Đã học {completed}/{total}
+        </p>
+      </div>
+      <ProgressBar value={total === 0 ? 0 : (completed / total) * 100} />
+      <div className="mt-4 space-y-3">
+        {(lessons.data ?? []).map((lesson, index) => (
+          <Card key={lesson.id} className="grid gap-4 p-5 md:grid-cols-[64px_1fr_auto] md:items-center">
+            <div className="serif text-3xl text-gold-deep">{String(index + 1).padStart(2, '0')}</div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-semibold">{lesson.title}</h3>
+                {lesson.pdf ? <Badge tone="teal">Có PDF</Badge> : null}
+                {lesson.completed ? <Badge tone="olive">Đã học</Badge> : null}
+              </div>
+              <p className="mt-1 text-sm text-ink/60">{lesson.summary}</p>
+            </div>
+            <Link to={`/grammar/${lesson.id}`}>
+              <Button variant="navy">{lesson.completed ? 'Xem lại' : 'Học'}</Button>
+            </Link>
+          </Card>
+        ))}
+      </div>
+    </section>
   )
 }

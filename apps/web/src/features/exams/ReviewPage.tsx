@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/Button'
+import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Badge, Card } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { ApiError } from '@/lib/api'
@@ -7,7 +8,9 @@ import { useMemo, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { AudioPlayer } from './AudioPlayer'
 import { partName, useAttemptReview } from './exams.queries'
+import { SelectableText } from '@/features/study/SelectableText'
 import { PassageView } from './PassageView'
+import { SheetGallery } from './SheetGallery'
 import { examTextStyle, TextZoomBar, ZoomableImage } from './ZoomableImage'
 
 type Filter = 'all' | 'wrong' | 'blank'
@@ -21,7 +24,7 @@ export function ReviewPage() {
 
   const groups = useMemo(() => new Map((data?.groups ?? []).map((g) => [g.id, g])), [data])
 
-  if (isPending) return <p className="p-8 text-sm text-ink/55">Đang tải…</p>
+  if (isPending) return <PageLoading message="Đang tải bài chữa…" />
   if (error instanceof ApiError && error.status === 409) {
     if (staffView) return <p className="p-8 text-sm text-ink/60">Học viên chưa nộp bài này nên chưa xem được bài làm chi tiết.</p>
     return <Navigate to={`/attempts/${attemptId}/play`} replace />
@@ -65,6 +68,8 @@ export function ReviewPage() {
         </div>
       ) : null}
 
+      <SheetGallery images={data.sheetImages} />
+
       <div className="flex flex-wrap gap-2">
         {([['all', 'Tất cả'], ['wrong', 'Câu sai'], ['blank', 'Bỏ trống']] as const).map(([id, label]) => (
           <button
@@ -102,7 +107,7 @@ export function ReviewPage() {
                   <ZoomableImage src={q.imageUrl} alt={`Hình minh họa câu ${q.number}`} compact />
                 </div>
               ) : null}
-              {q.prompt ? <p className="mt-2 text-lg leading-8 font-medium">{q.prompt}</p> : null}
+              {q.prompt ? <SelectableText className="mt-2 text-lg leading-8 font-medium" text={q.prompt} /> : null}
               <ul className="mt-3 grid gap-2">
                 {q.options.map((o) => {
                   const isCorrect = o.key === q.correctKey

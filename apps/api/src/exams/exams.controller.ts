@@ -69,6 +69,22 @@ export class ExamsController {
     return this.audio.setAudio(actorOf(user, req), id, parse(setExamAudioSchema, body))
   }
 
+  /** Upload a Listening recording (raw body, up to 80MB). Omit `partCode` for the full-length file of the exam. */
+  @Roles('TEACHER', 'ADMIN')
+  @Post(':id/audio/file')
+  @HttpCode(200)
+  uploadAudio(
+    @CurrentUser() user: AuthUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query('partCode') partCode: string | undefined,
+    @Query('filename') filename: string | undefined,
+    @Req() req: Request,
+  ) {
+    const part = typeof partCode === 'string' && partCode.trim() ? partCode.trim() : undefined
+    const name = typeof filename === 'string' && filename.trim() ? filename.trim() : 'audio.mp3'
+    return this.audio.uploadFile(actorOf(user, req), id, req.body, req.header('content-type') ?? '', name, part)
+  }
+
   @Roles('TEACHER', 'ADMIN')
   @Post(':id/publish')
   @HttpCode(200)

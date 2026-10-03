@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/Button'
+import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Badge, Card } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { cn } from '@/lib/cn'
@@ -10,7 +11,9 @@ import { trackForPart } from './audio'
 import { AudioPlayer } from './AudioPlayer'
 import { AutosaveStore, type SaveStatus } from './autosave'
 import { formatClock, isListeningPart, partName, useAttemptPlayer, useSubmitAttempt } from './exams.queries'
+import { SelectableText } from '@/features/study/SelectableText'
 import { PassageView } from './PassageView'
+import { SheetGallery } from './SheetGallery'
 import { examTextStyle, TextZoomBar, ZoomableImage } from './ZoomableImage'
 
 const MODE_LABEL: Record<string, string> = {
@@ -24,7 +27,7 @@ export function ExamPlayerPage() {
   const { attemptId } = useParams()
   const { data, isPending, error } = useAttemptPlayer(attemptId)
 
-  if (isPending) return <p className="p-8 text-sm text-ink/55">Đang tải đề…</p>
+  if (isPending) return <PageLoading message="Đang tải đề…" />
   if (error || !data) return <QueryErrorRedirect error={error} />
   if (data.attempt.status !== 'IN_PROGRESS') return <Navigate to={`/attempts/${data.attempt.id}/result`} replace />
   return <Player key={data.attempt.id} data={data} />
@@ -132,6 +135,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
       <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
         <div className="space-y-4">
           <AudioPlayer attemptId={attempt.id} tracks={audio} partCode={question.partCode} mode={attempt.mode} />
+          <SheetGallery images={data.sheetImages} />
           {listening && !trackForPart(audio, question.partCode) ? (
             <div className="flex items-center gap-3 rounded-2xl bg-teal-soft px-4 py-3">
               <Headphones className="size-5 text-teal" />
@@ -160,7 +164,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
                 <ZoomableImage src={question.imageUrl} alt={`Hình minh họa câu ${question.number}`} compact />
               </div>
             ) : null}
-            {question.prompt ? <h2 className="mt-3 text-xl leading-8 font-medium">{question.prompt}</h2> : null}
+            {question.prompt ? <SelectableText as="h2" className="mt-3 text-xl leading-8 font-medium" text={question.prompt} /> : null}
             <div className="mt-6 grid gap-3" role="radiogroup" aria-label={`Đáp án câu ${question.number}`}>
               {question.options.map((option) => {
                 const selected = save.answers[question.id] === option.key

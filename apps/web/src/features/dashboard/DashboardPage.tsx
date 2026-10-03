@@ -1,12 +1,14 @@
 import { useAuth } from '@/app/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Badge, Card } from '@/components/ui/Primitives'
+import { PageLoading } from '@/components/ui/LoadingScreen'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { useAssignments } from '@/features/assignments/assignments.queries'
 import { formatGoal, type GoalDto, type LeaderboardEntryDto, type SkillStatDto, type StudentDashboardDto } from '@toeic/shared'
 import type { ReactNode } from 'react'
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Link } from 'react-router-dom'
+import { useStudyOverview } from '@/features/study/study.queries'
 import { useDashboard } from './dashboard.queries'
 
 const dayMonth = (iso: string) => {
@@ -23,8 +25,9 @@ export function DashboardPage() {
   const { user } = useAuth()
   const { data, isPending, error } = useDashboard()
   const homework = useAssignments()
+  const study = useStudyOverview()
 
-  if (isPending) return <p className="p-8 text-sm text-ink/55">Đang tải tổng quan…</p>
+  if (isPending) return <PageLoading message="Đang tải tổng quan…" />
   if (error || !data) return <QueryErrorRedirect error={error} />
 
   const due = (homework.data ?? []).filter((a) => a.myProgress?.status !== 'COMPLETED').slice(0, 3)
@@ -75,19 +78,23 @@ export function DashboardPage() {
 
       <section className="grid gap-6 lg:grid-cols-2">
         <Card className="p-6">
-          <Badge tone="paper">Sắp ra mắt</Badge>
-          <h2 className="serif mt-3 text-2xl">Ngữ pháp cốt lõi</h2>
-          <p className="mt-2 text-sm text-ink/60">Các chuyên đề ngữ pháp Part 5 & Part 6 sẽ hiển thị tiến độ của bạn khi bài học được đăng.</p>
+          <Badge>Ngữ pháp</Badge>
+          <h2 className="serif mt-3 text-2xl">Chuyên đề Part 5 & 6</h2>
+          <p className="mt-2 text-sm text-ink/60">
+            {study.data ? `Đã học ${study.data.grammarCompleted}/${study.data.grammarTotal} chuyên đề.` : 'Các chuyên đề ngữ pháp cốt lõi cho Part 5 và Part 6.'}
+          </p>
           <Link to="/study" className="mt-4 inline-block">
-            <Button variant="navy">Xem mục học tập</Button>
+            <Button variant="navy">Học ngữ pháp</Button>
           </Link>
         </Card>
         <Card className="p-6">
-          <Badge tone="paper">Sắp ra mắt</Badge>
-          <h2 className="serif mt-3 text-2xl">Từ vựng TOEIC</h2>
-          <p className="mt-2 text-sm text-ink/60">Sổ từ vựng và lịch ôn ngắt quãng sẽ dựa trên các từ bạn đã lưu.</p>
+          <Badge tone="teal">Từ vựng</Badge>
+          <h2 className="serif mt-3 text-2xl">Flashcard và sổ tay</h2>
+          <p className="mt-2 text-sm text-ink/60">
+            {study.data ? `${study.data.notebookTotal} từ trong sổ tay • ${study.data.catalogNew} từ kho chưa học.` : 'Bôi một từ khi làm bài để lưu vào sổ tay.'}
+          </p>
           <Link to="/study/notebook" className="mt-4 inline-block">
-            <Button variant="ghost">Mở sổ từ vựng</Button>
+            <Button variant="ghost">Mở sổ tay</Button>
           </Link>
         </Card>
       </section>
@@ -127,7 +134,7 @@ function Hero({ d, name }: { d: StudentDashboardDto; name: string }) {
             <Link to="/study"><Button variant="paper">Ôn từ vựng</Button></Link>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
           <Stat
             label="Chuỗi rèn luyện"
             value={`${streak.days} ngày`}
@@ -250,8 +257,8 @@ function SkillCard({ stat, kind }: { stat: SkillStatDto | undefined; kind: 'LIST
 
 function Stat({ label, value, hint, to }: { label: string; value: string; hint?: string; to?: string }) {
   const body = (
-    <div className="min-w-32 rounded-2xl border border-gold/40 bg-teal-soft p-4">
-      <p className="text-[10px] tracking-[0.16em] text-gold-deep uppercase">{label}</p>
+    <div className="min-w-0 rounded-2xl border border-gold/40 bg-teal-soft p-4">
+      <p className="text-[10px] leading-snug tracking-wide text-gold-deep uppercase">{label}</p>
       <p className="serif mt-2 text-2xl">{value}</p>
       {hint ? <p className="text-xs text-ink/55">{hint}</p> : null}
     </div>

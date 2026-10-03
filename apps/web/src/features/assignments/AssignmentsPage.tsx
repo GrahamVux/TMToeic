@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/Button'
+import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Badge, Card, ProgressBar } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { partName } from '@/features/exams/exams.queries'
@@ -64,7 +65,7 @@ export function AssignmentsPage() {
     }
   }
 
-  if (isPending) return <p className="p-8 text-sm text-ink/55">Đang tải bài tập…</p>
+  if (isPending) return <PageLoading message="Đang tải bài tập…" />
   if (error) return <QueryErrorRedirect error={error} />
 
   return (

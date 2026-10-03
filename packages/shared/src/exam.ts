@@ -213,6 +213,8 @@ export type AttemptPlayerDto = {
   groups: GroupDto[]
   questions: PlayerQuestionDto[]
   audio: AudioTrackDto[]
+  /** Scanned exam pages attached to the homework. Empty when the attempt is not an assignment, or none were uploaded. */
+  sheetImages: SheetImageDto[]
 }
 
 export type PartResultDto = { partCode: string; skill: Skill; total: number; correct: number; accuracy: number }
@@ -229,5 +231,6 @@ export type AttemptResultDto = {
   parts: PartResultDto[]
 }
 
+export type SheetImageDto = { id: string; url: string }
 export type ReviewQuestionDto = PlayerQuestionDto & { correctKey: string; isCorrect: boolean | null }
-export type AttemptReviewDto = { result: AttemptResultDto; groups: GroupDto[]; questions: ReviewQuestionDto[]; audio: AudioTrackDto[] }
+export type AttemptReviewDto = { result: AttemptResultDto; groups: GroupDto[]; questions: ReviewQuestionDto[]; audio: AudioTrackDto[]; sheetImages: SheetImageDto[] }

@@ -173,3 +173,88 @@ describe('Assignments (e2e)', () => {
     expect(start.body.error.code).toBe(ERROR_CODES.FORBIDDEN)
   })
 })
+
+describe('Assignment audio and sheet images', () => {
+  let app: INestApplication
+  let admin: TestClient
+  let student: TestClient
+  const storage = {
+    enabled: true,
+    bucket: 'toeic-content',
+    signedGetUrl: (key: string) => Promise.resolve(`https://r2.test/${key}?sig=fake`),
+    putObject: () => Promise.resolve(),
+  }
+
+  beforeAll(async () => {
+    app = await createTestApp({}, { storage })
+    const a = await login(app, ADMIN.username, ADMIN.password)
+    await a.c.post('/auth/change-password').send({ currentPassword: ADMIN.password, newPassword: 'AdminPass123' })
+    admin = a.c
+    const created = await admin.post('/users/students').send({ fullName: 'Nghe Bài Tập' })
+    const { c } = await login(app, created.body.user.studentCode as string, created.body.temporaryPassword as string)
+    await c.post('/auth/change-password').send({ currentPassword: created.body.temporaryPassword, newPassword: 'StudentPass99' })
+    student = c
+  })
+  afterAll(() => app.close())
+
+  function postRaw(id: string, kind: 'audio/file' | 'images', type: string, name: string, body: Buffer) {
+    return admin.agent
+      .post(`/api/v1/assignments/${id}/${kind}?filename=${encodeURIComponent(name)}`)
+      .set(CSRF_HEADER, CSRF_HEADER_VALUE)
+      .set('content-type', type)
+      .send(body)
+  }
+
+  it('attaches a listening file and exam photos that the student hears and sees', async () => {
+    const exam = await admin.post('/exams/import-authored').send({
+      code: `GV-MEDIA-${Date.now()}`,
+      title: 'Part 2 có file',
+      durationSeconds: 600,
+      publish: true,
+      parts: [{ partCode: 'PART_2', questionStart: 1, questionEnd: 1 }],
+      groups: [],
+      questions: [
+        {
+          partCode: 'PART_2',
+          number: 1,
+          prompt: 'Where?',
+          options: ['A', 'B', 'C'].map((key) => ({ key, text: key, correct: key === 'A' })),
+        },
+      ],
+    })
+    expect(exam.status).toBe(201)
+    const created = await admin.post('/assignments').send({
+      title: 'Nghe Part 2',
+      examId: exam.body.id,
+      partCodes: ['PART_2'],
+      durationSeconds: 300,
+      studentIds: [],
+    })
+    // empty studentIds means the whole class, including the student created above
+    expect(created.status).toBe(201)
+
+    const reading = await admin.post('/exams/import-authored').send(authored(`GV-RC-${Date.now()}`))
+    const readingAsg = await admin.post('/assignments').send({
+      title: 'Đọc',
+      examId: reading.body.id,
+      partCodes: ['PART_5'],
+      durationSeconds: 300,
+    })
+    expect((await postRaw(readingAsg.body.id, 'audio/file', 'audio/mpeg', 'x.mp3', Buffer.from('ID3'))).status).toBe(400)
+
+    expect((await postRaw(created.body.id, 'audio/file', 'application/pdf', 'x.pdf', Buffer.from('%PDF'))).status).toBe(400)
+    expect((await postRaw(created.body.id, 'audio/file', 'audio/mpeg', 'clip.mp3', Buffer.from('ID3-fake'))).status).toBe(200)
+    expect((await postRaw(created.body.id, 'images', 'image/jpeg', 'trang-1.jpg', Buffer.from('jpeg'))).status).toBe(200)
+    expect((await admin.get('/assignments')).body.find((a: { id: string }) => a.id === created.body.id)).toMatchObject({ hasAudio: true, imageCount: 1 })
+
+    const started = await student.post(`/assignments/${created.body.id}/start`).send({})
+    expect(started.status).toBe(200)
+    const player = await student.get(`/attempts/${started.body.id}`)
+    expect(player.body.audio).toHaveLength(1)
+    expect(player.body.audio[0].partCodes).toEqual(['PART_2'])
+    expect(player.body.audio[0].url).toMatch(/^https:\/\/r2\.test\/assignments\//)
+    expect(player.body.sheetImages).toHaveLength(1)
+    expect(player.body.sheetImages[0].url).toMatch(/images\//)
+    expect(JSON.stringify(player.body)).not.toMatch(/objectKey|"bucket"/)
+  })
+})

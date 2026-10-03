@@ -1,13 +1,15 @@
 import { Button } from '@/components/ui/Button'
+import { FilePick } from '@/components/ui/FilePick'
 import { Modal } from '@/components/ui/Modal'
 import { Badge, Card, Input } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { partName, useExams } from '@/features/exams/exams.queries'
 import { useStudents } from '@/features/teacher/users.queries'
-import type { AssignmentDetailDto, ExamSummaryDto, StudentAssignmentStatus } from '@toeic/shared'
+import type { AssignmentDetailDto, AssignmentDto, ExamSummaryDto, StudentAssignmentStatus } from '@toeic/shared'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { useAssignment, useAssignments, useCloseAssignment, useCreateAssignment } from '@/features/assignments/assignments.queries'
+import { ApiError } from '@/lib/api'
+import { useAssignment, useAssignments, useCloseAssignment, useCreateAssignment, useUploadAssignmentAudio, useUploadAssignmentImages } from '@/features/assignments/assignments.queries'
 
 function toLocalInput(d: Date) {
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -32,6 +34,8 @@ export function TeacherAssignmentsPage() {
   const exams = useExams()
   const assignments = useAssignments()
   const create = useCreateAssignment()
+  const uploadAudio = useUploadAssignmentAudio()
+  const uploadImages = useUploadAssignmentImages()
   const close = useCloseAssignment()
   const students = useStudents({ q: '', status: 'ACTIVE', page: 1, pageSize: 100 })
   const [params] = useSearchParams()
@@ -45,6 +49,8 @@ export function TeacherAssignmentsPage() {
   const [dueAt, setDueAt] = useState(() => toLocalInput(new Date(Date.now() + 3 * 86_400_000)))
   const [allStudents, setAllStudents] = useState(true)
   const [picked, setPicked] = useState<string[]>([])
+  const [audioFile, setAudioFile] = useState<File | null>(null)
+  const [imageFiles, setImageFiles] = useState<File[]>([])
   const [formError, setFormError] = useState<string | null>(null)
   const [checkingId, setCheckingId] = useState<string | null>(null)
 
@@ -64,6 +70,8 @@ export function TeacherAssignmentsPage() {
 
   const selectedParts = exam?.parts.filter((p) => partCodes.includes(p.code)) ?? []
   const questionCount = selectedParts.reduce((s, p) => s + p.questionCount, 0)
+  const listening = selectedParts.some((p) => p.skill === 'LISTENING')
+  const saving = create.isPending || uploadAudio.isPending || uploadImages.isPending
 
   const roster = students.data?.items ?? []
 
@@ -82,7 +90,7 @@ export function TeacherAssignmentsPage() {
       return
     }
     try {
-      await create.mutateAsync({
+      const created = await create.mutateAsync({
         title: title.trim(),
         description: description.trim() || undefined,
         examId: exam.id,
@@ -92,11 +100,15 @@ export function TeacherAssignmentsPage() {
         studentIds: allStudents ? undefined : picked,
         publish: true,
       })
+      if (listening && audioFile) await uploadAudio.mutateAsync({ id: created.id, file: audioFile })
+      if (imageFiles.length > 0) await uploadImages.mutateAsync({ id: created.id, files: imageFiles })
       setTitle('')
       setDescription('')
       setPartCodes([])
-    } catch {
-      setFormError('Không giao được bài. Kiểm tra đề đã xuất bản và danh sách học viên.')
+      setAudioFile(null)
+      setImageFiles([])
+    } catch (e) {
+      setFormError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Không giao được bài. Kiểm tra đề đã xuất bản và danh sách học viên.')
     }
   }
 
@@ -164,6 +176,27 @@ export function TeacherAssignmentsPage() {
           <p className="mt-3 text-sm text-ink/55">
             {exam ? `${exam.title} • ${selectedParts.length} part • ${questionCount} câu` : 'Chưa chọn đề'}
           </p>
+          {listening ? (
+            <div className="mt-4">
+              <FilePick
+                label="Chọn file nghe"
+                accept="audio/mpeg,audio/mp4,audio/wav,audio/x-m4a,.mp3,.m4a,.wav"
+                chosen={audioFile?.name ?? null}
+                hint="mp3, m4a hoặc wav, tối đa 80MB. Học viên nghe file này khi làm bài."
+                onFiles={(files) => setAudioFile(files[0] ?? null)}
+              />
+            </div>
+          ) : null}
+          <div className="mt-3">
+            <FilePick
+              label="Chọn ảnh đề"
+              accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+              multiple
+              chosen={imageFiles.length > 0 ? imageFiles.map((file) => file.name).join(', ') : null}
+              hint="Ảnh trang đề, mỗi ảnh tối đa 8MB. Học viên xem khi làm bài."
+              onFiles={setImageFiles}
+            />
+          </div>
           <label className="mt-4 flex items-center gap-2 text-sm">
             <input type="checkbox" checked={allStudents} onChange={(e) => setAllStudents(e.target.checked)} />
             Giao cả lớp (học viên đang hoạt động)
@@ -187,8 +220,8 @@ export function TeacherAssignmentsPage() {
               {formError}
             </p>
           ) : null}
-          <Button className="mt-4 w-full" disabled={create.isPending} onClick={() => void submit()}>
-            {create.isPending ? 'Đang giao…' : 'Giao bài tập'}
+          <Button className="mt-4 w-full" disabled={saving} onClick={() => void submit()}>
+            {saving ? 'Đang giao…' : 'Giao bài tập'}
           </Button>
         </Card>
       </div>
@@ -219,6 +252,7 @@ export function TeacherAssignmentsPage() {
                   ) : null}
                 </div>
               </div>
+              <AssignmentFiles assignment={a} />
             </Card>
           ))}
         </div>
@@ -281,6 +315,75 @@ function AssignmentCheckModal({ assignmentId, onClose }: { assignmentId: string;
         </>
       ) : null}
     </Modal>
+  )
+}
+
+function AssignmentFiles({ assignment }: { assignment: AssignmentDto }) {
+  const uploadAudio = useUploadAssignmentAudio()
+  const uploadImages = useUploadAssignmentImages()
+  const listening = assignment.parts.some((p) => p.skill === 'LISTENING')
+  const [note, setNote] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
+  const busy = uploadAudio.isPending || uploadImages.isPending
+
+  async function onAudio(file: File) {
+    setNote(null)
+    setFailed(false)
+    try {
+      await uploadAudio.mutateAsync({ id: assignment.id, file })
+      setNote('Đã gắn file nghe cho bài tập này.')
+    } catch (e) {
+      setFailed(true)
+      setNote(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Không tải được file nghe.')
+    }
+  }
+
+  async function onImages(files: File[]) {
+    setNote(null)
+    setFailed(false)
+    try {
+      await uploadImages.mutateAsync({ id: assignment.id, files })
+      setNote(`Đã thêm ${files.length} ảnh đề.`)
+    } catch (e) {
+      setFailed(true)
+      setNote(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Không tải được ảnh đề.')
+    }
+  }
+
+  return (
+    <div className="mt-4 border-t border-ink/8 pt-3">
+      <p className="text-xs text-ink/55">
+        {listening ? (assignment.hasAudio ? 'Đã có file nghe. ' : 'Chưa có file nghe. ') : ''}
+        {assignment.imageCount > 0 ? `${assignment.imageCount} ảnh đề.` : 'Chưa có ảnh đề.'} Học viên thấy các file này khi làm bài.
+      </p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {listening ? (
+          <FilePick
+            label={busy && uploadAudio.isPending ? 'Đang tải file nghe…' : assignment.hasAudio ? 'Đổi file nghe' : 'Thêm file nghe'}
+            accept="audio/mpeg,audio/mp4,audio/wav,audio/x-m4a,.mp3,.m4a,.wav"
+            disabled={busy}
+            onFiles={(files) => {
+              const file = files[0]
+              if (file) void onAudio(file)
+            }}
+          />
+        ) : null}
+        <FilePick
+          label={busy && uploadImages.isPending ? 'Đang tải ảnh…' : 'Thêm ảnh đề'}
+          accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+          multiple
+          disabled={busy}
+          onFiles={(files) => {
+            if (files.length) void onImages(files)
+          }}
+        />
+      </div>
+      {note ? (
+        <p className={`mt-2 text-sm ${failed ? 'text-coral' : 'text-olive'}`} role={failed ? 'alert' : 'status'}>
+          {note}
+        </p>
+      ) : null}
+    </div>
   )
 }
 

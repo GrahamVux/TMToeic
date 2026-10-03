@@ -30,6 +30,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status = exception.getStatus()
       code = status === 404 ? ERROR_CODES.NOT_FOUND : status === 401 ? ERROR_CODES.UNAUTHENTICATED : status === 403 ? ERROR_CODES.FORBIDDEN : ERROR_CODES.VALIDATION_FAILED
       message = exception.message
+    } else if (exception instanceof Error && (exception as { type?: string }).type === 'entity.too.large') {
+      status = HttpStatus.PAYLOAD_TOO_LARGE
+      code = ERROR_CODES.VALIDATION_FAILED
+      message = 'File nghe quá lớn (tối đa 80MB)'
     } else {
       this.logger.error(exception instanceof Error ? exception.stack : String(exception))
     }

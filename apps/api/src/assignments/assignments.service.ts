@@ -14,6 +14,8 @@ import { AppException } from '../common/app-exception'
 import type { AuthUser } from '../common/decorators'
 import { DB, type Db } from '../db/database.module'
 import {
+  assets,
+  assignmentImages,
   assignmentStudents,
   assignments,
   attempts,
@@ -24,6 +26,7 @@ import {
   users,
   type AssignmentRow,
 } from '../db/schema'
+import { StorageService } from '../storage/storage.service'
 
 type Actor = Pick<AuthUser, 'id' | 'role'> & { ip?: string }
 
@@ -32,6 +35,7 @@ export class AssignmentsService {
   constructor(
     @Inject(DB) private readonly db: Db,
     private readonly audit: AuditService,
+    private readonly storage: StorageService,
   ) {}
 
   async create(actor: Actor, input: CreateAssignmentInput): Promise<AssignmentDto> {
@@ -122,6 +126,49 @@ export class AssignmentsService {
     return (await this.toDtos([await this.requireRow(id)]))[0]
   }
 
+  /** Listening file for this homework. Students hear it for every Listening part in the assignment. */
+  async uploadAudio(actor: Actor, id: string, raw: unknown, contentType: string, filename: string) {
+    if (!this.storage.enabled) throw AppException.badRequest('Chưa cấu hình kho file. Không lưu được audio.')
+    const row = await this.requireRow(id)
+    const selected = (await this.examPartsOf(row.examId)).filter((p) => row.partCodes.includes(p.code))
+    if (!selected.some((p) => p.skill === 'LISTENING')) throw AppException.badRequest('Bài tập này không có part Listening.')
+    const body = Buffer.isBuffer(raw) ? raw : null
+    if (!body || body.length === 0) throw AppException.badRequest('Thiếu file nghe.')
+    if (body.length > MAX_AUDIO_BYTES) throw AppException.badRequest('File nghe quá lớn (tối đa 80MB).')
+    const mime = audioMime(contentType, filename)
+    if (!mime) throw AppException.badRequest('Chỉ nhận file mp3, m4a hoặc wav.')
+
+    const ext = mime === 'audio/mpeg' ? 'mp3' : mime === 'audio/mp4' ? 'm4a' : mime === 'audio/wav' ? 'wav' : 'webm'
+    const objectKey = `assignments/${id}/audio/${Date.now()}.${ext}`
+    const assetId = await this.storeObject(objectKey, body, mime, filename)
+    await this.db.update(assignments).set({ audioAssetId: assetId, updatedAt: new Date() }).where(eq(assignments.id, id))
+    await this.audit.log({ action: 'ASSIGNMENT_AUDIO_SET', actorId: actor.id, entityType: 'assignment', entityId: id, metadata: { assetId }, ip: actor.ip })
+    return { ok: true as const }
+  }
+
+  /** One scanned exam page. Students see these while doing the homework. */
+  async uploadImage(actor: Actor, id: string, raw: unknown, contentType: string, filename: string) {
+    if (!this.storage.enabled) throw AppException.badRequest('Chưa cấu hình kho file. Không lưu được ảnh.')
+    await this.requireRow(id)
+    const body = Buffer.isBuffer(raw) ? raw : null
+    if (!body || body.length === 0) throw AppException.badRequest('Thiếu ảnh đề.')
+    if (body.length > MAX_IMAGE_BYTES) throw AppException.badRequest('Mỗi ảnh tối đa 8MB.')
+    const mime = imageMime(contentType, filename)
+    if (!mime) throw AppException.badRequest('Chỉ nhận ảnh jpg, png hoặc webp.')
+    const [{ n }] = await this.db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(assignmentImages)
+      .where(eq(assignmentImages.assignmentId, id))
+    if (n >= MAX_IMAGES) throw AppException.badRequest(`Mỗi bài tập tối đa ${MAX_IMAGES} ảnh.`)
+
+    const ext = mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg'
+    const objectKey = `assignments/${id}/images/${Date.now()}.${ext}`
+    const assetId = await this.storeObject(objectKey, body, mime, filename)
+    await this.db.insert(assignmentImages).values({ assignmentId: id, assetId, displayOrder: n })
+    await this.audit.log({ action: 'ASSIGNMENT_IMAGE_ADDED', actorId: actor.id, entityType: 'assignment', entityId: id, metadata: { assetId }, ip: actor.ip })
+    return { ok: true as const, imageCount: n + 1 }
+  }
+
   async close(actor: Actor, id: string): Promise<AssignmentDto> {
     const row = await this.requireRow(id)
     if (row.status === 'DRAFT') throw AppException.conflict('Chỉ đóng bài tập đã giao')
@@ -154,6 +201,28 @@ export class AssignmentsService {
     }
     const rows = await this.db.select({ id: users.id }).from(users).where(and(eq(users.role, 'STUDENT'), eq(users.status, 'ACTIVE')))
     return rows.map((r) => r.id)
+  }
+
+  private async storeObject(objectKey: string, body: Buffer, mime: string, filename: string): Promise<string> {
+    try {
+      await this.storage.putObject(objectKey, body, mime)
+    } catch {
+      throw AppException.badRequest('Không lưu được file. Kiểm tra cấu hình kho file.')
+    }
+    const original = filename.replace(/[/\\]/g, '').slice(0, 120) || 'file'
+    const [asset] = await this.db
+      .insert(assets)
+      .values({
+        provider: 'CLOUDFLARE_R2',
+        bucket: this.storage.bucket,
+        objectKey,
+        mimeType: mime,
+        sizeBytes: body.length,
+        originalFilename: original,
+      })
+      .returning({ id: assets.id })
+    if (!asset) throw AppException.badRequest('Không lưu được file.')
+    return asset.id
   }
 
   private async examPartsOf(examId: string): Promise<ExamPartDto[]> {
@@ -197,6 +266,13 @@ export class AssignmentsService {
       .groupBy(attempts.assignmentId)
     const submittedCount = new Map(submittedRows.map((r) => [r.assignmentId, r.n]))
 
+    const imageRows = await this.db
+      .select({ assignmentId: assignmentImages.assignmentId, n: sql<number>`count(*)::int` })
+      .from(assignmentImages)
+      .where(inArray(assignmentImages.assignmentId, ids))
+      .groupBy(assignmentImages.assignmentId)
+    const imageCount = new Map(imageRows.map((r) => [r.assignmentId, r.n]))
+
     const myAttempts = studentId
       ? await this.db
           .select()
@@ -228,6 +304,8 @@ export class AssignmentsService {
         createdAt: a.createdAt.toISOString(),
         studentCount: studentCount.get(a.id) ?? 0,
         submittedCount: submittedCount.get(a.id) ?? 0,
+        hasAudio: a.audioAssetId !== null,
+        imageCount: imageCount.get(a.id) ?? 0,
         myProgress: studentId
           ? {
               status: myStatus,
@@ -278,4 +356,33 @@ export class AssignmentsService {
     if (dueAt && dueAt.getTime() < Date.now()) return 'OVERDUE'
     return 'ASSIGNED'
   }
+}
+
+const MAX_AUDIO_BYTES = 80 * 1024 * 1024
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024
+const MAX_IMAGES = 20
+
+function audioMime(contentType: string, filename: string): string | null {
+  const mime = contentType.split(';')[0]?.trim().toLowerCase() ?? ''
+  if (mime === 'audio/mpeg' || mime === 'audio/mp3') return 'audio/mpeg'
+  if (mime === 'audio/mp4' || mime === 'audio/m4a' || mime === 'audio/x-m4a') return 'audio/mp4'
+  if (mime === 'audio/wav' || mime === 'audio/wave' || mime === 'audio/x-wav') return 'audio/wav'
+  if (mime === 'audio/webm') return 'audio/webm'
+  const ext = filename.split('.').pop()?.toLowerCase()
+  if (ext === 'mp3') return 'audio/mpeg'
+  if (ext === 'm4a' || ext === 'mp4') return 'audio/mp4'
+  if (ext === 'wav') return 'audio/wav'
+  return null
+}
+
+function imageMime(contentType: string, filename: string): string | null {
+  const mime = contentType.split(';')[0]?.trim().toLowerCase() ?? ''
+  if (mime === 'image/jpeg' || mime === 'image/jpg') return 'image/jpeg'
+  if (mime === 'image/png') return 'image/png'
+  if (mime === 'image/webp') return 'image/webp'
+  const ext = filename.split('.').pop()?.toLowerCase()
+  if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg'
+  if (ext === 'png') return 'image/png'
+  if (ext === 'webp') return 'image/webp'
+  return null
 }

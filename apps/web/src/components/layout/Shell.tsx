@@ -5,7 +5,7 @@ import { UserMenu } from '@/components/layout/UserMenu'
 import { useSite } from '@/features/site/SiteSettingsProvider'
 import { BugReportWidget } from '@/features/bugs/BugReportWidget'
 import { useBugReportSummary } from '@/features/bugs/bugs.queries'
-import { BarChart3, Bell, BookOpen, Bug, ClipboardList, LogOut, Menu, Settings, Users, X } from 'lucide-react'
+import { BarChart3, Bell, BookOpen, Bug, ClipboardList, Library, LogOut, Menu, Settings, Users, X } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 
@@ -209,6 +209,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
     user?.role === 'ADMIN'
       ? [
           ...adminNav,
+          { to: '/admin/study', label: 'Học liệu', short: 'Học liệu', icon: Library, end: false },
           { to: '/admin/bugs', label: openCount ? `Báo lỗi (${openCount})` : 'Báo lỗi', short: 'Lỗi', icon: Bug, end: false },
           { to: '/admin/settings', label: 'Cài đặt', short: 'Cài đặt', icon: Settings, end: false },
         ]

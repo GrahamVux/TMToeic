@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/Button'
+import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Badge, Card, ProgressBar } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { ApiError } from '@/lib/api'
@@ -10,7 +11,7 @@ export function ResultPage() {
   const staffView = Boolean(studentId)
   const { data: r, isPending, error } = useAttemptResult(attemptId)
 
-  if (isPending) return <p className="p-8 text-sm text-ink/55">Đang tải kết quả…</p>
+  if (isPending) return <PageLoading message="Đang tải kết quả…" />
   if (error instanceof ApiError && error.status === 409) {
     if (staffView) return <p className="p-8 text-sm text-ink/60">Học viên chưa nộp bài này nên chưa có kết quả.</p>
     return <Navigate to={`/attempts/${attemptId}/play`} replace />

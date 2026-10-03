@@ -1,47 +1,52 @@
 import { Button } from '@/components/ui/Button'
-import { Badge, Card, ProgressBar } from '@/components/ui/Primitives'
-import { grammarTopics } from '@/data/mock'
+import { Badge, Card } from '@/components/ui/Primitives'
+import { PageLoading } from '@/components/ui/LoadingScreen'
+import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { Link, useParams } from 'react-router-dom'
+import { useGrammarLesson, useGrammarProgress } from './study.queries'
 
 export function GrammarLessonPage() {
   const { topicId } = useParams()
-  const topic = grammarTopics.find((item) => item.id === topicId) ?? grammarTopics[2]
+  const lesson = useGrammarLesson(topicId)
+  const progress = useGrammarProgress()
+
+  if (lesson.isPending) return <PageLoading message="Đang tải chuyên đề…" />
+  if (lesson.error || !lesson.data) return <QueryErrorRedirect error={lesson.error} />
+  const topic = lesson.data
 
   return (
     <div className="space-y-6">
-      <p className="text-xs text-ink/50">Học tập / Ngữ pháp / {topic.order}</p>
+      <p className="text-xs text-ink/50">Học tập / Ngữ pháp</p>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Badge>{topic.status === 'DONE' ? 'Đã học • 100%' : topic.status === 'LEARNING' ? 'Đang học' : 'Chuyên đề mới'}</Badge>
-          <h1 className="serif mt-3 text-4xl">{topic.title}</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-ink/65">{topic.note}</p>
+          <Badge tone={topic.completed ? 'olive' : 'gold'}>{topic.completed ? 'Đã học' : 'Chuyên đề'}</Badge>
+          <h1 className="serif mt-3 text-3xl sm:text-4xl">{topic.title}</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-ink/65">{topic.summary}</p>
         </div>
         <Link to="/study">
-          <Button variant="ghost">Về kho chuyên đề</Button>
+          <Button variant="ghost">Về mục học tập</Button>
         </Link>
       </div>
-
-      <Card className="overflow-hidden">
-        <div className="aspect-video bg-teal-soft text-ink">
-          <div className="flex h-full flex-col items-center justify-center gap-2">
-            <p className="text-gold-deep">Video bài giảng • Google Drive iframe</p>
-            <p className="text-sm text-ink/60">VideoPlayer abstraction — provider = google_drive</p>
+      <Card className="p-6">
+        <h2 className="serif text-2xl">Nội dung</h2>
+        <p className="mt-4 text-sm leading-7 whitespace-pre-line text-ink/80">{topic.body}</p>
+        {topic.pdf ? (
+          <div className="mt-6">
+            <h3 className="font-semibold">Tài liệu PDF</h3>
+            <p className="mt-1 text-sm text-ink/55">{topic.pdf.filename}</p>
+            <a className="mt-3 inline-block" href={`/api/v1/study/grammar/${topic.id}/pdf`} target="_blank" rel="noreferrer">
+              <Button>Mở tài liệu PDF</Button>
+            </a>
+            <iframe title={topic.pdf.filename} src={`/api/v1/study/grammar/${topic.id}/pdf`} className="mt-4 hidden h-[70vh] w-full rounded-xl border border-ink/10 bg-white md:block" />
           </div>
-        </div>
-        <div className="p-6">
-          <h2 className="serif text-2xl">Nội dung bài học</h2>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-ink/70">
-            <li>Nhận diện dấu hiệu trong 10 giây, không dịch toàn câu.</li>
-            <li>Các bẫy ETS hay gặp trong Part 5 & Part 6 gắn với chuyên đề này.</li>
-            <li>20 câu củng cố chấm tự động + video chữa của Thầy Minh.</li>
-          </ul>
-          <ProgressBar className="mt-5" value={topic.progress} />
-          <div className="mt-5 flex gap-3">
-            <Link to="/practice">
-              <Button variant="navy">Làm 20 câu củng cố</Button>
-            </Link>
-            <Button variant="ghost">Đánh dấu đã học</Button>
-          </div>
+        ) : null}
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button disabled={progress.isPending} onClick={() => progress.mutate({ id: topic.id, completed: !topic.completed })}>
+            {topic.completed ? 'Bỏ đánh dấu đã học' : 'Đánh dấu đã học'}
+          </Button>
+          <Link to="/practice/reading">
+            <Button variant="navy">Luyện Part 5–7</Button>
+          </Link>
         </div>
       </Card>
     </div>

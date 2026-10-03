@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/Button'
+import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Badge, Card } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { partName } from '@/features/exams/exams.queries'
@@ -25,7 +26,7 @@ export function StudentDetailPage() {
     document.getElementById('bai-lam')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [location.hash, sittings.data])
 
-  if (isPending) return <p className="py-16 text-center text-ink/55" role="status">Đang tải hồ sơ…</p>
+  if (isPending) return <PageLoading message="Đang tải hồ sơ…" />
   if (error || !user) return <QueryErrorRedirect error={error} />
 
   const target = user.goal

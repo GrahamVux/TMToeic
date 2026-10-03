@@ -1,3 +1,4 @@
+import { SelectableText } from '@/features/study/SelectableText'
 import type { GroupDto } from '@toeic/shared'
 import { ZoomableImage } from './ZoomableImage'
 
@@ -13,7 +14,7 @@ export function PassageView({ group }: { group: GroupDto }) {
             {group.passages.length > 1 ? `Văn bản ${p.label}` : 'Văn bản'}
             {p.title ? ` • ${p.title}` : ''}
           </p>
-          <p className="mt-2 text-sm leading-7 whitespace-pre-line text-ink/85">{p.content}</p>
+          <SelectableText className="mt-2 text-sm leading-7 whitespace-pre-line text-ink/85" text={p.content} />
         </article>
       ))}
     </div>

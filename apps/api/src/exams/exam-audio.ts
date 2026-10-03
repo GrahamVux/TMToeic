@@ -53,8 +53,11 @@ export class ExamAudioService {
     private readonly audit: AuditService,
   ) {}
 
-  /** Signed tracks for an attempt scope; empty when storage is not configured or no audio is attached. */
-  async tracksFor(examId: string, scopeCodes: string[]): Promise<AudioTrackDto[]> {
+  /**
+   * Signed tracks for an attempt scope; empty when storage is not configured or no audio is attached.
+   * `assignmentAudioId` is the homework's own file: it plays for every Listening part in the attempt, even a single part.
+   */
+  async tracksFor(examId: string, scopeCodes: string[], assignmentAudioId?: string | null): Promise<AudioTrackDto[]> {
     if (!this.storage.enabled) return []
     const [exam] = await this.db.select({ audioAssetId: exams.audioAssetId }).from(exams).where(eq(exams.id, examId)).limit(1)
     const eps = await this.db
@@ -64,6 +67,11 @@ export class ExamAudioService {
       .innerJoin(skills, eq(skills.id, parts.skillId))
       .where(eq(examParts.examId, examId))
       .orderBy(asc(examParts.displayOrder))
+
+    if (assignmentAudioId) {
+      const listening = eps.filter((p) => p.skill === 'LISTENING' && scopeCodes.includes(p.code)).map((p) => p.code)
+      return this.oneTrack(assignmentAudioId, listening)
+    }
 
     const plan = planAudioTracks({ examAssetId: exam?.audioAssetId ?? null, examParts: eps, scopeCodes })
     if (plan.length === 0) return []
@@ -87,7 +95,23 @@ export class ExamAudioService {
     return tracks
   }
 
-  /** Signed URLs for picture assets (question photos, group figures). Empty map when storage is not configured. */
+  private async oneTrack(assetId: string, partCodes: string[]): Promise<AudioTrackDto[]> {
+    if (partCodes.length === 0) return []
+    const [asset] = await this.db.select().from(assets).where(eq(assets.id, assetId)).limit(1)
+    if (!asset?.mimeType?.startsWith('audio/')) return []
+    const expiresAt = new Date(Date.now() + AUDIO_URL_TTL_SECONDS * 1000).toISOString()
+    return [
+      {
+        id: asset.id,
+        label: partsLabel(partCodes),
+        partCodes,
+        url: await this.storage.signedGetUrl(asset.objectKey, AUDIO_URL_TTL_SECONDS, asset.bucket),
+        expiresAt,
+      },
+    ]
+  }
+
+  /** Signed URLs for picture assets (question photos, group figures, homework pages). Empty map when storage is not configured. */
   async signedImageUrls(assetIds: string[]): Promise<Map<string, string>> {
     const ids = [...new Set(assetIds)]
     const out = new Map<string, string>()
@@ -133,4 +157,74 @@ export class ExamAudioService {
     })
     return { ok: true as const }
   }
+
+  /**
+   * Staff uploads a recording. Bytes go to object storage, an asset row is created, then the same attach rules as setAudio apply.
+   * Omit `partCode` for the full Listening recording of the exam.
+   */
+  async uploadFile(actor: Actor, examId: string, raw: unknown, contentType: string, filename: string, partCode?: string) {
+    if (!this.storage.enabled) throw AppException.badRequest('Chưa cấu hình kho file. Không lưu được audio.')
+    const body = Buffer.isBuffer(raw) ? raw : null
+    if (!body || body.length === 0) throw AppException.badRequest('Thiếu file nghe.')
+    if (body.length > MAX_AUDIO_BYTES) throw AppException.badRequest('File nghe quá lớn (tối đa 80MB).')
+
+    const mime = audioMime(contentType, filename)
+    if (!mime) throw AppException.badRequest('Chỉ nhận file mp3, m4a hoặc wav.')
+
+    const [exam] = await this.db.select({ id: exams.id }).from(exams).where(eq(exams.id, examId)).limit(1)
+    if (!exam) throw AppException.notFound('Không tìm thấy đề thi')
+
+    const rows = await this.db
+      .select({ code: parts.code, skill: skills.code })
+      .from(examParts)
+      .innerJoin(parts, eq(parts.id, examParts.partId))
+      .innerJoin(skills, eq(skills.id, parts.skillId))
+      .where(eq(examParts.examId, examId))
+    if (!rows.some((r) => r.skill === 'LISTENING')) throw AppException.badRequest('Chỉ đề Listening mới gắn được file nghe.')
+    if (partCode) {
+      const part = rows.find((r) => r.code === partCode)
+      if (!part) throw AppException.badRequest(`Đề không có ${partCode}`)
+      if (part.skill !== 'LISTENING') throw AppException.badRequest('Chỉ part Listening mới có audio')
+    }
+
+    const ext = mime === 'audio/mpeg' ? 'mp3' : mime === 'audio/mp4' ? 'm4a' : mime === 'audio/wav' ? 'wav' : 'webm'
+    const objectKey = `authored/${examId}/audio/${partCode ?? 'full'}-${Date.now()}.${ext}`
+    const original = filename.replace(/[/\\]/g, '').slice(0, 120) || `audio.${ext}`
+    try {
+      await this.storage.putObject(objectKey, body, mime)
+    } catch {
+      throw AppException.badRequest('Không lưu được file nghe. Kiểm tra cấu hình kho file.')
+    }
+
+    const [asset] = await this.db
+      .insert(assets)
+      .values({
+        provider: 'CLOUDFLARE_R2',
+        bucket: this.storage.bucket,
+        objectKey,
+        mimeType: mime,
+        sizeBytes: body.length,
+        originalFilename: original,
+      })
+      .returning({ id: assets.id })
+    if (!asset) throw AppException.badRequest('Không lưu được file nghe.')
+    return this.setAudio(actor, examId, { assetId: asset.id, ...(partCode ? { partCode } : {}) })
+  }
+}
+
+const MAX_AUDIO_BYTES = 80 * 1024 * 1024
+
+/** Accept common browser MIME labels and fall back to the filename when the browser sends a generic type. */
+function audioMime(contentType: string, filename: string): string | null {
+  const mime = contentType.split(';')[0]?.trim().toLowerCase() ?? ''
+  if (mime === 'audio/mpeg' || mime === 'audio/mp3') return 'audio/mpeg'
+  if (mime === 'audio/mp4' || mime === 'audio/m4a' || mime === 'audio/x-m4a') return 'audio/mp4'
+  if (mime === 'audio/wav' || mime === 'audio/wave' || mime === 'audio/x-wav') return 'audio/wav'
+  if (mime === 'audio/webm') return 'audio/webm'
+  const ext = filename.split('.').pop()?.toLowerCase()
+  if (ext === 'mp3') return 'audio/mpeg'
+  if (ext === 'm4a' || ext === 'mp4') return 'audio/mp4'
+  if (ext === 'wav') return 'audio/wav'
+  if (ext === 'webm') return 'audio/webm'
+  return null
 }

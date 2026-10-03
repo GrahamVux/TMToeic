@@ -10,6 +10,7 @@ const INDEX: Hit[] = [
   { label: 'Tổng quan', group: 'Trang', to: '/dashboard' },
   { label: 'Học tập — Từ vựng & Ngữ pháp', group: 'Trang', to: '/study' },
   { label: 'Sổ tay từ vựng', group: 'Trang', to: '/study/notebook' },
+  { label: 'Flashcard từ vựng', group: 'Trang', to: '/study/flashcards' },
   { label: 'Luyện tập ETS L&R', group: 'Trang', to: '/practice' },
   { label: 'Luyện nghe (Listening)', group: 'Trang', to: '/practice/listening' },
   { label: 'Luyện đọc (Reading)', group: 'Trang', to: '/practice/reading' },

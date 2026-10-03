@@ -52,6 +52,10 @@ export type AssignmentDto = {
   createdAt: string
   studentCount: number
   submittedCount: number
+  /** True when this homework has its own listening file. */
+  hasAudio: boolean
+  /** Scanned exam pages attached to this homework. */
+  imageCount: number
   /** Present on the student list / start payload. */
   myProgress?: {
     status: StudentAssignmentStatus

@@ -13,8 +13,10 @@ import { PracticePage } from '@/features/practice/PracticePage'
 import { ReadingDrillsPage } from '@/features/practice/ReadingDrillsPage'
 import { ProgressPage } from '@/features/progress/ProgressPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
+import { FlashcardPage } from '@/features/study/FlashcardPage'
 import { GrammarLessonPage } from '@/features/study/GrammarLessonPage'
 import { StudyPage } from '@/features/study/StudyPage'
+import { AdminStudyPage } from '@/features/teacher/AdminStudyPage'
 import { ExamBankPage } from '@/features/teacher/ExamBankPage'
 import { ReportsPage } from '@/features/teacher/ReportsPage'
 import { StudentDetailPage } from '@/features/teacher/StudentDetailPage'
@@ -24,17 +26,14 @@ import { TeacherAssignmentsPage } from '@/features/teacher/TeacherAssignmentsPag
 import { TeacherDashboardPage } from '@/features/teacher/TeacherDashboardPage'
 import { NotebookPage } from '@/features/vocabulary/NotebookPage'
 import { SiteSettingsProvider } from '@/features/site/SiteSettingsProvider'
+import { LoadingScreen } from '@/components/ui/LoadingScreen'
 import { ApiError } from '@/lib/api'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { homePathForRole } from '@toeic/shared'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 
 function FullPageSpinner() {
-  return (
-    <div className="grid min-h-screen place-items-center bg-paper text-sm text-ink/55" role="status" aria-live="polite">
-      Đang tải…
-    </div>
-  )
+  return <LoadingScreen />
 }
 
 /**
@@ -71,6 +70,7 @@ function AppRoutes() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/study" element={<StudyPage />} />
         <Route path="/study/notebook" element={<NotebookPage />} />
+        <Route path="/study/flashcards" element={<FlashcardPage />} />
         <Route path="/grammar/:topicId" element={<GrammarLessonPage />} />
         <Route path="/practice" element={<PracticePage />} />
         <Route path="/practice/listening" element={<ListeningDrillsPage />} />
@@ -89,6 +89,7 @@ function AppRoutes() {
         <Route path="/admin/students/:studentId/attempts/:attemptId/review" element={<ReviewPage />} />
         <Route path="/admin/exams" element={<ExamBankPage />} />
         <Route path="/admin/assignments" element={<TeacherAssignmentsPage />} />
+        <Route path="/admin/study" element={<AdminStudyPage />} />
         <Route path="/admin/reports" element={<ReportsPage />} />
         <Route path="/admin/bugs" element={<BugReportsPage />} />
         <Route path="/admin/settings" element={<SiteSettingsPage />} />

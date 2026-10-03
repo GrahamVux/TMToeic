@@ -3,6 +3,7 @@ import {
   bigint,
   bigserial,
   boolean,
+  customType,
   index,
   integer,
   jsonb,
@@ -277,9 +278,28 @@ export const assignments = pgTable(
     dueAt: timestamp('due_at', { withTimezone: true }),
     status: assignmentLifecycleEnum('status').notNull().default('DRAFT'),
     publishedAt: timestamp('published_at', { withTimezone: true }),
+    /** Recording students hear while doing this homework. Wins over the exam's own audio. */
+    audioAssetId: uuid('audio_asset_id').references(() => assets.id, { onDelete: 'set null' }),
     ...timestamps,
   },
   (t) => [index('assignments_exam_idx').on(t.examId), index('assignments_status_idx').on(t.status, t.dueAt)],
+).enableRLS()
+
+/** Scanned exam pages shown to students while they do this homework. */
+export const assignmentImages = pgTable(
+  'assignment_images',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    assignmentId: uuid('assignment_id')
+      .notNull()
+      .references(() => assignments.id, { onDelete: 'cascade' }),
+    assetId: uuid('asset_id')
+      .notNull()
+      .references(() => assets.id, { onDelete: 'restrict' }),
+    displayOrder: integer('display_order').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('assignment_images_assignment_idx').on(t.assignmentId, t.displayOrder)],
 ).enableRLS()
 
 export const assignmentStudents = pgTable(
@@ -406,6 +426,122 @@ export const bugReports = pgTable(
     index('bug_reports_status_created_idx').on(t.status, t.createdAt),
     index('bug_reports_reporter_idx').on(t.reporterId, t.createdAt),
   ],
+).enableRLS()
+
+/** Shared vocabulary bank imported by an admin from Excel. */
+export const vocabEntries = pgTable(
+  'vocab_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    word: text('word').notNull(),
+    wordKey: text('word_key').notNull(),
+    partOfSpeech: text('part_of_speech').notNull(),
+    meaning: text('meaning').notNull(),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('vocab_entries_word_pos_uq').on(t.wordKey, t.partOfSpeech), index('vocab_entries_word_idx').on(t.wordKey)],
+).enableRLS()
+
+/** A student's personal word. Meaning may be empty until they fill it in. */
+export const notebookEntries = pgTable(
+  'notebook_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    word: text('word').notNull(),
+    wordKey: text('word_key').notNull(),
+    partOfSpeech: text('part_of_speech').notNull().default(''),
+    meaning: text('meaning').notNull().default(''),
+    source: text('source').notNull(),
+    vocabEntryId: uuid('vocab_entry_id').references(() => vocabEntries.id, { onDelete: 'set null' }),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('notebook_entries_user_word_uq').on(t.userId, t.wordKey, t.partOfSpeech), index('notebook_entries_user_idx').on(t.userId, t.createdAt)],
+).enableRLS()
+
+/** Spaced-repetition state for one catalog card or one notebook card. */
+export const cardReviews = pgTable(
+  'card_reviews',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    vocabEntryId: uuid('vocab_entry_id').references(() => vocabEntries.id, { onDelete: 'cascade' }),
+    notebookEntryId: uuid('notebook_entry_id').references(() => notebookEntries.id, { onDelete: 'cascade' }),
+    dueAt: timestamp('due_at', { withTimezone: true }).notNull().defaultNow(),
+    intervalDays: integer('interval_days').notNull().default(0),
+    repetitions: integer('repetitions').notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('card_reviews_vocab_uq').on(t.userId, t.vocabEntryId).where(sql`${t.vocabEntryId} is not null`),
+    uniqueIndex('card_reviews_notebook_uq').on(t.userId, t.notebookEntryId).where(sql`${t.notebookEntryId} is not null`),
+    index('card_reviews_due_idx').on(t.userId, t.dueAt),
+  ],
+).enableRLS()
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() {
+    return 'bytea'
+  },
+  toDriver(value) {
+    return value
+  },
+  fromDriver(value: unknown) {
+    return pdfBuffer(value)
+  },
+})
+
+function pdfBuffer(value: unknown): Buffer {
+  if (Buffer.isBuffer(value)) return value
+  if (value instanceof Uint8Array) return Buffer.from(value)
+  if (typeof value === 'string') {
+    const hex = value.startsWith('\\x') ? value.slice(2) : value
+    if (hex.length % 2 === 0 && /^[0-9a-fA-F]*$/.test(hex)) return Buffer.from(hex, 'hex')
+  }
+  return Buffer.from(value as ArrayBuffer)
+}
+
+export const grammarLessons = pgTable(
+  'grammar_lessons',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    title: text('title').notNull(),
+    summary: text('summary').notNull(),
+    body: text('body').notNull(),
+    displayOrder: integer('display_order').notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [index('grammar_lessons_order_idx').on(t.displayOrder)],
+).enableRLS()
+
+/** One handout PDF per grammar lesson. Bytes stay out of the lesson list query. */
+export const grammarLessonFiles = pgTable('grammar_lesson_files', {
+  lessonId: uuid('lesson_id')
+    .primaryKey()
+    .references(() => grammarLessons.id, { onDelete: 'cascade' }),
+  filename: text('filename').notNull(),
+  pdfBytes: bytea('pdf_bytes').notNull(),
+  sizeBytes: integer('size_bytes').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS()
+
+export const grammarProgress = pgTable(
+  'grammar_progress',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    lessonId: uuid('lesson_id')
+      .notNull()
+      .references(() => grammarLessons.id, { onDelete: 'cascade' }),
+    completedAt: timestamp('completed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('grammar_progress_user_lesson_uq').on(t.userId, t.lessonId)],
 ).enableRLS()
 
 export type ExamRow = typeof exams.$inferSelect

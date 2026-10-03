@@ -10,6 +10,7 @@ import {
   type PartResultDto,
   type PlayerQuestionDto,
   type SaveAnswerInput,
+  type SheetImageDto,
   type Skill,
   type StartAttemptInput,
 } from '@toeic/shared'
@@ -22,6 +23,7 @@ import {
   attemptAnswers,
   attempts,
   assignments,
+  assignmentImages,
   assignmentStudents,
   examParts,
   exams,
@@ -238,13 +240,14 @@ export class AttemptsService {
     const exam = await this.requireExam(attempt.examId)
     const { questions: qs, groups } = await this.loadPlayerContent(attempt)
     const answered = qs.filter((q) => q.selectedKey !== null).length
-    const audio = await this.examAudio.tracksFor(attempt.examId, attempt.partCodes)
-    return { attempt: this.toDto(attempt, exam.title, answered), groups, questions: qs, audio }
+    const audio = await this.audioFor(attempt)
+    const sheetImages = await this.sheetImages(attempt.assignmentId)
+    return { attempt: this.toDto(attempt, exam.title, answered), groups, questions: qs, audio, sheetImages }
   }
 
   async getAudio(actor: Actor, attemptId: string): Promise<AttemptAudioDto> {
     const attempt = await this.requireReadable(actor, attemptId)
-    return { audio: await this.examAudio.tracksFor(attempt.examId, attempt.partCodes) }
+    return { audio: await this.audioFor(attempt) }
   }
 
   // ---------------------------------------------------------------- answer (autosave)
@@ -316,8 +319,33 @@ export class AttemptsService {
         const correctKey = keyByQ.get(q.id) ?? ''
         return { ...q, correctKey, isCorrect: q.selectedKey === null ? null : q.selectedKey === correctKey }
       }),
-      audio: await this.examAudio.tracksFor(attempt.examId, attempt.partCodes),
+      audio: await this.audioFor(attempt),
+      sheetImages: await this.sheetImages(attempt.assignmentId),
     }
+  }
+
+  /** Homework file wins for the parts in this sitting; otherwise the exam's own recordings. */
+  private async audioFor(attempt: Pick<AttemptRow, 'examId' | 'partCodes' | 'assignmentId'>) {
+    let assignmentAudioId: string | null = null
+    if (attempt.assignmentId) {
+      const [row] = await this.db.select({ audioAssetId: assignments.audioAssetId }).from(assignments).where(eq(assignments.id, attempt.assignmentId)).limit(1)
+      assignmentAudioId = row?.audioAssetId ?? null
+    }
+    return this.examAudio.tracksFor(attempt.examId, attempt.partCodes, assignmentAudioId)
+  }
+
+  private async sheetImages(assignmentId: string | null): Promise<SheetImageDto[]> {
+    if (!assignmentId) return []
+    const rows = await this.db
+      .select({ id: assignmentImages.id, assetId: assignmentImages.assetId })
+      .from(assignmentImages)
+      .where(eq(assignmentImages.assignmentId, assignmentId))
+      .orderBy(asc(assignmentImages.displayOrder), asc(assignmentImages.createdAt))
+    const urls = await this.examAudio.signedImageUrls(rows.map((r) => r.assetId))
+    return rows.flatMap((r) => {
+      const url = urls.get(r.assetId)
+      return url ? [{ id: r.id, url }] : []
+    })
   }
 
   // ---------------------------------------------------------------- finalize + scoring

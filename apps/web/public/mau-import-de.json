@@ -1,0 +1,75 @@
+{
+  "code": "GV-MAU-PART5-6",
+  "title": "Đề mẫu — Part 5 và Part 6",
+  "description": "File mẫu để import vào ngân hàng đề. Đổi mã code trước mỗi lần upload.",
+  "source": "Giáo viên",
+  "difficulty": "MEDIUM",
+  "durationSeconds": 600,
+  "publish": true,
+  "parts": [
+    { "partCode": "PART_5", "questionStart": 101, "questionEnd": 102 },
+    { "partCode": "PART_6", "questionStart": 131, "questionEnd": 132 }
+  ],
+  "groups": [
+    {
+      "key": "q131-132",
+      "partCode": "PART_6",
+      "instructions": "Chọn từ hoặc cụm từ thích hợp điền vào chỗ trống.",
+      "passages": [
+        {
+          "label": "A",
+          "title": "Notice",
+          "content": "The library will be closed on Monday for maintenance. Staff will still answer questions by email. Please _____ any books that are due before the weekend."
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "partCode": "PART_5",
+      "number": 101,
+      "prompt": "The report was submitted _______ the deadline.",
+      "options": [
+        { "key": "A", "text": "before", "correct": true },
+        { "key": "B", "text": "previous", "correct": false },
+        { "key": "C", "text": "ago", "correct": false },
+        { "key": "D", "text": "already", "correct": false }
+      ]
+    },
+    {
+      "partCode": "PART_5",
+      "number": 102,
+      "prompt": "Ms. Chen is responsible for _______ the new employees.",
+      "options": [
+        { "key": "A", "text": "train", "correct": false },
+        { "key": "B", "text": "training", "correct": true },
+        { "key": "C", "text": "trained", "correct": false },
+        { "key": "D", "text": "trains", "correct": false }
+      ]
+    },
+    {
+      "partCode": "PART_6",
+      "number": 131,
+      "groupKey": "q131-132",
+      "prompt": "",
+      "options": [
+        { "key": "A", "text": "return", "correct": true },
+        { "key": "B", "text": "returning", "correct": false },
+        { "key": "C", "text": "returned", "correct": false },
+        { "key": "D", "text": "returns", "correct": false }
+      ]
+    },
+    {
+      "partCode": "PART_6",
+      "number": 132,
+      "groupKey": "q131-132",
+      "prompt": "What is the purpose of the notice?",
+      "options": [
+        { "key": "A", "text": "To hire new staff", "correct": false },
+        { "key": "B", "text": "To announce a closing", "correct": true },
+        { "key": "C", "text": "To advertise a sale", "correct": false },
+        { "key": "D", "text": "To cancel a membership", "correct": false }
+      ]
+    }
+  ]
+}

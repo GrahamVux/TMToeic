@@ -339,6 +339,14 @@ export class ExamsService {
   /** Self-authored exam → bank. Parts are stored as exam_parts so the teacher can pick them for homework. */
   async importAuthored(actor: Actor, input: ImportAuthoredExamInput): Promise<ExamSummaryDto> {
     const { groups, questions, publish, ...examInput } = input
+    const codes = examInput.parts.map((p) => p.partCode)
+    const skillRows = await this.db
+      .select({ skill: skills.code })
+      .from(parts)
+      .innerJoin(skills, eq(skills.id, parts.skillId))
+      .where(inArray(parts.code, codes))
+    const skillSet = new Set(skillRows.map((r) => r.skill))
+    if (skillSet.size > 1) throw AppException.badRequest('Mỗi đề chỉ thuộc Listening hoặc Reading. Hãy tách thành hai file.')
     const [existing] = await this.db.select({ id: exams.id }).from(exams).where(eq(exams.code, examInput.code)).limit(1)
     if (existing) throw AppException.conflict('Mã đề đã tồn tại trong ngân hàng. Hãy dùng mã khác.')
     const created = await this.create(actor, examInput)

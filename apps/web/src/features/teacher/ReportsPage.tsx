@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/Button'
+import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Card } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { useClassReport } from '@/features/progress/progress.queries'
@@ -10,7 +11,7 @@ const dateFmt = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle
 export function ReportsPage() {
   const { data: r, isPending, error } = useClassReport()
 
-  if (isPending) return <p className="py-16 text-center text-ink/55" role="status">Đang tải báo cáo…</p>
+  if (isPending) return <PageLoading message="Đang tải báo cáo…" />
   if (error || !r) return <QueryErrorRedirect error={error} />
 
   const [y, m, d] = r.week.start.split('-')

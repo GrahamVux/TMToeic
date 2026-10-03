@@ -41,6 +41,11 @@ export function LoginPage() {
       const user = await login(parsed.data)
       navigate(user.mustChangePassword ? '/change-password' : (from ?? homePathForRole(user.role)), { replace: true })
     } catch (err) {
+      const offline = err instanceof ApiError && (err.code === 'NETWORK' || err.status === 0 || err.status >= 500)
+      if (offline) {
+        setFieldError('Không kết nối được máy chủ. Hãy thử lại sau vài giây.')
+        return
+      }
       const deniedLogin =
         err instanceof ApiError &&
         (LOGIN_DENIED.has(err.code) || err.status === 401 || err.status === 403 || err.status === 429)
@@ -52,24 +57,24 @@ export function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-paper text-ink">
+    <div className="relative min-h-screen overflow-x-hidden bg-paper text-ink">
       <div className="pointer-events-none absolute inset-0 site-wash" />
-      <div className="relative mx-auto grid min-h-screen max-w-6xl items-center gap-12 px-6 py-12 lg:grid-cols-2">
-        <div>
+      <div className="relative mx-auto grid min-h-screen max-w-6xl items-center gap-10 px-4 py-10 sm:px-6 sm:py-12 lg:grid-cols-2">
+        <div className="min-w-0">
           <BrandMark />
-          <h1 className="serif mt-10 max-w-xl text-5xl leading-tight">{site.loginHeadline}</h1>
-          <p className="mt-5 max-w-lg text-base leading-7 text-ink/65">{site.loginIntro}</p>
+          <h1 className="serif mt-8 max-w-xl text-3xl leading-tight break-words sm:mt-10 sm:text-5xl">{site.loginHeadline}</h1>
+          <p className="mt-5 max-w-lg text-base leading-7 break-words text-ink/65">{site.loginIntro}</p>
           <p className="mt-8 max-w-md text-sm text-ink/55">
             Quên mật khẩu hoặc tài khoản bị khóa? Liên hệ{site.phone ? ` ${site.phone}` : ' Thầy Minh'} để được cấp lại mật khẩu tạm.
           </p>
         </div>
         <form
           noValidate
-          className="rounded-3xl border border-gold/40 bg-cream p-8 text-ink shadow-[0_20px_60px_rgba(43,138,156,0.12)]"
+          className="min-w-0 rounded-3xl border border-gold/40 bg-cream p-5 text-ink shadow-[0_20px_60px_rgba(43,138,156,0.12)] sm:p-8"
           onSubmit={submit}
         >
-          <p className="text-xs font-semibold tracking-[0.2em] text-gold-deep uppercase">Đăng nhập nội bộ</p>
-          <h2 className="serif mt-2 text-3xl">Xin chào trở lại</h2>
+          <p className="text-xs font-semibold tracking-[0.12em] break-words text-gold-deep uppercase sm:tracking-[0.2em]">Đăng nhập nội bộ</p>
+          <h2 className="serif mt-2 text-3xl break-words">Xin chào trở lại</h2>
           <label className="mt-6 block text-sm font-medium" htmlFor="login-id">Mã học viên / tên đăng nhập</label>
           <Input
             id="login-id"

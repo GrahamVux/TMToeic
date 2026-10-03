@@ -1,4 +1,4 @@
-import { api } from '@/lib/api'
+import { api, apiUpload } from '@/lib/api'
 import type { AttemptPlayerDto, AttemptResultDto, AttemptReviewDto, ExamSummaryDto, StartAttemptInput, AttemptDto } from '@toeic/shared'
 import { PART_SEED } from '@toeic/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -75,6 +75,30 @@ export function useArchiveExam() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api<ExamSummaryDto>(`/exams/${id}/archive`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: examKeys.exams }),
+  })
+}
+
+const MAX_AUDIO_BYTES = 80 * 1024 * 1024
+
+export function audioContentType(file: File): string {
+  if (file.type.startsWith('audio/')) return file.type
+  const ext = file.name.split('.').pop()?.toLowerCase()
+  if (ext === 'mp3') return 'audio/mpeg'
+  if (ext === 'm4a' || ext === 'mp4') return 'audio/mp4'
+  if (ext === 'wav') return 'audio/wav'
+  return 'application/octet-stream'
+}
+
+export function useUploadExamAudio() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ examId, file, partCode }: { examId: string; file: File; partCode?: string }) => {
+      if (file.size > MAX_AUDIO_BYTES) throw new Error('File nghe quá lớn (tối đa 80MB).')
+      const q = new URLSearchParams({ filename: file.name })
+      if (partCode) q.set('partCode', partCode)
+      return apiUpload<{ ok: true }>(`/exams/${examId}/audio/file?${q}`, file, audioContentType(file))
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: examKeys.exams }),
   })
 }

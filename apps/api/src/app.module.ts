@@ -15,6 +15,7 @@ import { DatabaseModule } from './db/database.module'
 import { ExamsModule } from './exams/exams.module'
 import { ProgressModule } from './progress/progress.module'
 import { SiteModule } from './site/site.module'
+import { StudyModule } from './study/study.module'
 import { BugReportsModule } from './bugs/bug-reports.module'
 import { StorageModule } from './storage/storage.service'
 import { HealthController } from './health/health.controller'
@@ -34,6 +35,7 @@ import { UsersModule } from './users/users.module'
     ProgressModule,
     SiteModule,
     BugReportsModule,
+    StudyModule,
   ],
   controllers: [CatalogController, HealthController],
   providers: [

@@ -1,0 +1,35 @@
+{
+  "code": "GV-MAU-PART2",
+  "title": "Đề mẫu — Part 2",
+  "description": "File mẫu đề Listening. Đổi mã code trước mỗi lần upload. File nghe chọn riêng trên trang kho đề.",
+  "source": "Giáo viên",
+  "difficulty": "MEDIUM",
+  "durationSeconds": 600,
+  "publish": true,
+  "parts": [
+    { "partCode": "PART_2", "questionStart": 7, "questionEnd": 8 }
+  ],
+  "groups": [],
+  "questions": [
+    {
+      "partCode": "PART_2",
+      "number": 7,
+      "prompt": "Where is the meeting?",
+      "options": [
+        { "key": "A", "text": "In the conference room.", "correct": true },
+        { "key": "B", "text": "It starts at three.", "correct": false },
+        { "key": "C", "text": "Yes, I am going.", "correct": false }
+      ]
+    },
+    {
+      "partCode": "PART_2",
+      "number": 8,
+      "prompt": "Who will present the report?",
+      "options": [
+        { "key": "A", "text": "The printer is broken.", "correct": false },
+        { "key": "B", "text": "Ms. Alvarez will.", "correct": true },
+        { "key": "C", "text": "On Friday morning.", "correct": false }
+      ]
+    }
+  ]
+}

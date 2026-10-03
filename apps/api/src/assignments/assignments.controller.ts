@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Req } from '@nestjs/common'
+import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Query, Req } from '@nestjs/common'
 import { createAssignmentSchema } from '@toeic/shared'
 import type { Request } from 'express'
 import { clientIp, CurrentUser, Roles, type AuthUser } from '../common/decorators'
@@ -43,6 +43,34 @@ export class AssignmentsController {
   @HttpCode(200)
   close(@CurrentUser() user: AuthUser, @Param('id', new ParseUUIDPipe()) id: string, @Req() req: Request) {
     return this.assignments.close(actorOf(user, req), id)
+  }
+
+  /** Listening file students hear while doing this homework. */
+  @Roles('TEACHER', 'ADMIN')
+  @Post(':id/audio/file')
+  @HttpCode(200)
+  uploadAudio(
+    @CurrentUser() user: AuthUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query('filename') filename: string | undefined,
+    @Req() req: Request,
+  ) {
+    const name = typeof filename === 'string' && filename.trim() ? filename.trim() : 'audio.mp3'
+    return this.assignments.uploadAudio(actorOf(user, req), id, req.body, req.header('content-type') ?? '', name)
+  }
+
+  /** One scanned exam page shown to students during this homework. */
+  @Roles('TEACHER', 'ADMIN')
+  @Post(':id/images')
+  @HttpCode(200)
+  uploadImage(
+    @CurrentUser() user: AuthUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query('filename') filename: string | undefined,
+    @Req() req: Request,
+  ) {
+    const name = typeof filename === 'string' && filename.trim() ? filename.trim() : 'anh-de.jpg'
+    return this.assignments.uploadImage(actorOf(user, req), id, req.body, req.header('content-type') ?? '', name)
   }
 
   @Roles('STUDENT')

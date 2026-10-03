@@ -1,7 +1,19 @@
-import { api } from '@/lib/api'
+import { audioContentType, examKeys } from '@/features/exams/exams.queries'
+import { api, apiUpload } from '@/lib/api'
 import type { AssignmentDetailDto, AssignmentDto, AttemptDto, CreateAssignmentInput, ExamSummaryDto, ImportAuthoredExamInput } from '@toeic/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { examKeys } from '@/features/exams/exams.queries'
+
+const MAX_AUDIO_BYTES = 80 * 1024 * 1024
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024
+
+function imageContentType(file: File): string {
+  if (file.type.startsWith('image/')) return file.type
+  const ext = file.name.split('.').pop()?.toLowerCase()
+  if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg'
+  if (ext === 'png') return 'image/png'
+  if (ext === 'webp') return 'image/webp'
+  return 'application/octet-stream'
+}
 
 export const assignmentKeys = {
   all: ['assignments'] as const,
@@ -24,6 +36,32 @@ export function useCreateAssignment() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (input: CreateAssignmentInput) => api<AssignmentDto>('/assignments', { method: 'POST', body: input }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: assignmentKeys.all }),
+  })
+}
+
+export function useUploadAssignmentAudio() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) => {
+      if (file.size > MAX_AUDIO_BYTES) throw new Error('File nghe quá lớn (tối đa 80MB).')
+      const q = new URLSearchParams({ filename: file.name })
+      return apiUpload<{ ok: true }>(`/assignments/${id}/audio/file?${q}`, file, audioContentType(file))
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: assignmentKeys.all }),
+  })
+}
+
+export function useUploadAssignmentImages() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, files }: { id: string; files: File[] }) => {
+      for (const file of files) {
+        if (file.size > MAX_IMAGE_BYTES) throw new Error('Mỗi ảnh tối đa 8MB.')
+        const q = new URLSearchParams({ filename: file.name })
+        await apiUpload<{ ok: true }>(`/assignments/${id}/images?${q}`, file, imageContentType(file))
+      }
+    },
     onSuccess: () => void qc.invalidateQueries({ queryKey: assignmentKeys.all }),
   })
 }
