@@ -135,6 +135,20 @@ export const saveAnswerSchema = z.object({
 })
 export type SaveAnswerInput = z.infer<typeof saveAnswerSchema>
 
+/** Absences shorter than this are a flicker (a click on the browser chrome) and are dropped. */
+export const FOCUS_MIN_AWAY_SECONDS = 1
+
+/** Timed sittings and homework. Free practice is not watched. */
+export function isFocusWatched(attempt: { mode: string; assignmentId: string | null }): boolean {
+  return attempt.assignmentId != null || attempt.mode === 'TIMED' || attempt.mode === 'FULL_TEST'
+}
+
+export const recordFocusSchema = z.object({
+  state: z.enum(['away', 'back']),
+})
+export type RecordFocusInput = z.infer<typeof recordFocusSchema>
+export type RecordFocusResult = { recorded: boolean }
+
 /** Attach (or detach with `assetId: null`) a Listening recording. Without `partCode` it is the full-length audio of the exam. */
 export const setExamAudioSchema = z.object({
   assetId: z.uuid().nullable(),
@@ -205,6 +219,8 @@ export type AttemptDto = {
   totalQuestions: number
   answeredCount: number
   assignmentId: string | null
+  /** True on timed tests and homework. The player records leaving the tab only when this is set. */
+  focusWatch: boolean
 }
 
 /** Returned while IN_PROGRESS — never contains the answer key. */
@@ -219,6 +235,23 @@ export type AttemptPlayerDto = {
 
 export type PartResultDto = { partCode: string; skill: Skill; total: number; correct: number; accuracy: number }
 
+export type FocusLeaveDto = {
+  leftAt: string
+  returnedAt: string | null
+  awaySeconds: number
+}
+
+/**
+ * Present on timed tests and homework after the sitting is finished.
+ * `leaveCount` 0 means the student was watched and did not leave.
+ */
+export type FocusReportDto = {
+  leaveCount: number
+  awaySeconds: number
+  longestAwaySeconds: number
+  leaves: FocusLeaveDto[]
+}
+
 export type AttemptResultDto = {
   attempt: AttemptDto
   totalScore: number | null
@@ -229,6 +262,8 @@ export type AttemptResultDto = {
   unansweredCount: number
   durationSeconds: number
   parts: PartResultDto[]
+  /** Null on free practice, and while the sitting is still in progress. */
+  focus: FocusReportDto | null
 }
 
 export type SheetImageDto = { id: string; url: string }

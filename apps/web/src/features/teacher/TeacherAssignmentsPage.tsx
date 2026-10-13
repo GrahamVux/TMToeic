@@ -297,6 +297,7 @@ function AssignmentCheckModal({ assignmentId, onClose }: { assignmentId: string;
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge tone={STATUS_TONE[s.status]}>{STATUS_LABEL[s.status]}</Badge>
+                    {s.focusLeaveCount ? <Badge tone="warn">Rời tab {s.focusLeaveCount}</Badge> : null}
                     {s.attemptId && s.status === 'COMPLETED' ? (
                       <Link to={`/admin/students/${s.studentId}/attempts/${s.attemptId}`} className="text-sm font-semibold text-gold-deep">
                         Xem điểm

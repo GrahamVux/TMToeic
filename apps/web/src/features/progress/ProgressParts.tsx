@@ -108,6 +108,9 @@ export function AttemptsTable({
                 <td className="px-4 py-3">
                   {kind}
                   {a.status === 'EXPIRED' ? <Badge tone="warn" className="ml-2">Hết giờ</Badge> : null}
+                  {staffStudentId && a.focusLeaveCount > 0 ? (
+                    <Badge tone="warn" className="ml-2">Rời tab {a.focusLeaveCount}</Badge>
+                  ) : null}
                 </td>
                 <td className="px-4 py-3">
                   {a.totalScore !== null ? <span className="font-semibold">{a.totalScore}/990</span> : null}

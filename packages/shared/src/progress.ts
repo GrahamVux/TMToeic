@@ -125,6 +125,8 @@ export type AttemptSummaryDto = {
   partCodes: string[]
   /** Set when this sitting was a homework assignment. */
   assignmentTitle: string | null
+  /** Times the student left the tab or switched windows. 0 when none were recorded. */
+  focusLeaveCount: number
 }
 
 /** Below this many answered questions a part is "not enough data" — no weakness is declared from a handful of clicks. */

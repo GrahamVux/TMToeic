@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Badge, Card } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
@@ -10,6 +11,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { trackForPart } from './audio'
 import { AudioPlayer } from './AudioPlayer'
 import { AutosaveStore, type SaveStatus } from './autosave'
+import { useFocusGuard } from './focus-guard'
 import { formatClock, isListeningPart, partName, useAttemptPlayer, useSubmitAttempt } from './exams.queries'
 import { SelectableText } from '@/features/study/SelectableText'
 import { PassageView } from './PassageView'
@@ -47,6 +49,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
     return () => store.dispose()
   }, [store])
   const save = useSyncExternalStore(store.subscribe, store.getSnapshot)
+  const focus = useFocusGuard(attempt.id, attempt.focusWatch)
 
   const [index, setIndex] = useState(() => {
     const firstOpen = questions.findIndex((q) => q.selectedKey === null)
@@ -118,6 +121,9 @@ function Player({ data }: { data: AttemptPlayerDto }) {
         <div>
           <p className="text-xs text-gold-deep">{MODE_LABEL[attempt.mode] ?? attempt.mode} • {attempt.totalQuestions} câu</p>
           <h1 className="serif text-2xl">{attempt.examTitle}</h1>
+          {attempt.focusWatch ? (
+            <p className="mt-1 max-w-md text-xs text-ink/55">Rời tab hoặc chuyển sang cửa sổ khác sẽ được ghi lại cho giáo viên.</p>
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <TextZoomBar scale={textZoom} onChange={setTextZoom} />
@@ -131,6 +137,18 @@ function Player({ data }: { data: AttemptPlayerDto }) {
           <Button variant="danger" disabled={finishing} onClick={() => setConfirm(true)}>Nộp bài</Button>
         </div>
       </div>
+
+      {focus.notice ? (
+        <Modal title="Cảnh báo rời màn hình" onClose={focus.dismiss} dismissible={false}>
+          <p className="flex gap-2 text-sm text-ink/80">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-coral" />
+            <span>{focus.notice}</span>
+          </p>
+          <div className="mt-5 flex justify-end">
+            <Button variant="danger" onClick={focus.dismiss}>Tôi đã hiểu</Button>
+          </div>
+        </Modal>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
         <div className="space-y-4">

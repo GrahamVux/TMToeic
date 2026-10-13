@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Req } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
-import { saveAnswerSchema } from '@toeic/shared'
+import { recordFocusSchema, saveAnswerSchema } from '@toeic/shared'
 import type { Request } from 'express'
 import { clientIp, CurrentUser, Roles, type AuthUser } from '../common/decorators'
 import { parse } from '../common/zod'
@@ -34,6 +34,19 @@ export class AttemptsController {
     @Req() req: Request,
   ) {
     return this.attempts.saveAnswer(actorOf(user, req), id, questionId, parse(saveAnswerSchema, body))
+  }
+
+  /** Opens or closes one "left the tab" interval. Free practice returns `{ recorded: false }`. */
+  @Throttle({ default: { limit: 120, ttl: 60_000 } })
+  @Post(':id/focus')
+  @HttpCode(200)
+  recordFocus(
+    @CurrentUser() user: AuthUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: unknown,
+    @Req() req: Request,
+  ) {
+    return this.attempts.recordFocus(actorOf(user, req), id, parse(recordFocusSchema, body))
   }
 
   @Post(':id/submit')

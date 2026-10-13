@@ -1,8 +1,8 @@
 import type { INestApplication } from '@nestjs/common'
 import { ERROR_CODES } from '@toeic/shared'
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { DB, type Db } from '../db/database.module'
-import { attempts } from '../db/schema'
+import { attemptFocusLeaves, attempts } from '../db/schema'
 import { ADMIN, client, createTestApp, login, type TestClient } from '../test/test-app'
 import { scaledSectionScore } from './scoring'
 
@@ -430,6 +430,57 @@ describe('Exam engine (e2e on PGlite)', () => {
       } finally {
         await prodApp.close()
       }
+    })
+  })
+
+  describe('focus watch', () => {
+    const focus = (c: TestClient, id: string, state: 'away' | 'back') => c.post(`/attempts/${id}/focus`).send({ state })
+    const rewindOpen = (id: string, msAgo: number) =>
+      db
+        .update(attemptFocusLeaves)
+        .set({ leftAt: new Date(Date.now() - msAgo) })
+        .where(and(eq(attemptFocusLeaves.attemptId, id), isNull(attemptFocusLeaves.returnedAt)))
+
+    it('records tab leaves on a timed test, drops a flicker, and ignores practice', async () => {
+      const examId = await publishedExam(SMALL_LAYOUT, { duration: 3600 })
+
+      const practice = await student.post(`/exams/${examId}/attempts`).send({ mode: 'PRACTICE' })
+      expect(practice.body.focusWatch).toBe(false)
+      const ignored = await focus(student, practice.body.id as string, 'away')
+      expect(ignored.status).toBe(200)
+      expect(ignored.body).toEqual({ recorded: false })
+      const practiceResult = await student.post(`/attempts/${practice.body.id}/submit`)
+      expect(practiceResult.status).toBe(200)
+      expect(practiceResult.body.focus).toBeNull()
+
+      const start = await student.post(`/exams/${examId}/attempts`).send({ mode: 'FULL_TEST' })
+      expect(start.body.focusWatch).toBe(true)
+      const id = start.body.id as string
+      expect((await otherStudent.post(`/attempts/${id}/focus`).send({ state: 'away' })).status).toBe(404)
+
+      expect((await focus(student, id, 'away')).body.recorded).toBe(true)
+      await rewindOpen(id, 200)
+      expect((await focus(student, id, 'back')).body.recorded).toBe(false)
+
+      expect((await focus(student, id, 'away')).body.recorded).toBe(true)
+      expect((await focus(student, id, 'away')).body.recorded).toBe(true)
+      await rewindOpen(id, 5_000)
+      expect((await focus(student, id, 'back')).body.recorded).toBe(true)
+
+      expect((await focus(student, id, 'away')).body.recorded).toBe(true)
+      await rewindOpen(id, 4_000)
+      const submitted = await student.post(`/attempts/${id}/submit`)
+      expect(submitted.status).toBe(200)
+      expect(submitted.body.focus).toBeNull()
+      expect((await student.get(`/attempts/${id}/result`)).body.focus).toBeNull()
+
+      expect((await focus(student, id, 'away')).status).toBe(409)
+      const staff = await admin.get(`/attempts/${id}/result`)
+      expect(staff.status).toBe(200)
+      expect(staff.body.focus.leaveCount).toBe(2)
+      expect(staff.body.focus.awaySeconds).toBeGreaterThanOrEqual(9)
+      expect(staff.body.focus.longestAwaySeconds).toBeGreaterThanOrEqual(4)
+      expect(staff.body.focus.leaves).toHaveLength(2)
     })
   })
 })

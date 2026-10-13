@@ -60,6 +60,8 @@ export function computeStreak(activeDays: string[], today: string): { days: numb
 
 const pct = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 100) : null)
 
+const focusLeaveCountSql = sql<number>`(select count(*)::int from attempt_focus_leaves where attempt_id = ${attempts.id} and coalesce(away_seconds, 0) >= 1)`
+
 function toAttemptSummary(r: {
   attemptId: string
   examTitle: string
@@ -71,6 +73,7 @@ function toAttemptSummary(r: {
   totalScore: number | null
   partCodes: string[]
   assignmentTitle: string | null
+  focusLeaveCount: number
 }): AttemptSummaryDto {
   return {
     attemptId: r.attemptId,
@@ -84,6 +87,7 @@ function toAttemptSummary(r: {
     totalScore: r.totalScore,
     partCodes: r.partCodes,
     assignmentTitle: r.assignmentTitle,
+    focusLeaveCount: Number(r.focusLeaveCount ?? 0),
   }
 }
 
@@ -250,6 +254,7 @@ export class ProgressService {
           totalScore: attempts.totalScore,
           partCodes: attempts.partCodes,
           assignmentTitle: assignments.title,
+          focusLeaveCount: focusLeaveCountSql,
         })
         .from(attempts)
         .innerJoin(exams, eq(exams.id, attempts.examId))
@@ -329,6 +334,7 @@ export class ProgressService {
         totalScore: attempts.totalScore,
         partCodes: attempts.partCodes,
         assignmentTitle: assignments.title,
+        focusLeaveCount: focusLeaveCountSql,
       })
       .from(attempts)
       .innerJoin(exams, eq(exams.id, attempts.examId))

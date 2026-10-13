@@ -8,6 +8,7 @@ import { useMemo, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { AudioPlayer } from './AudioPlayer'
 import { partName, useAttemptReview } from './exams.queries'
+import { FocusNote } from './FocusNote'
 import { SelectableText } from '@/features/study/SelectableText'
 import { PassageView } from './PassageView'
 import { SheetGallery } from './SheetGallery'
@@ -59,6 +60,8 @@ export function ReviewPage() {
           </Link>
         </div>
       </header>
+
+      {staffView ? <FocusNote focus={data.result.focus} /> : null}
 
       {data.audio.length > 0 ? (
         <div className="sticky top-2 z-10 grid gap-2">

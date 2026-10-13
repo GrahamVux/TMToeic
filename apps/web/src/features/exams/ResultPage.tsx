@@ -5,6 +5,7 @@ import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { ApiError } from '@/lib/api'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { formatClock, partName, useAttemptResult } from './exams.queries'
+import { FocusNote } from './FocusNote'
 
 export function ResultPage() {
   const { attemptId, studentId } = useParams()
@@ -58,6 +59,8 @@ export function ResultPage() {
         <Stat label="Bỏ trống" value={r.unansweredCount} />
         <Stat label="Thời gian làm" value={formatClock(r.durationSeconds)} />
       </div>
+
+      {staffView ? <FocusNote focus={r.focus} /> : null}
 
       <Card className="p-5">
         <h2 className="serif text-2xl">Kết quả theo Part</h2>

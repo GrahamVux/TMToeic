@@ -5,6 +5,7 @@ import {
   type AssignmentProgressDto,
   type CreateAssignmentInput,
   type ExamPartDto,
+  FOCUS_MIN_AWAY_SECONDS,
   type Skill,
   type StudentAssignmentStatus,
 } from '@toeic/shared'
@@ -18,6 +19,7 @@ import {
   assignmentImages,
   assignmentStudents,
   assignments,
+  attemptFocusLeaves,
   attempts,
   examParts,
   exams,
@@ -330,6 +332,15 @@ export class AssignmentsService {
     const attemptRows = await this.db.select().from(attempts).where(eq(attempts.assignmentId, assignmentId)).orderBy(desc(attempts.startedAt))
     const latest = new Map<string, (typeof attemptRows)[number]>()
     for (const t of attemptRows) if (!latest.has(t.userId)) latest.set(t.userId, t)
+    const doneIds = [...latest.values()].filter((t) => t.status === 'SUBMITTED' || t.status === 'EXPIRED').map((t) => t.id)
+    const focusRows = doneIds.length
+      ? await this.db
+          .select({ attemptId: attemptFocusLeaves.attemptId, n: sql<number>`count(*)::int` })
+          .from(attemptFocusLeaves)
+          .where(and(inArray(attemptFocusLeaves.attemptId, doneIds), sql`coalesce(${attemptFocusLeaves.awaySeconds}, 0) >= ${FOCUS_MIN_AWAY_SECONDS}`))
+          .groupBy(attemptFocusLeaves.attemptId)
+      : []
+    const focusByAttempt = new Map(focusRows.map((r) => [r.attemptId, Number(r.n)]))
 
     return roster.map((s) => {
       const t = latest.get(s.id)
@@ -346,6 +357,7 @@ export class AssignmentsService {
         correctCount: done ? (t!.correctCount ?? 0) : null,
         submittedAt: t?.submittedAt?.toISOString() ?? null,
         totalScore: done ? (t!.totalScore ?? null) : null,
+        focusLeaveCount: done && t ? (focusByAttempt.get(t.id) ?? 0) : null,
       }
     })
   }

@@ -380,6 +380,24 @@ export const attemptAnswers = pgTable(
   (t) => [uniqueIndex('attempt_answers_uq').on(t.attemptId, t.questionId)],
 ).enableRLS()
 
+/** One row per time the student left a watched sitting (tab hidden or window unfocused). */
+export const attemptFocusLeaves = pgTable(
+  'attempt_focus_leaves',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    attemptId: uuid('attempt_id')
+      .notNull()
+      .references(() => attempts.id, { onDelete: 'cascade' }),
+    leftAt: timestamp('left_at', { withTimezone: true }).notNull(),
+    returnedAt: timestamp('returned_at', { withTimezone: true }),
+    awaySeconds: integer('away_seconds'),
+  },
+  (t) => [
+    index('attempt_focus_attempt_idx').on(t.attemptId),
+    uniqueIndex('attempt_focus_one_open_uq').on(t.attemptId).where(sql`${t.returnedAt} is null`),
+  ],
+).enableRLS()
+
 export const siteSettings = pgTable('site_settings', {
   id: text('id').primaryKey(),
   brandName: text('brand_name').notNull(),

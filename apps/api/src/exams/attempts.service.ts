@@ -1,26 +1,32 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common'
 import {
   ERROR_CODES,
+  FOCUS_MIN_AWAY_SECONDS,
+  isFocusWatched,
   type AttemptAudioDto,
   type AttemptDto,
   type AttemptPlayerDto,
   type AttemptResultDto,
   type AttemptReviewDto,
+  type FocusReportDto,
   type GroupDto,
   type PartResultDto,
   type PlayerQuestionDto,
+  type RecordFocusInput,
+  type RecordFocusResult,
   type SaveAnswerInput,
   type SheetImageDto,
   type Skill,
   type StartAttemptInput,
 } from '@toeic/shared'
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { AuditService } from '../audit/audit.service'
 import { AppException } from '../common/app-exception'
 import type { AuthUser } from '../common/decorators'
 import { DB, type Db } from '../db/database.module'
 import {
   attemptAnswers,
+  attemptFocusLeaves,
   attempts,
   assignments,
   assignmentImages,
@@ -229,7 +235,7 @@ export class AttemptsService {
     const out: AttemptResultDto[] = []
     for (const r of rows) {
       const current = await this.expireIfNeeded(r)
-      out.push(await this.buildResult(current, current.status === 'IN_PROGRESS'))
+      out.push(this.presentResult(actor, await this.buildResult(current, current.status === 'IN_PROGRESS')))
     }
     return out
   }
@@ -284,6 +290,43 @@ export class AttemptsService {
     return { savedAt: new Date().toISOString(), remainingSeconds: remaining }
   }
 
+  /**
+   * `away` opens one leave; a second away while one is open is a no-op.
+   * `back` closes it. Under a second is deleted so a click on the browser chrome is not a leave.
+   */
+  async recordFocus(actor: Actor, attemptId: string, input: RecordFocusInput): Promise<RecordFocusResult> {
+    const attempt = await this.requireOwn(actor, attemptId)
+    if (attempt.status !== 'IN_PROGRESS') throw this.closed()
+    if (attempt.deadlineAt && Date.now() > attempt.deadlineAt.getTime() + DEADLINE_GRACE_MS) {
+      await this.expireIfNeeded(attempt)
+      throw this.closed()
+    }
+    if (!isFocusWatched(attempt)) return { recorded: false }
+    const now = new Date()
+    if (input.state === 'away') {
+      try {
+        await this.db.insert(attemptFocusLeaves).values({ attemptId, leftAt: now })
+      } catch (err) {
+        if (!isUniqueViolation(err)) throw err
+      }
+      return { recorded: true }
+    }
+    const [open] = await this.db
+      .select()
+      .from(attemptFocusLeaves)
+      .where(and(eq(attemptFocusLeaves.attemptId, attemptId), isNull(attemptFocusLeaves.returnedAt)))
+      .orderBy(desc(attemptFocusLeaves.leftAt))
+      .limit(1)
+    if (!open) return { recorded: false }
+    const awaySeconds = Math.max(0, Math.floor((now.getTime() - open.leftAt.getTime()) / 1000))
+    if (awaySeconds < FOCUS_MIN_AWAY_SECONDS) {
+      await this.db.delete(attemptFocusLeaves).where(eq(attemptFocusLeaves.id, open.id))
+      return { recorded: false }
+    }
+    await this.db.update(attemptFocusLeaves).set({ returnedAt: now, awaySeconds }).where(eq(attemptFocusLeaves.id, open.id))
+    return { recorded: true }
+  }
+
   // ---------------------------------------------------------------- submit (idempotent)
   async submit(actor: Actor, attemptId: string): Promise<AttemptResultDto> {
     const attempt = await this.requireOwn(actor, attemptId)
@@ -293,13 +336,13 @@ export class AttemptsService {
     if (done.id === attempt.id && attempt.status === 'IN_PROGRESS' && done.status === 'SUBMITTED') {
       await this.audit.log({ action: 'EXAM_SUBMITTED', actorId: actor.id, entityType: 'attempt', entityId: done.id, metadata: { totalScore: done.totalScore }, ip: actor.ip })
     }
-    return this.buildResult(done, false)
+    return this.presentResult(actor, await this.buildResult(done, false))
   }
 
   async getResult(actor: Actor, attemptId: string): Promise<AttemptResultDto> {
     const attempt = await this.expireIfNeeded(await this.requireReadable(actor, attemptId))
     if (attempt.status === 'IN_PROGRESS') throw AppException.conflict('Bài làm chưa nộp nên chưa có kết quả')
-    return this.buildResult(attempt, false)
+    return this.presentResult(actor, await this.buildResult(attempt, false))
   }
 
   /** Review with the answer key — only after the attempt is finished. */
@@ -313,7 +356,7 @@ export class AttemptsService {
       .where(and(eq(questionOptions.isCorrect, true), inArray(questionOptions.questionId, qs.map((q) => q.id))))
     const keyByQ = new Map(correct.map((c) => [c.questionId, c.key]))
     return {
-      result: await this.buildResult(attempt, false),
+      result: this.presentResult(actor, await this.buildResult(attempt, false)),
       groups,
       questions: qs.map((q) => {
         const correctKey = keyByQ.get(q.id) ?? ''
@@ -369,6 +412,7 @@ export class AttemptsService {
         const [existing] = await tx.select().from(attempts).where(eq(attempts.id, a.id)).limit(1)
         return existing
       }
+      await this.closeOpenFocus(tx, a.id, submittedAt)
 
       const scope = await this.scopeQuestions(tx, a.examId, a.partCodes)
       const qIds = scope.map((q) => q.id)
@@ -417,11 +461,17 @@ export class AttemptsService {
     })
   }
 
+  /** The leave tally is for teachers. Students keep the warning during the exam, not the count afterwards. */
+  private presentResult(actor: Actor, result: AttemptResultDto): AttemptResultDto {
+    if (actor.role === 'TEACHER' || actor.role === 'ADMIN') return result
+    return { ...result, focus: null }
+  }
+
   private async buildResult(a: AttemptRow, live: boolean): Promise<AttemptResultDto> {
     const exam = await this.requireExam(a.examId)
     const dto = await this.withAnswered(a, exam)
     if (live) {
-      return { attempt: dto, totalScore: null, listeningScore: null, readingScore: null, correctCount: 0, incorrectCount: 0, unansweredCount: a.totalQuestions - dto.answeredCount, durationSeconds: 0, parts: [] }
+      return { attempt: dto, totalScore: null, listeningScore: null, readingScore: null, correctCount: 0, incorrectCount: 0, unansweredCount: a.totalQuestions - dto.answeredCount, durationSeconds: 0, parts: [], focus: null }
     }
     const scope = await this.scopeQuestions(this.db, a.examId, a.partCodes)
     const answers = await this.db.select({ questionId: attemptAnswers.questionId, isCorrect: attemptAnswers.isCorrect }).from(attemptAnswers).where(eq(attemptAnswers.attemptId, a.id))
@@ -441,6 +491,44 @@ export class AttemptsService {
       unansweredCount: a.unansweredCount ?? 0,
       durationSeconds: a.durationSeconds ?? 0,
       parts: partResults,
+      focus: await this.focusReport(a),
+    }
+  }
+
+  /** Closes a leave that was still open when the sitting ended (the student submitted from another window, or the clock ran out). */
+  private async closeOpenFocus(tx: Pick<Db, 'select' | 'update' | 'delete'>, attemptId: string, endedAt: Date) {
+    const open = await tx
+      .select()
+      .from(attemptFocusLeaves)
+      .where(and(eq(attemptFocusLeaves.attemptId, attemptId), isNull(attemptFocusLeaves.returnedAt)))
+    for (const row of open) {
+      const awaySeconds = Math.max(0, Math.floor((endedAt.getTime() - row.leftAt.getTime()) / 1000))
+      if (awaySeconds < FOCUS_MIN_AWAY_SECONDS) {
+        await tx.delete(attemptFocusLeaves).where(eq(attemptFocusLeaves.id, row.id))
+      } else {
+        await tx.update(attemptFocusLeaves).set({ returnedAt: endedAt, awaySeconds }).where(eq(attemptFocusLeaves.id, row.id))
+      }
+    }
+  }
+
+  private async focusReport(a: AttemptRow): Promise<FocusReportDto | null> {
+    if (!isFocusWatched(a)) return null
+    const rows = await this.db
+      .select()
+      .from(attemptFocusLeaves)
+      .where(and(eq(attemptFocusLeaves.attemptId, a.id), sql`coalesce(${attemptFocusLeaves.awaySeconds}, 0) >= ${FOCUS_MIN_AWAY_SECONDS}`))
+      .orderBy(asc(attemptFocusLeaves.leftAt))
+    const awaySeconds = rows.reduce((sum, row) => sum + (row.awaySeconds ?? 0), 0)
+    const longestAwaySeconds = rows.reduce((max, row) => Math.max(max, row.awaySeconds ?? 0), 0)
+    return {
+      leaveCount: rows.length,
+      awaySeconds,
+      longestAwaySeconds,
+      leaves: rows.slice(0, 30).map((row) => ({
+        leftAt: row.leftAt.toISOString(),
+        returnedAt: row.returnedAt?.toISOString() ?? null,
+        awaySeconds: row.awaySeconds ?? 0,
+      })),
     }
   }
 
@@ -583,6 +671,7 @@ export class AttemptsService {
       partCodes: a.partCodes,
       totalQuestions: a.totalQuestions,
       answeredCount,
+      focusWatch: isFocusWatched(a),
     }
   }
 }

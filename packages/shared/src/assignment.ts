@@ -34,6 +34,8 @@ export type AssignmentProgressDto = {
   correctCount: number | null
   submittedAt: string | null
   totalScore: number | null
+  /** Leaves recorded on a finished sitting. Null until the student submits. */
+  focusLeaveCount: number | null
 }
 
 export type AssignmentDto = {
