@@ -1,7 +1,10 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common'
 import {
   ERROR_CODES,
+  FILL_EXAM_SOURCE,
+  FILL_QUESTION_TYPE,
   FOCUS_MIN_AWAY_SECONDS,
+  fillAnswerMatches,
   isFocusWatched,
   type AttemptAudioDto,
   type AttemptDto,
@@ -174,7 +177,8 @@ export class AttemptsService {
     if (asg.dueAt && asg.dueAt.getTime() < Date.now()) throw AppException.forbidden('Đã hết hạn nộp bài')
 
     const [exam] = await this.db.select().from(exams).where(eq(exams.id, asg.examId)).limit(1)
-    if (!exam || exam.status !== 'PUBLISHED') throw AppException.notFound('Không tìm thấy đề thi')
+    const fillHomework = exam?.source === FILL_EXAM_SOURCE && exam.status === 'DRAFT'
+    if (!exam || (exam.status !== 'PUBLISHED' && !fillHomework)) throw AppException.notFound('Không tìm thấy đề thi')
 
     const examParts_ = await this.db
       .select({ code: parts.code, order: examParts.displayOrder })
@@ -245,7 +249,7 @@ export class AttemptsService {
     const attempt = await this.expireIfNeeded(await this.requireOwn(actor, attemptId))
     const exam = await this.requireExam(attempt.examId)
     const { questions: qs, groups } = await this.loadPlayerContent(attempt)
-    const answered = qs.filter((q) => q.selectedKey !== null).length
+    const answered = qs.filter((q) => (q.type === FILL_QUESTION_TYPE ? !!q.answerText?.trim() : q.selectedKey !== null)).length
     const audio = await this.audioFor(attempt)
     const sheetImages = await this.sheetImages(attempt.assignmentId)
     return { attempt: this.toDto(attempt, exam.title, answered), groups, questions: qs, audio, sheetImages }
@@ -266,9 +270,28 @@ export class AttemptsService {
     }
 
     const scope = await this.scopeQuestions(this.db, attempt.examId, attempt.partCodes)
-    if (!scope.some((q) => q.id === questionId)) throw AppException.notFound('Câu hỏi không thuộc bài làm này')
+    const question = scope.find((q) => q.id === questionId)
+    if (!question) throw AppException.notFound('Câu hỏi không thuộc bài làm này')
 
-    if (input.selectedKey === null) {
+    const now = new Date()
+    const spent = sql`coalesce(${input.timeSpentSeconds ?? null}, ${attemptAnswers.timeSpentSeconds})`
+    if (question.type === FILL_QUESTION_TYPE) {
+      if (input.answerText === undefined) throw AppException.badRequest('Câu điền từ cần chữ đã gõ')
+      const text = input.answerText?.trim() ?? ''
+      if (!text) {
+        await this.db.delete(attemptAnswers).where(and(eq(attemptAnswers.attemptId, attemptId), eq(attemptAnswers.questionId, questionId)))
+      } else {
+        await this.db
+          .insert(attemptAnswers)
+          .values({ attemptId, questionId, answerText: text, answeredAt: now, timeSpentSeconds: input.timeSpentSeconds })
+          .onConflictDoUpdate({
+            target: [attemptAnswers.attemptId, attemptAnswers.questionId],
+            set: { answerText: text, selectedOptionId: null, answeredAt: now, timeSpentSeconds: spent },
+          })
+      }
+    } else if (input.selectedKey === undefined) {
+      throw AppException.badRequest('Câu trắc nghiệm cần đáp án A B C D')
+    } else if (input.selectedKey === null) {
       await this.db.delete(attemptAnswers).where(and(eq(attemptAnswers.attemptId, attemptId), eq(attemptAnswers.questionId, questionId)))
     } else {
       const [option] = await this.db
@@ -277,13 +300,12 @@ export class AttemptsService {
         .where(and(eq(questionOptions.questionId, questionId), eq(questionOptions.optionKey, input.selectedKey)))
         .limit(1)
       if (!option) throw AppException.badRequest('Lựa chọn không tồn tại cho câu hỏi này')
-      const now = new Date()
       await this.db
         .insert(attemptAnswers)
         .values({ attemptId, questionId, selectedOptionId: option.id, answeredAt: now, timeSpentSeconds: input.timeSpentSeconds })
         .onConflictDoUpdate({
           target: [attemptAnswers.attemptId, attemptAnswers.questionId],
-          set: { selectedOptionId: option.id, answeredAt: now, timeSpentSeconds: sql`coalesce(${input.timeSpentSeconds ?? null}, ${attemptAnswers.timeSpentSeconds})` },
+          set: { selectedOptionId: option.id, answerText: null, answeredAt: now, timeSpentSeconds: spent },
         })
     }
     const remaining = attempt.deadlineAt ? Math.max(0, Math.floor((attempt.deadlineAt.getTime() - Date.now()) / 1000)) : null
@@ -350,17 +372,41 @@ export class AttemptsService {
     const attempt = await this.expireIfNeeded(await this.requireReadable(actor, attemptId))
     if (attempt.status === 'IN_PROGRESS') throw AppException.conflict('Chỉ xem được đáp án sau khi nộp bài')
     const { questions: qs, groups } = await this.loadPlayerContent(attempt)
-    const correct = await this.db
-      .select({ questionId: questionOptions.questionId, key: questionOptions.optionKey })
-      .from(questionOptions)
-      .where(and(eq(questionOptions.isCorrect, true), inArray(questionOptions.questionId, qs.map((q) => q.id))))
+    const qIds = qs.map((q) => q.id)
+    const correct = qIds.length
+      ? await this.db
+          .select({ questionId: questionOptions.questionId, key: questionOptions.optionKey })
+          .from(questionOptions)
+          .where(and(eq(questionOptions.isCorrect, true), inArray(questionOptions.questionId, qIds)))
+      : []
     const keyByQ = new Map(correct.map((c) => [c.questionId, c.key]))
+    const graded = qIds.length
+      ? await this.db
+          .select({ questionId: attemptAnswers.questionId, isCorrect: attemptAnswers.isCorrect })
+          .from(attemptAnswers)
+          .where(eq(attemptAnswers.attemptId, attempt.id))
+      : []
+    const gradedByQ = new Map(graded.map((row) => [row.questionId, row.isCorrect]))
+    const fillIds = qs.filter((q) => q.type === FILL_QUESTION_TYPE).map((q) => q.id)
+    const acceptedRows = fillIds.length
+      ? await this.db.select({ id: questions.id, accepted: questions.acceptedAnswers }).from(questions).where(inArray(questions.id, fillIds))
+      : []
+    const acceptedByQ = new Map(acceptedRows.map((row) => [row.id, row.accepted ?? []]))
+    const explanationRows = qIds.length
+      ? await this.db.select({ id: questions.id, explanation: questions.explanation }).from(questions).where(inArray(questions.id, qIds))
+      : []
+    const explanationByQ = new Map(explanationRows.map((row) => [row.id, row.explanation]))
     return {
       result: this.presentResult(actor, await this.buildResult(attempt, false)),
       groups,
       questions: qs.map((q) => {
+        const explanation = explanationByQ.get(q.id) || null
+        if (q.type === FILL_QUESTION_TYPE) {
+          const accepted = acceptedByQ.get(q.id) ?? []
+          return { ...q, correctKey: '', correctText: accepted.join(' / '), isCorrect: q.answerText ? (gradedByQ.get(q.id) ?? false) : null, explanation }
+        }
         const correctKey = keyByQ.get(q.id) ?? ''
-        return { ...q, correctKey, isCorrect: q.selectedKey === null ? null : q.selectedKey === correctKey }
+        return { ...q, correctKey, correctText: null, isCorrect: q.selectedKey === null ? null : q.selectedKey === correctKey, explanation }
       }),
       audio: await this.audioFor(attempt),
       sheetImages: await this.sheetImages(attempt.assignmentId),
@@ -389,6 +435,14 @@ export class AttemptsService {
       const url = urls.get(r.assetId)
       return url ? [{ id: r.id, url }] : []
     })
+  }
+
+  /**
+   * Scores an open sitting once the clock plus the short grace has passed.
+   * Used when a student closes the laptop at 0:00 so the result exists without them opening the player again.
+   */
+  async closeIfPastDeadline(row: AttemptRow): Promise<AttemptRow> {
+    return this.expireIfNeeded(row)
   }
 
   // ---------------------------------------------------------------- finalize + scoring
@@ -420,13 +474,20 @@ export class AttemptsService {
         ? await tx.select({ id: questionOptions.id, questionId: questionOptions.questionId }).from(questionOptions).where(and(eq(questionOptions.isCorrect, true), inArray(questionOptions.questionId, qIds)))
         : []
       const correctOptionByQ = new Map(correctRows.map((r) => [r.questionId, r.id]))
+      const fillRows = qIds.length
+        ? await tx.select({ id: questions.id, type: questions.type, accepted: questions.acceptedAnswers }).from(questions).where(inArray(questions.id, qIds))
+        : []
+      const acceptedByQ = new Map(fillRows.filter((q) => q.type === FILL_QUESTION_TYPE).map((q) => [q.id, q.accepted ?? []]))
       const answers = await tx.select().from(attemptAnswers).where(eq(attemptAnswers.attemptId, a.id))
 
       const correctAnswerIds: string[] = []
       const wrongAnswerIds: string[] = []
       const correctQ = new Set<string>()
       for (const ans of answers) {
-        const ok = ans.selectedOptionId !== null && ans.selectedOptionId === correctOptionByQ.get(ans.questionId)
+        const accepted = acceptedByQ.get(ans.questionId)
+        const ok = accepted
+          ? !!ans.answerText && fillAnswerMatches(ans.answerText, accepted)
+          : ans.selectedOptionId !== null && ans.selectedOptionId === correctOptionByQ.get(ans.questionId)
         if (ok) {
           correctAnswerIds.push(ans.id)
           correctQ.add(ans.questionId)
@@ -612,6 +673,15 @@ export class AttemptsService {
     const answers = await this.db.select().from(attemptAnswers).where(eq(attemptAnswers.attemptId, a.id))
     const keyByOptionId = new Map(opts.map((o) => [o.id, o.key]))
     const selectedByQ = new Map(answers.map((x) => [x.questionId, x.selectedOptionId ? (keyByOptionId.get(x.selectedOptionId) ?? null) : null]))
+    const textByQ = new Map(answers.map((x) => [x.questionId, x.answerText]))
+    const blankAt = new Map<string, number>()
+    const seenInGroup = new Map<string, number>()
+    for (const q of scope) {
+      if (q.type !== FILL_QUESTION_TYPE || !q.groupId) continue
+      const index = seenInGroup.get(q.groupId) ?? 0
+      blankAt.set(q.id, index)
+      seenInGroup.set(q.groupId, index + 1)
+    }
 
     const groupIds = [...new Set(scope.map((q) => q.groupId).filter((g): g is string => !!g))]
     const groupRows = groupIds.length
@@ -638,8 +708,10 @@ export class AttemptsService {
         type: q.type,
         prompt: q.prompt,
         imageUrl: q.imageAssetId ? (imageUrls.get(q.imageAssetId) ?? null) : null,
-        options: opts.filter((o) => o.questionId === q.id).map((o) => ({ key: o.key, text: o.text })),
-        selectedKey: selectedByQ.get(q.id) ?? null,
+        options: q.type === FILL_QUESTION_TYPE ? [] : opts.filter((o) => o.questionId === q.id).map((o) => ({ key: o.key, text: o.text })),
+        selectedKey: q.type === FILL_QUESTION_TYPE ? null : (selectedByQ.get(q.id) ?? null),
+        answerText: q.type === FILL_QUESTION_TYPE ? (textByQ.get(q.id) ?? null) : null,
+        blankIndex: blankAt.get(q.id) ?? null,
       })),
       groups: groupRows.map(({ g, partCode }) => ({
         id: g.id,

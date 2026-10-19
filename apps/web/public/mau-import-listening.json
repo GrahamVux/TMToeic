@@ -19,7 +19,8 @@
         { "key": "A", "text": "In the conference room.", "correct": true },
         { "key": "B", "text": "It starts at three.", "correct": false },
         { "key": "C", "text": "Yes, I am going.", "correct": false }
-      ]
+      ],
+      "explanation": "Câu hỏi Where hỏi địa điểm. Đáp án A trả lời đúng nơi. B trả lời giờ, C trả lời Yes/No."
     },
     {
       "partCode": "PART_2",
@@ -29,7 +30,8 @@
         { "key": "A", "text": "The printer is broken.", "correct": false },
         { "key": "B", "text": "Ms. Alvarez will.", "correct": true },
         { "key": "C", "text": "On Friday morning.", "correct": false }
-      ]
+      ],
+      "explanation": "Câu hỏi Who hỏi người. Đáp án B nêu tên người sẽ trình bày."
     }
   ]
 }

@@ -12,6 +12,7 @@ import {
   pgTable,
   text,
   timestamp,
+  primaryKey,
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
@@ -49,6 +50,10 @@ export const users = pgTable(
     goalTrack: text('goal_track'),
     targetScoreMin: integer('target_score_min'),
     mustChangePassword: boolean('must_change_password').notNull().default(true),
+    /** Teacher grants. Ignored for ADMIN (always allowed) and STUDENT. Existing teachers default to all three. */
+    permCreateStudents: boolean('perm_create_students').notNull().default(true),
+    permManageAssignments: boolean('perm_manage_assignments').notNull().default(true),
+    permViewProgress: boolean('perm_view_progress').notNull().default(true),
     failedLoginCount: integer('failed_login_count').notNull().default(0),
     lockedUntil: timestamp('locked_until', { withTimezone: true }),
     lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
@@ -61,6 +66,44 @@ export const users = pgTable(
     uniqueIndex('users_email_uq').on(sql`lower(${t.email})`).where(sql`${t.email} is not null`),
     index('users_role_status_idx').on(t.role, t.status),
   ],
+).enableRLS()
+
+export const classes = pgTable(
+  'classes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: text('name').notNull(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('classes_name_uq').on(sql`lower(${t.name})`)],
+).enableRLS()
+
+/** One class per student. Staff are not members. */
+export const classMembers = pgTable(
+  'class_members',
+  {
+    classId: uuid('class_id')
+      .notNull()
+      .references(() => classes.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.userId] }), index('class_members_class_idx').on(t.classId)],
+).enableRLS()
+
+/** Teachers allowed to manage the students of a class. A teacher may cover several classes. */
+export const classTeachers = pgTable(
+  'class_teachers',
+  {
+    classId: uuid('class_id')
+      .notNull()
+      .references(() => classes.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.classId, t.userId] }), index('class_teachers_user_idx').on(t.userId)],
 ).enableRLS()
 
 /** One row per device/login. Refresh token is opaque; only its SHA-256 is stored and it rotates on every refresh. */
@@ -241,7 +284,11 @@ export const questions = pgTable(
     audioAssetId: uuid('audio_asset_id').references(() => assets.id, { onDelete: 'set null' }),
     videoAssetId: uuid('video_asset_id').references(() => assets.id, { onDelete: 'set null' }),
     explanationStatus: text('explanation_status').notNull().default('NONE'),
+    /** Written solution shown after the student submits. */
+    explanation: text('explanation'),
     difficulty: text('difficulty'),
+    /** Accepted cloze answers for this blank. Never sent to the player. */
+    acceptedAnswers: jsonb('accepted_answers').$type<string[] | null>(),
     ...timestamps,
   },
   (t) => [uniqueIndex('questions_number_uq').on(t.examPartId, t.questionNumber), index('questions_group_idx').on(t.groupId)],
@@ -373,6 +420,8 @@ export const attemptAnswers = pgTable(
       .notNull()
       .references(() => questions.id, { onDelete: 'restrict' }),
     selectedOptionId: uuid('selected_option_id').references(() => questionOptions.id, { onDelete: 'set null' }),
+    /** Typed cloze answer. Null on a multiple-choice question. */
+    answerText: text('answer_text'),
     isCorrect: boolean('is_correct'),
     answeredAt: timestamp('answered_at', { withTimezone: true }).notNull().defaultNow(),
     timeSpentSeconds: integer('time_spent_seconds'),
@@ -419,6 +468,7 @@ export const siteSettings = pgTable('site_settings', {
   themePrimary: text('theme_primary').notNull(),
   themePrimarySoft: text('theme_primary_soft').notNull(),
   themePaper: text('theme_paper').notNull(),
+  honorBoardEnabled: boolean('honor_board_enabled').notNull().default(true),
   ...timestamps,
 }).enableRLS()
 

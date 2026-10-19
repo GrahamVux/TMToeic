@@ -1,5 +1,5 @@
 import { createParamDecorator, type ExecutionContext, SetMetadata } from '@nestjs/common'
-import type { Role } from '@toeic/shared'
+import type { Role, TeacherPermissions } from '@toeic/shared'
 import type { Request } from 'express'
 
 export type AuthUser = {
@@ -7,6 +7,7 @@ export type AuthUser = {
   role: Role
   sessionId: string
   mustChangePassword: boolean
+  permissions: TeacherPermissions
 }
 
 export type AuthedRequest = Request & { user?: AuthUser }

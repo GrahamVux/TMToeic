@@ -1,6 +1,6 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
-import { ERROR_CODES, type SessionDto } from '@toeic/shared'
+import { ERROR_CODES, teacherGrants, type SessionDto } from '@toeic/shared'
 import { and, eq, gt, isNull, ne, or, sql } from 'drizzle-orm'
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
 import { AuditService } from '../audit/audit.service'
@@ -310,6 +310,11 @@ export class AuthService {
         role: found.user.role,
         sessionId: found.session.id,
         mustChangePassword: found.user.mustChangePassword,
+        permissions: teacherGrants(found.user.role, {
+          createStudents: found.user.permCreateStudents,
+          manageAssignments: found.user.permManageAssignments,
+          viewProgress: found.user.permViewProgress,
+        }),
       },
     }
   }

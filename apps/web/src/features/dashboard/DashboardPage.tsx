@@ -4,7 +4,8 @@ import { Badge, Card } from '@/components/ui/Primitives'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { useAssignments } from '@/features/assignments/assignments.queries'
-import { formatGoal, type GoalDto, type LeaderboardEntryDto, type SkillStatDto, type StudentDashboardDto } from '@toeic/shared'
+import { HonorBoards } from '@/features/honor/HonorBoards'
+import { formatGoal, type GoalDto, type SkillStatDto, type StudentDashboardDto } from '@toeic/shared'
 import type { ReactNode } from 'react'
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Link } from 'react-router-dom'
@@ -66,10 +67,8 @@ export function DashboardPage() {
         </Card>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
-        <ScoreChart d={data} />
-        <Leaderboard d={data} />
-      </section>
+      <ScoreChart d={data} />
+      <HonorBoards honor={data.honor} />
 
       <section className="grid gap-6 lg:grid-cols-2">
         <SkillCard stat={data.skills.find((s) => s.skill === 'LISTENING')} kind="LISTENING" />
@@ -186,50 +185,6 @@ function ScoreChart({ d }: { d: StudentDashboardDto }) {
         </div>
       )}
     </Card>
-  )
-}
-
-function Leaderboard({ d }: { d: StudentDashboardDto }) {
-  const { entries, you, participants } = d.leaderboard
-  const [y, m, day] = d.weekStart.split('-')
-  const youInList = entries.some((e) => e.you)
-  return (
-    <Card className="p-6">
-      <h2 className="serif text-2xl">Bảng vinh danh tuần</h2>
-      <p className="mt-1 text-sm text-ink/60">
-        Xếp theo số câu đã làm từ thứ Hai {day}/{m}/{y} • {participants} bạn tham gia
-      </p>
-      {entries.length === 0 ? (
-        <p className="mt-5 rounded-2xl bg-paper p-4 text-sm text-ink/60">Tuần này chưa ai luyện tập. Hãy là người đầu tiên lên bảng!</p>
-      ) : (
-        <ul className="mt-5 space-y-3">
-          {entries.map((row) => (
-            <Row key={row.rank} row={row} />
-          ))}
-          {you && !youInList ? (
-            <>
-              <li className="text-center text-xs text-ink/40" aria-hidden="true">⋯</li>
-              <Row row={you} />
-            </>
-          ) : null}
-        </ul>
-      )}
-      {!you && entries.length > 0 ? <p className="mt-4 text-xs text-ink/55">Bạn chưa có hoạt động tuần này — làm vài câu để có tên trên bảng.</p> : null}
-    </Card>
-  )
-}
-
-function Row({ row }: { row: LeaderboardEntryDto }) {
-  return (
-    <li className={`flex items-center justify-between rounded-2xl px-3 py-3 ${row.you ? 'bg-gold/15' : 'bg-paper'}`}>
-      <div>
-        <p className="font-semibold">{row.rank}. {row.name} {row.you ? '(Bạn)' : ''}</p>
-        <p className="text-xs text-ink/55">
-          {row.answered} câu{row.accuracy !== null ? ` • ${row.accuracy}% đúng` : ''}
-        </p>
-      </div>
-      {row.rank === 1 ? <Badge tone="gold">Top chuyên cần</Badge> : null}
-    </li>
   )
 }
 

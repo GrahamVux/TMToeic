@@ -123,3 +123,58 @@ export async function apiUpload<T = void>(path: string, file: Blob, contentType:
   if (res.status === 204) return undefined as T
   return (await res.json()) as T
 }
+
+/** Download a file the API returns as bytes (Excel export). Same cookie and refresh behaviour as `api`. */
+export async function apiDownload(path: string, file: Blob, contentType: string): Promise<{ blob: Blob; filename: string; headers: Headers }> {
+  const sendRaw = async () => {
+    try {
+      return await fetch(`${BASE}${path}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': contentType, [CSRF_HEADER]: CSRF_HEADER_VALUE },
+        body: file,
+      })
+    } catch {
+      throw new ApiError(0, 'NETWORK', 'Không kết nối được máy chủ. Vui lòng kiểm tra mạng và thử lại.')
+    }
+  }
+
+  let res = await sendRaw()
+  if (res.status === 401) {
+    if (await refreshSession()) res = await sendRaw()
+  }
+  if (!res.ok) {
+    const err = await toError(res)
+    if (err.status === 401 || err.code === ERROR_CODES.ACCOUNT_DISABLED || err.code === ERROR_CODES.SESSION_EXPIRED) sessionLostHandler?.()
+    throw err
+  }
+  const match = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')
+  return { blob: await res.blob(), filename: match?.[1] ?? 'download.xlsx', headers: res.headers }
+}
+
+/** GET a file the API returns as bytes (class result workbook). */
+export async function apiGetFile(path: string): Promise<{ blob: Blob; filename: string }> {
+  const sendRaw = async () => {
+    try {
+      return await fetch(`${BASE}${path}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { [CSRF_HEADER]: CSRF_HEADER_VALUE },
+      })
+    } catch {
+      throw new ApiError(0, 'NETWORK', 'Không kết nối được máy chủ. Vui lòng kiểm tra mạng và thử lại.')
+    }
+  }
+
+  let res = await sendRaw()
+  if (res.status === 401) {
+    if (await refreshSession()) res = await sendRaw()
+  }
+  if (!res.ok) {
+    const err = await toError(res)
+    if (err.status === 401 || err.code === ERROR_CODES.ACCOUNT_DISABLED || err.code === ERROR_CODES.SESSION_EXPIRED) sessionLostHandler?.()
+    throw err
+  }
+  const match = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')
+  return { blob: await res.blob(), filename: match?.[1] ?? 'ket-qua.xlsx' }
+}

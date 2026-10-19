@@ -106,7 +106,7 @@ function ExamCard({
         </div>
         <h3 className="mt-2 text-lg font-semibold">{exam.title}</h3>
         <p className="text-sm text-ink/55">
-          {minutes} phút • {exam.totalQuestions} câu
+          {minutes} phút • {exam.totalQuestions} câu • thi thử tính giờ, chấm điểm khi hết giờ
         </p>
         {last ? (
           <p className="mt-1 text-sm">
@@ -129,7 +129,7 @@ function ExamCard({
           Luyện tập
         </Button>
         <Button variant="navy" disabled={busy} onClick={() => onStart(exam, 'FULL_TEST')}>
-          Thi thử tính giờ
+          Thi thử cả bộ đề
         </Button>
       </div>
     </Card>

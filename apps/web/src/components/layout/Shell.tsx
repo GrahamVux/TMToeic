@@ -205,15 +205,23 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const roleLabel = user?.role === 'ADMIN' ? 'Quản trị viên' : 'Giáo viên'
   const bugs = useBugReportSummary(user?.role === 'ADMIN')
   const openCount = bugs.data?.openCount ?? 0
+  const grants = user?.permissions
+  const teacherNav = adminNav.filter((item) => {
+    if (user?.role === 'ADMIN') return true
+    if (item.to === '/admin/exams') return !!grants?.manageAssignments
+    if (item.to === '/admin/assignments') return !!grants?.manageAssignments || !!grants?.viewProgress
+    if (item.to === '/admin/reports') return !!grants?.viewProgress
+    return true
+  })
   const nav =
     user?.role === 'ADMIN'
       ? [
-          ...adminNav,
+          ...teacherNav,
           { to: '/admin/study', label: 'Học liệu', short: 'Học liệu', icon: Library, end: false },
           { to: '/admin/bugs', label: openCount ? `Báo lỗi (${openCount})` : 'Báo lỗi', short: 'Lỗi', icon: Bug, end: false },
           { to: '/admin/settings', label: 'Cài đặt', short: 'Cài đặt', icon: Settings, end: false },
         ]
-      : adminNav
+      : teacherNav
 
   useEffect(() => {
     setOpen(false)

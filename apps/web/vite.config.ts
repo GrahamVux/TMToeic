@@ -11,9 +11,14 @@ export default defineConfig({
     },
   },
   server: {
+    // Windows often resolves localhost to ::1 only, so 127.0.0.1:5173 was refused.
+    // Listen on every interface and proxy the API over IPv4, which Nest binds explicitly.
+    host: true,
+    port: 5173,
+    strictPort: true,
     // Same-origin in dev: cookies are first-party. Production uses a Pages Function at /api.
     proxy: {
-      '/api': { target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:3001', changeOrigin: false },
+      '/api': { target: process.env.VITE_API_PROXY_TARGET ?? 'http://127.0.0.1:3001', changeOrigin: false },
     },
   },
 })

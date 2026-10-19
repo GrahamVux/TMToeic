@@ -1,7 +1,21 @@
 import type { INestApplication } from '@nestjs/common'
-import type { StudentDashboardDto } from '@toeic/shared'
+import { rankFromXp, type StudentDashboardDto } from '@toeic/shared'
 import { ADMIN, createTestApp, login, type TestClient } from '../test/test-app'
 import { computeStreak } from './progress.service'
+
+describe('rankFromXp', () => {
+  it('climbs one rank every 100 EXP and stops at Thách Đấu', () => {
+    expect(rankFromXp(0).label).toBe('Đồng III')
+    expect(rankFromXp(99).label).toBe('Đồng III')
+    expect(rankFromXp(100).label).toBe('Đồng II')
+    expect(rankFromXp(200).label).toBe('Đồng I')
+    expect(rankFromXp(300).label).toBe('Bạc III')
+    expect(rankFromXp(2100).label).toBe('Thách Đấu')
+    expect(rankFromXp(5000).label).toBe('Thách Đấu')
+    expect(rankFromXp(5000).toNext).toBeNull()
+    expect(rankFromXp(150).toNext).toBe(50)
+  })
+})
 
 describe('computeStreak', () => {
   it('counts consecutive days ending today', () => {
@@ -103,7 +117,11 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
       improvement: null,
       scoreHistory: [],
       streak: { days: 0, activeToday: false },
-      leaderboard: { entries: [], you: null, participants: 0 },
+      honor: {
+        enabled: true,
+        className: 'Lớp K42',
+        classBoard: { entries: [], you: null, participants: 0 },
+      },
     })
     expect(d.skills.map((k) => [k.skill, k.attempts, k.answered, k.accuracy])).toEqual([
       ['LISTENING', 0, 0, null],
@@ -180,7 +198,9 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     expect(d.latestScore).toBeNull() // partial practice has no 990-scale score
     expect(d.skills.find((k) => k.skill === 'READING')).toMatchObject({ attempts: 1, answered: 2, correct: 2, accuracy: 100 })
     expect(d.skills.find((k) => k.skill === 'LISTENING')).toMatchObject({ attempts: 0, accuracy: null })
-    expect(d.leaderboard.you).toMatchObject({ name: 'Chăm Chỉ', answered: 2, accuracy: 100, you: true })
+    expect(d.honor.classBoard.you).toMatchObject({ name: 'Chăm Chỉ', weeklyXp: 67, you: true })
+    expect(d.honor.me.rank.label).toBe('Đồng III')
+    expect(d.honor.centerBoard.every((row) => !('name' in row))).toBe(true)
   })
 
   it('ranks classmates by weekly questions, limits to top 5, still shows you beyond the top, and shares only names', async () => {
@@ -194,16 +214,18 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     }
     const last = await dash(clients[5])
     // Previous tests' students are also in the class ranking, so assert structure rather than absolute ranks.
-    expect(last.leaderboard.entries).toHaveLength(5)
-    expect(last.leaderboard.entries.map((e) => e.rank)).toEqual([1, 2, 3, 4, 5])
-    expect(last.leaderboard.entries.every((e, i, arr) => i === 0 || arr[i - 1].answered >= e.answered)).toBe(true)
-    expect(last.leaderboard.you).toMatchObject({ name: 'Hạng F', you: true })
-    expect(last.leaderboard.you!.rank).toBeGreaterThan(5)
-    expect(last.leaderboard.participants).toBeGreaterThanOrEqual(7)
-    for (const e of last.leaderboard.entries) expect(Object.keys(e).sort()).toEqual(['accuracy', 'answered', 'name', 'rank', 'you'])
+    expect(last.honor.classBoard.entries).toHaveLength(5)
+    expect(last.honor.classBoard.entries.map((e) => e.place)).toEqual([1, 2, 3, 4, 5])
+    expect(last.honor.classBoard.entries.every((e, i, arr) => i === 0 || arr[i - 1].weeklyXp >= e.weeklyXp)).toBe(true)
+    expect(last.honor.classBoard.you).toMatchObject({ name: 'Hạng F', you: true })
+    expect(last.honor.classBoard.you!.place).toBeGreaterThan(5)
+    expect(last.honor.classBoard.participants).toBeGreaterThanOrEqual(7)
+    for (const e of last.honor.classBoard.entries) expect(Object.keys(e).sort()).toEqual(['name', 'place', 'rank', 'weeklyXp', 'yearlyXp', 'you'])
+    expect(last.honor.classBoard.entries.every((e) => e.rank.label.length > 0)).toBe(true)
+    expect(last.honor.centerBoard.some((row) => row.className !== 'Lớp K42')).toBe(false)
 
     const first = await dash(clients[0])
-    expect(first.leaderboard.you!.rank).toBeLessThan(last.leaderboard.you!.rank)
+    expect(first.honor.classBoard.you!.place).toBeLessThan(last.honor.classBoard.you!.place)
   })
 
   it('a full 200-question test produces the score history, latest score and distance to goal', async () => {
@@ -255,6 +277,10 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
       const { c } = await login(app, 'teacher.prog', temp)
       expect((await c.post('/auth/change-password').send({ currentPassword: temp, newPassword: 'TeacherPass99' })).status).toBe(200)
       teacher = c
+      const rooms = await admin.get('/classes')
+      const room = rooms.body[0] as { id: string; teachers: Array<{ id: string }> }
+      const teacherIds = [...new Set([...(room.teachers ?? []).map((item) => item.id), created.body.user.id as string])]
+      expect((await put(admin, `/classes/${room.id}/teachers`, { teacherIds })).status).toBe(200)
     })
 
     const progress = async (c: TestClient) => (await c.get('/me/progress')).body as import('@toeic/shared').StudentProgressDto
@@ -379,10 +405,81 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
       await db.update(attemptAnswers).set({ answeredAt: new Date(Date.now() - 10 * 86_400_000) }).where(eq(attemptAnswers.attemptId, id))
 
       const r = (await teacher.get('/reports/class')).body as import('@toeic/shared').ClassReportDto
-      expect(r.inactive.find((i) => i.fullName === 'Bỏ Bê')).toMatchObject({ daysInactive: 10 })
+      expect(r.inactive.find((i) => i.fullName === 'Bỏ Bê')).toMatchObject({ daysInactive: 10, reasons: expect.arrayContaining(['INACTIVE']) })
       // and it is no longer a streak
       expect((await dash(s)).streak).toEqual({ days: 0, activeToday: false })
     })
+
+    it('flags students under 50% accuracy and students who missed a homework deadline', async () => {
+      const examId = await publishedExam([{ partCode: 'PART_5', questionStart: 101, questionEnd: 104 }] as typeof FULL)
+      const weakCreated = await admin.post('/users/students').send({ fullName: 'Yếu Bài' })
+      expect(weakCreated.status).toBe(201)
+      const weak = (await login(app, weakCreated.body.user.studentCode as string, weakCreated.body.temporaryPassword as string)).c
+      expect((await weak.post('/auth/change-password').send({ currentPassword: weakCreated.body.temporaryPassword, newPassword: 'StudentPass99' })).status).toBe(200)
+      const start = await weak.post(`/exams/${examId}/attempts`).send({ mode: 'PRACTICE' })
+      const attemptId = start.body.id as string
+      const { questions } = (await weak.get(`/attempts/${attemptId}`)).body as { questions: Array<{ id: string }> }
+      for (const q of questions) expect((await put(weak, `/attempts/${attemptId}/answers/${q.id}`, { selectedKey: 'B' })).status).toBe(200)
+      expect((await weak.post(`/attempts/${attemptId}/submit`)).status).toBe(200)
+
+      const low = ((await teacher.get('/reports/class')).body as import('@toeic/shared').ClassReportDto).inactive.find((i) => i.fullName === 'Yếu Bài')
+      expect(low).toMatchObject({ accuracy: 0, reasons: ['LOW_ACCURACY'] })
+
+      const lateCreated = await admin.post('/users/students').send({ fullName: 'Quá Hạn Bài' })
+      const lateId = lateCreated.body.user.id as string
+      const late = (await login(app, lateCreated.body.user.studentCode as string, lateCreated.body.temporaryPassword as string)).c
+      expect((await late.post('/auth/change-password').send({ currentPassword: lateCreated.body.temporaryPassword, newPassword: 'StudentPass99' })).status).toBe(200)
+      await practice(late, examId, 4, true)
+      const assigned = await admin.post('/assignments').send({
+        title: 'Bài quá hạn cần hỗ trợ',
+        examId,
+        partCodes: ['PART_5'],
+        durationSeconds: 300,
+        dueAt: new Date(Date.now() - 60_000).toISOString(),
+        studentIds: [lateId],
+      })
+      expect(assigned.status).toBe(201)
+
+      const missed = ((await teacher.get('/reports/class')).body as import('@toeic/shared').ClassReportDto).inactive.find((i) => i.fullName === 'Quá Hạn Bài')
+      expect(missed?.reasons).toContain('OVERDUE')
+      expect(missed?.overdueCount).toBeGreaterThanOrEqual(1)
+      expect(missed?.reasons).not.toContain('LOW_ACCURACY')
+    })
+  })
+
+  it('keeps each class off the other class roster and can hide the whole board', async () => {
+    const examId = await publishedExam(SMALL as typeof FULL)
+    const createdA = await admin.post('/users/students').send({ fullName: 'Lớp A Một' })
+    const createdB = await admin.post('/users/students').send({ fullName: 'Lớp B Hai' })
+    const room = await admin.post('/classes').send({ name: 'Lớp Bí Mật' })
+    expect(room.status).toBe(201)
+    expect((await put(admin, '/classes/members', { userId: createdB.body.user.id, classId: room.body.id })).status).toBe(200)
+
+    const loginStudent = async (created: { body: { user: { studentCode: string }; temporaryPassword: string } }) => {
+      const { c } = await login(app, created.body.user.studentCode, created.body.temporaryPassword)
+      await c.post('/auth/change-password').send({ currentPassword: created.body.temporaryPassword, newPassword: 'StudentPass99' })
+      return c
+    }
+    const a = await loginStudent(createdA)
+    const b = await loginStudent(createdB)
+    await practice(a, examId, 3, true)
+    await practice(b, examId, 3, true)
+
+    const boardA = await dash(a)
+    const boardB = await dash(b)
+    expect(boardA.honor.className).toBe('Lớp K42')
+    expect(boardB.honor.className).toBe('Lớp Bí Mật')
+    expect(boardA.honor.classBoard.entries.map((e) => e.name)).not.toContain('Lớp B Hai')
+    expect(boardB.honor.classBoard.entries.map((e) => e.name)).toEqual(['Lớp B Hai'])
+    expect(JSON.stringify(boardA.honor.centerBoard)).not.toContain('Lớp B Hai')
+    expect(boardA.honor.centerBoard.map((row) => row.className).sort()).toEqual(expect.arrayContaining(['Lớp K42', 'Lớp Bí Mật']))
+
+    expect((await put(admin, '/site-settings', { honorBoardEnabled: false })).status).toBe(200)
+    const hidden = await dash(a)
+    expect(hidden.honor.enabled).toBe(false)
+    expect(hidden.honor.classBoard.entries).toEqual([])
+    expect(hidden.honor.centerBoard).toEqual([])
+    expect((await put(admin, '/site-settings', { honorBoardEnabled: true })).status).toBe(200)
   })
 
   it('never exposes another student’s data: the dashboard is computed only for the caller', async () => {

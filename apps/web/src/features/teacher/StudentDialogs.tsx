@@ -1,14 +1,12 @@
+import { useAuth } from '@/app/AuthContext'
 import { Button } from '@/components/ui/Button'
+import { FilePick } from '@/components/ui/FilePick'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Primitives'
 import { ApiError } from '@/lib/api'
-import { createStudentSchema, type CredentialsIssuedDto, type UserDto } from '@toeic/shared'
+import { DEFAULT_NEW_ACCOUNT_PASSWORD, type CredentialsIssuedDto, type TeacherPermissions, type UserDto } from '@toeic/shared'
 import { useState, type FormEvent } from 'react'
-import { useCreateStudent, useResetPassword, useSetUserStatus } from './users.queries'
-
-function FieldError({ message }: { message?: string }) {
-  return message ? <p className="mt-1 text-xs text-coral">{message}</p> : null
-}
+import { useCreateStaff, useCreateStudent, useImportStudents, useResetPassword, useSetUserStatus, useTeachers, useUpdateTeacherPermissions } from './users.queries'
 
 /** Temporary password is returned by the API exactly once — keep the dialog open until the teacher confirms they noted it. */
 export function CredentialsDialog({ issued, title, onClose }: { issued: CredentialsIssuedDto; title: string; onClose: () => void }) {
@@ -28,7 +26,7 @@ export function CredentialsDialog({ issued, title, onClose }: { issued: Credenti
   return (
     <Modal title={title} onClose={onClose} dismissible={false}>
       <p className="text-sm text-ink/65">
-        Gửi thông tin này cho <span className="font-semibold">{issued.user.fullName}</span>. Học viên sẽ phải đổi mật khẩu ở lần đăng nhập đầu tiên.
+        Gửi thông tin này cho <span className="font-semibold">{issued.user.fullName}</span>. Lần đăng nhập đầu tiên phải đổi mật khẩu.
       </p>
       <dl className="mt-4 space-y-3 rounded-xl bg-paper p-4 text-sm">
         <div className="flex justify-between gap-3">
@@ -51,78 +49,256 @@ export function CredentialsDialog({ issued, title, onClose }: { issued: Credenti
   )
 }
 
-export function CreateStudentDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (issued: CredentialsIssuedDto) => void }) {
-  const create = useCreateStudent()
-  const [form, setForm] = useState({ fullName: '', email: '', phone: '', targetScore: '' })
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [formError, setFormError] = useState<string | null>(null)
-  const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }))
+export function ImportStudentsDialog({
+  classId,
+  className,
+  onClose,
+  onDone,
+}: {
+  classId: string
+  className: string
+  onClose: () => void
+  onDone: (result: { created: number; skipped: number }) => void
+}) {
+  const importStudents = useImportStudents()
+  const [error, setError] = useState<string | null>(null)
 
-  async function submit(e: FormEvent) {
-    e.preventDefault()
-    setFormError(null)
-    const parsed = createStudentSchema.safeParse({
-      fullName: form.fullName,
-      ...(form.email.trim() ? { email: form.email } : {}),
-      ...(form.phone.trim() ? { phone: form.phone } : {}),
-      ...(form.targetScore.trim() ? { targetScore: Number(form.targetScore) } : {}),
-    })
-    if (!parsed.success) {
-      const next: Record<string, string> = {}
-      for (const i of parsed.error.issues) next[String(i.path[0])] ??= i.message
-      setErrors(next)
-      return
-    }
-    setErrors({})
+  return (
+    <Modal title={`Thêm học viên vào ${className}`} onClose={onClose}>
+      <p className="text-sm text-ink/65">
+        File gồm cột <span className="font-semibold">Họ tên</span> và <span className="font-semibold">Số điện thoại</span>. Học viên mới vào lớp {className}. Có thể tải file này nhiều lần.
+      </p>
+      <p className="mt-2 text-sm text-ink/65">
+        Mật khẩu mặc định của mọi tài khoản mới là <span className="font-mono font-semibold">{DEFAULT_NEW_ACCOUNT_PASSWORD}</span>. Lần đăng nhập đầu phải đổi mật khẩu.
+      </p>
+      <a className="mt-3 inline-block text-sm font-semibold text-gold-deep underline underline-offset-4" href="/api/v1/users/students/template">
+        Tải file mẫu
+      </a>
+      <div className="mt-4">
+        <FilePick
+          label={importStudents.isPending ? 'Đang tạo tài khoản…' : 'Chọn file .xlsx'}
+          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          disabled={importStudents.isPending}
+          hint="Tối đa 500 học viên, 8MB. Số trùng trong cùng file được bỏ qua."
+          onFiles={(files) => {
+            const file = files[0]
+            if (!file) return
+            setError(null)
+            void importStudents.mutateAsync({ file, classId }).then(onDone, (err) => {
+              setError(err instanceof ApiError ? err.message : 'Không nhập được file.')
+            })
+          }}
+        />
+      </div>
+      {error ? <p role="alert" className="mt-3 rounded-xl bg-[#f8dcd8] px-3 py-2 text-sm text-coral">{error}</p> : null}
+      <div className="mt-5 flex justify-end">
+        <Button type="button" variant="ghost" onClick={onClose}>Đóng</Button>
+      </div>
+    </Modal>
+  )
+}
+
+export function AddOneStudentDialog({
+  classId,
+  className,
+  onClose,
+  onIssued,
+}: {
+  classId: string
+  className: string
+  onClose: () => void
+  onIssued: (issued: CredentialsIssuedDto) => void
+}) {
+  const create = useCreateStudent()
+  const [fullName, setFullName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    setError(null)
     try {
-      onCreated(await create.mutateAsync(parsed.data))
+      onIssued(await create.mutateAsync({ fullName: fullName.trim(), phone: phone.trim(), classId }))
     } catch (err) {
-      if (err instanceof ApiError) {
-        setErrors(err.fields)
-        if (Object.keys(err.fields).length === 0) setFormError('Không tạo được học viên. Vui lòng thử lại.')
-      } else setFormError('Đã có lỗi xảy ra, vui lòng thử lại.')
+      setError(err instanceof ApiError ? err.message : 'Không tạo được học viên.')
     }
   }
 
   return (
-    <Modal title="Thêm học viên" onClose={onClose}>
-      <form onSubmit={submit} noValidate className="space-y-3">
+    <Modal title={`Thêm một học viên vào ${className}`} onClose={() => !create.isPending && onClose()}>
+      <form onSubmit={(event) => void submit(event)} className="space-y-3">
+        <p className="text-sm text-ink/65">
+          Mật khẩu mặc định là <span className="font-mono font-semibold">{DEFAULT_NEW_ACCOUNT_PASSWORD}</span>. Có thể thêm tiếp sau khi đóng hộp thoại.
+        </p>
         <div>
-          <label htmlFor="cs-name" className="text-sm font-medium">Họ và tên *</label>
-          <Input id="cs-name" className="mt-1" value={form.fullName} onChange={set('fullName')} autoFocus />
-          <FieldError message={errors.fullName} />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <label htmlFor="cs-email" className="text-sm font-medium">Email</label>
-            <Input id="cs-email" className="mt-1" type="email" value={form.email} onChange={set('email')} />
-            <FieldError message={errors.email} />
-          </div>
-          <div>
-            <label htmlFor="cs-phone" className="text-sm font-medium">Số điện thoại</label>
-            <Input id="cs-phone" className="mt-1" value={form.phone} onChange={set('phone')} />
-            <FieldError message={errors.phone} />
-          </div>
+          <label className="text-sm font-medium" htmlFor="student-name">Họ và tên</label>
+          <Input id="student-name" className="mt-1" value={fullName} onChange={(e) => setFullName(e.target.value)} required minLength={2} />
         </div>
         <div>
-          <label htmlFor="cs-target" className="text-sm font-medium">Điểm mục tiêu 2 kỹ năng (tuỳ chọn)</label>
-          <Input id="cs-target" className="mt-1" inputMode="numeric" placeholder="VD: 850" value={form.targetScore} onChange={set('targetScore')} />
-          <p className="mt-1 text-xs text-ink/50">Gán mức Listening & Reading ban đầu. Học viên tự chọn 2 hoặc 4 kỹ năng và điểm mục tiêu trong cài đặt.</p>
-          <FieldError message={errors.targetScore} />
+          <label className="text-sm font-medium" htmlFor="student-phone">Số điện thoại</label>
+          <Input id="student-phone" className="mt-1" value={phone} onChange={(e) => setPhone(e.target.value)} required minLength={6} />
         </div>
-        <p className="text-xs text-ink/50">Mã học viên và mật khẩu tạm sẽ được hệ thống tạo tự động.</p>
-        {formError && <p role="alert" className="rounded-xl bg-[#f8dcd8] px-3 py-2 text-sm text-coral">{formError}</p>}
+        {error ? <p role="alert" className="rounded-xl bg-[#f8dcd8] px-3 py-2 text-sm text-coral">{error}</p> : null}
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="ghost" onClick={onClose}>Hủy</Button>
-          <Button type="submit" disabled={create.isPending}>{create.isPending ? 'Đang tạo…' : 'Tạo học viên'}</Button>
+          <Button type="submit" disabled={create.isPending}>{create.isPending ? 'Đang tạo…' : 'Tạo tài khoản'}</Button>
         </div>
       </form>
     </Modal>
   )
 }
 
+/** Stays on the class card so Excel and single adds can be repeated. */
+export function AddStudentActions({ classId, className }: { classId: string; className: string }) {
+  const [mode, setMode] = useState<'one' | 'excel' | null>(null)
+  const [issued, setIssued] = useState<CredentialsIssuedDto | null>(null)
+  const [note, setNote] = useState<string | null>(null)
+
+  return (
+    <div className="mt-3">
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" className="px-3 py-1.5 text-xs" onClick={() => setMode('one')}>Thêm lẻ</Button>
+        <Button type="button" variant="paper" className="px-3 py-1.5 text-xs" onClick={() => setMode('excel')}>Thêm từ Excel</Button>
+      </div>
+      {note ? <p className="mt-2 text-sm text-olive">{note}</p> : null}
+      {mode === 'one' ? (
+        <AddOneStudentDialog
+          classId={classId}
+          className={className}
+          onClose={() => setMode(null)}
+          onIssued={(next) => {
+            setMode(null)
+            setNote(`Đã thêm ${next.user.fullName} vào ${className}.`)
+            setIssued(next)
+          }}
+        />
+      ) : null}
+      {mode === 'excel' ? (
+        <ImportStudentsDialog
+          classId={classId}
+          className={className}
+          onClose={() => setMode(null)}
+          onDone={(result) => {
+            setMode(null)
+            setNote(`Đã tạo ${result.created} tài khoản vào ${className}${result.skipped ? `, bỏ qua ${result.skipped} dòng` : ''}. File tài khoản đã được tải về.`)
+          }}
+        />
+      ) : null}
+      {issued ? <CredentialsDialog issued={issued} title="Đã tạo tài khoản học viên" onClose={() => setIssued(null)} /> : null}
+    </div>
+  )
+}
+
+const GRANT_FIELDS: Array<{ key: keyof TeacherPermissions; label: string }> = [
+  { key: 'createStudents', label: 'Tạo học viên' },
+  { key: 'manageAssignments', label: 'Quản lý và giao bài tập' },
+  { key: 'viewProgress', label: 'Xem tiến độ bài tập' },
+]
+
+export function TeacherAccessPanel() {
+  const teachers = useTeachers()
+  const create = useCreateStaff()
+  const update = useUpdateTeacherPermissions()
+  const [open, setOpen] = useState(false)
+  const [issued, setIssued] = useState<CredentialsIssuedDto | null>(null)
+  const [form, setForm] = useState({ username: '', fullName: '', createStudents: false, manageAssignments: false, viewProgress: false })
+  const [formError, setFormError] = useState<string | null>(null)
+
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    setFormError(null)
+    try {
+      const res = await create.mutateAsync({
+        username: form.username,
+        fullName: form.fullName,
+        role: 'TEACHER',
+        permissions: {
+          createStudents: form.createStudents,
+          manageAssignments: form.manageAssignments,
+          viewProgress: form.viewProgress,
+        },
+      })
+      setOpen(false)
+      setForm({ username: '', fullName: '', createStudents: false, manageAssignments: false, viewProgress: false })
+      setIssued(res)
+    } catch (err) {
+      setFormError(err instanceof ApiError ? err.message : 'Không tạo được tài khoản giáo viên.')
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border border-gold/35 bg-cream p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="serif text-2xl">Giáo viên</h2>
+          <p className="mt-1 text-sm text-ink/60">Tạo tài khoản và bật từng quyền. Mật khẩu mặc định là {DEFAULT_NEW_ACCOUNT_PASSWORD}.</p>
+        </div>
+        <Button onClick={() => setOpen(true)}>+ Thêm giáo viên</Button>
+      </div>
+      {teachers.isPending ? <p className="mt-4 text-sm text-ink/55">Đang tải…</p> : null}
+      <ul className="mt-4 divide-y divide-gold/25">
+        {(teachers.data?.items ?? []).map((teacher) => (
+          <li key={teacher.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+            <div>
+              <p className="font-semibold">{teacher.fullName}</p>
+              <p className="text-xs text-ink/50">{teacher.username}</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {GRANT_FIELDS.map((field) => (
+                <label key={field.key} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={teacher.permissions[field.key]}
+                    disabled={update.isPending}
+                    onChange={(event) => {
+                      void update.mutate({
+                        id: teacher.id,
+                        permissions: { ...teacher.permissions, [field.key]: event.target.checked },
+                      })
+                    }}
+                  />
+                  {field.label}
+                </label>
+              ))}
+            </div>
+          </li>
+        ))}
+      </ul>
+      {open ? (
+        <Modal title="Thêm giáo viên" onClose={() => !create.isPending && setOpen(false)}>
+          <form onSubmit={(event) => void submit(event)} className="space-y-3">
+            <div>
+              <label className="text-sm font-medium" htmlFor="teacher-name">Họ và tên</label>
+              <Input id="teacher-name" className="mt-1" value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} required />
+            </div>
+            <div>
+              <label className="text-sm font-medium" htmlFor="teacher-user">Tên đăng nhập</label>
+              <Input id="teacher-user" className="mt-1" value={form.username} onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))} required />
+            </div>
+            <div className="space-y-2">
+              {GRANT_FIELDS.map((field) => (
+                <label key={field.key} className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={form[field.key]} onChange={(e) => setForm((f) => ({ ...f, [field.key]: e.target.checked }))} />
+                  {field.label}
+                </label>
+              ))}
+            </div>
+            {formError ? <p role="alert" className="rounded-xl bg-[#f8dcd8] px-3 py-2 text-sm text-coral">{formError}</p> : null}
+            <div className="flex justify-end gap-3 pt-2">
+              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Hủy</Button>
+              <Button type="submit" disabled={create.isPending}>{create.isPending ? 'Đang tạo…' : 'Tạo tài khoản'}</Button>
+            </div>
+          </form>
+        </Modal>
+      ) : null}
+      {issued ? <CredentialsDialog issued={issued} title="Đã tạo tài khoản giáo viên" onClose={() => setIssued(null)} /> : null}
+    </section>
+  )
+}
+
 /** Reset-password + disable/enable with confirmation. Shared by the student list and the detail page. */
 export function AccountActions({ user, compact = false }: { user: UserDto; compact?: boolean }) {
+  const { user: actor } = useAuth()
   const reset = useResetPassword()
   const setStatus = useSetUserStatus()
   const [confirm, setConfirm] = useState<'reset' | 'status' | null>(null)
@@ -130,6 +306,7 @@ export function AccountActions({ user, compact = false }: { user: UserDto; compa
   const [error, setError] = useState<string | null>(null)
   const disabled = user.status === 'DISABLED'
   const busy = reset.isPending || setStatus.isPending
+  if (actor?.role === 'TEACHER' && !actor.permissions.createStudents) return null
 
   async function run() {
     setError(null)

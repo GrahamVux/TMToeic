@@ -44,6 +44,9 @@ export const SKILL_SEED: ReadonlyArray<{ code: Skill; name: string; displayOrder
   { code: 'WRITING', name: 'Writing', displayOrder: 4 },
 ]
 
+/** TOEIC parts plus the center's fill-in exercise (`FILL_1`). */
+export const PART_CODE_PATTERN = /^(PART|FILL)_\d+$/
+
 export const PART_SEED: ReadonlyArray<{ skill: Skill; code: string; name: string; description: string; displayOrder: number }> = [
   { skill: 'LISTENING', code: 'PART_1', name: 'Part 1 — Photographs', description: 'Mô tả tranh', displayOrder: 1 },
   { skill: 'LISTENING', code: 'PART_2', name: 'Part 2 — Question-Response', description: 'Hỏi – đáp', displayOrder: 2 },
@@ -52,4 +55,5 @@ export const PART_SEED: ReadonlyArray<{ skill: Skill; code: string; name: string
   { skill: 'READING', code: 'PART_5', name: 'Part 5 — Incomplete Sentences', description: 'Hoàn thành câu', displayOrder: 5 },
   { skill: 'READING', code: 'PART_6', name: 'Part 6 — Text Completion', description: 'Điền đoạn văn', displayOrder: 6 },
   { skill: 'READING', code: 'PART_7', name: 'Part 7 — Reading Comprehension', description: 'Đọc hiểu', displayOrder: 7 },
+  { skill: 'READING', code: 'FILL_1', name: 'Điền từ', description: 'Điền từ vào chỗ khuyết', displayOrder: 8 },
 ]

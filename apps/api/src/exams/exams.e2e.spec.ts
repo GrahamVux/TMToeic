@@ -483,4 +483,38 @@ describe('Exam engine (e2e on PGlite)', () => {
       expect(staff.body.focus.leaves).toHaveLength(2)
     })
   })
+
+  it('hides an explanation until the sitting is submitted', async () => {
+    const code = `EXPL-${++seq}-${Date.now()}`
+    const imported = await admin.post('/exams/import-authored').send({
+      code,
+      title: 'Đề có lời giải',
+      durationSeconds: 300,
+      parts: [{ partCode: 'PART_5', questionStart: 101, questionEnd: 101 }],
+      publish: true,
+      groups: [],
+      questions: [
+        {
+          partCode: 'PART_5',
+          number: 101,
+          prompt: 'The report was submitted _______ the deadline.',
+          explanation: 'before là giới từ chỉ thời điểm.',
+          options: [
+            { key: 'A', text: 'before', correct: true },
+            { key: 'B', text: 'previous', correct: false },
+          ],
+        },
+      ],
+    })
+    expect(imported.status).toBe(201)
+    const started = await student.post(`/exams/${imported.body.id}/attempts`).send({ mode: 'PRACTICE' })
+    expect(started.status).toBe(200)
+    const player = await student.get(`/attempts/${started.body.id}`)
+    expect(JSON.stringify(player.body)).not.toContain('giới từ')
+    const questionId = player.body.questions[0].id as string
+    expect((await put(student, `/attempts/${started.body.id}/answers/${questionId}`, { selectedKey: 'A' })).status).toBe(200)
+    expect((await student.post(`/attempts/${started.body.id}/submit`)).status).toBe(200)
+    const review = await student.get(`/attempts/${started.body.id}/review`)
+    expect(review.body.questions[0].explanation).toBe('before là giới từ chỉ thời điểm.')
+  })
 })

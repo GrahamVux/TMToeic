@@ -34,7 +34,8 @@
         { "key": "B", "text": "previous", "correct": false },
         { "key": "C", "text": "ago", "correct": false },
         { "key": "D", "text": "already", "correct": false }
-      ]
+      ],
+      "explanation": "before là giới từ, đứng trước danh từ deadline. previous là tính từ, ago đứng sau cụm thời gian, already là trạng từ."
     },
     {
       "partCode": "PART_5",
@@ -45,7 +46,8 @@
         { "key": "B", "text": "training", "correct": true },
         { "key": "C", "text": "trained", "correct": false },
         { "key": "D", "text": "trains", "correct": false }
-      ]
+      ],
+      "explanation": "Sau for cần danh động từ (V-ing): responsible for training."
     },
     {
       "partCode": "PART_6",
@@ -57,7 +59,8 @@
         { "key": "B", "text": "returning", "correct": false },
         { "key": "C", "text": "returned", "correct": false },
         { "key": "D", "text": "returns", "correct": false }
-      ]
+      ],
+      "explanation": "Please + động từ nguyên mẫu: Please return."
     },
     {
       "partCode": "PART_6",
@@ -69,7 +72,8 @@
         { "key": "B", "text": "To announce a closing", "correct": true },
         { "key": "C", "text": "To advertise a sale", "correct": false },
         { "key": "D", "text": "To cancel a membership", "correct": false }
-      ]
+      ],
+      "explanation": "Câu đầu nói thư viện đóng cửa vào thứ Hai để bảo trì, nên mục đích là thông báo đóng cửa."
     }
   ]
 }

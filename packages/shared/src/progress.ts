@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { Skill } from './domain'
+import type { HonorBoardDto } from './honor'
 
 export const GOAL_TRACKS = ['TWO_SKILL', 'FOUR_SKILL'] as const
 export type GoalTrack = (typeof GOAL_TRACKS)[number]
@@ -74,14 +75,6 @@ export type SkillStatDto = {
   accuracy: number | null
 }
 
-export type LeaderboardEntryDto = {
-  rank: number
-  /** Only the display name of classmates is shared. */
-  name: string
-  answered: number
-  accuracy: number | null
-  you: boolean
-}
 
 /** Everything the student home page shows — computed from real attempts; new accounts get zeros/nulls, never sample data. */
 export type StudentDashboardDto = {
@@ -95,7 +88,7 @@ export type StudentDashboardDto = {
   scoreHistory: ScorePointDto[]
   streak: { days: number; activeToday: boolean }
   weekStart: string
-  leaderboard: { entries: LeaderboardEntryDto[]; you: LeaderboardEntryDto | null; participants: number }
+  honor: HonorBoardDto
   skills: SkillStatDto[]
 }
 
@@ -148,6 +141,9 @@ export type StudentProgressDto = {
   recentAttempts: AttemptSummaryDto[]
 }
 
+export const SUPPORT_REASONS = ['LOW_ACCURACY', 'INACTIVE', 'OVERDUE'] as const
+export type SupportReason = (typeof SUPPORT_REASONS)[number]
+
 export type InactiveStudentDto = {
   id: string
   fullName: string
@@ -155,9 +151,15 @@ export type InactiveStudentDto = {
   lastActivityAt: string | null
   /** null = has logged in but never practised. */
   daysInactive: number | null
+  /** Percent correct on finished work. Null when the student has no graded answer. */
+  accuracy: number | null
+  overdueCount: number
+  reasons: SupportReason[]
 }
 
 export const INACTIVE_AFTER_DAYS = 7
+/** A student needs support when their finished-work accuracy is strictly below this percent. */
+export const SUPPORT_ACCURACY_BELOW = 50
 
 export type ClassReportDto = {
   students: { total: number; active: number; pendingFirstLogin: number }
@@ -165,6 +167,9 @@ export type ClassReportDto = {
   /** Correct / graded answers of all students over the last 30 days. */
   accuracy30d: number | null
   inactiveCount: number
-  /** Active students who have logged in but not practised for INACTIVE_AFTER_DAYS (or ever). Capped list. */
+  /**
+   * Active students who need support: accuracy under 50%, no practice for INACTIVE_AFTER_DAYS
+   * (or none since login), or assigned homework still unfinished after the due date. Capped list.
+   */
   inactive: InactiveStudentDto[]
 }

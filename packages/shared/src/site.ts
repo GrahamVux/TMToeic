@@ -46,6 +46,8 @@ export const DEFAULT_SITE_SETTINGS = {
   theme: DEFAULT_SITE_THEME,
   logoUrl: null as string | null,
   faviconUrl: null as string | null,
+  /** Weekly honor boards on the student home. Admin can hide the whole block. */
+  honorBoardEnabled: true,
 }
 
 export type SiteSettingsDto = typeof DEFAULT_SITE_SETTINGS & { updatedAt: string }
@@ -71,6 +73,7 @@ export const updateSiteSettingsSchema = z.object({
   /** data URL to replace; null clears back to the default logo. */
   logoUrl: z.union([dataUrl, z.null()]).optional(),
   faviconUrl: z.union([dataUrl, z.null()]).optional(),
+  honorBoardEnabled: z.boolean().optional(),
 })
 export type UpdateSiteSettingsInput = z.infer<typeof updateSiteSettingsSchema>
 

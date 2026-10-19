@@ -1,6 +1,6 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Query, Req } from '@nestjs/common'
-import { createStaffSchema, createStudentSchema, listUsersQuerySchema } from '@toeic/shared'
-import type { Request } from 'express'
+import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query, Req, Res } from '@nestjs/common'
+import { createStaffSchema, createStudentSchema, listUsersQuerySchema, updateTeacherPermissionsSchema } from '@toeic/shared'
+import type { Request, Response } from 'express'
 import { clientIp, CurrentUser, Roles, type AuthUser } from '../common/decorators'
 import { parse } from '../common/zod'
 import { UsersService } from './users.service'
@@ -11,7 +11,7 @@ export class UsersController {
   constructor(private readonly users: UsersService) {}
 
   private actor(user: AuthUser, req: Request) {
-    return { id: user.id, role: user.role, ip: clientIp(req) }
+    return { id: user.id, role: user.role, permissions: user.permissions, ip: clientIp(req) }
   }
 
   @Get()
@@ -20,8 +20,27 @@ export class UsersController {
   }
 
   @Get('stats/students')
-  studentStats() {
-    return this.users.studentStats()
+  studentStats(@CurrentUser() user: AuthUser, @Req() req: Request) {
+    return this.users.studentStats(this.actor(user, req))
+  }
+
+  @Get('students/template')
+  async template(@CurrentUser() user: AuthUser, @Req() req: Request, @Res() res: Response) {
+    const file = await this.users.template(this.actor(user, req))
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.setHeader('Content-Disposition', 'attachment; filename="mau-hoc-vien.xlsx"')
+    res.send(file)
+  }
+
+  @Post('students/import')
+  @HttpCode(200)
+  async importStudents(@CurrentUser() user: AuthUser, @Query('classId') classId: string | undefined, @Req() req: Request, @Res() res: Response) {
+    const result = await this.users.importStudents(this.actor(user, req), req.body, classId || undefined)
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.setHeader('Content-Disposition', 'attachment; filename="tai-khoan-hoc-vien.xlsx"')
+    res.setHeader('X-Students-Created', String(result.created))
+    res.setHeader('X-Students-Skipped', String(result.skipped))
+    res.send(result.file)
   }
 
   @Post('students')
@@ -33,6 +52,12 @@ export class UsersController {
   @Post('staff')
   createStaff(@CurrentUser() user: AuthUser, @Body() body: unknown, @Req() req: Request) {
     return this.users.createStaff(this.actor(user, req), parse(createStaffSchema, body))
+  }
+
+  @Roles('ADMIN')
+  @Patch(':id/permissions')
+  updatePermissions(@CurrentUser() user: AuthUser, @Param('id', new ParseUUIDPipe()) id: string, @Body() body: unknown, @Req() req: Request) {
+    return this.users.updateTeacherPermissions(this.actor(user, req), id, parse(updateTeacherPermissionsSchema, body))
   }
 
   @Get(':id')

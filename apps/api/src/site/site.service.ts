@@ -43,6 +43,7 @@ export class SiteService {
     }
     if (input.logoUrl !== undefined) patch.logoDataUrl = input.logoUrl
     if (input.faviconUrl !== undefined) patch.faviconDataUrl = input.faviconUrl
+    if (input.honorBoardEnabled !== undefined) patch.honorBoardEnabled = input.honorBoardEnabled
 
     const [row] = await this.db.update(siteSettings).set(patch).where(eq(siteSettings.id, ID)).returning()
     await this.audit.log({ action: 'SITE_SETTINGS_UPDATED', actorId: actor.id, entityType: 'site_settings', entityId: ID, ip })
@@ -74,6 +75,7 @@ export class SiteService {
         themePrimary: d.theme.primary,
         themePrimarySoft: d.theme.primarySoft,
         themePaper: d.theme.paper,
+        honorBoardEnabled: d.honorBoardEnabled,
       })
       .returning()
     return created
@@ -98,6 +100,7 @@ export class SiteService {
       theme: { primary: row.themePrimary, primarySoft: row.themePrimarySoft, paper: row.themePaper },
       logoUrl: row.logoDataUrl,
       faviconUrl: row.faviconDataUrl,
+      honorBoardEnabled: row.honorBoardEnabled,
       updatedAt: row.updatedAt.toISOString(),
     }
   }

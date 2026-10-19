@@ -33,6 +33,36 @@ export const CSRF_HEADER_VALUE = 'web'
 
 export const PASSWORD_MIN_LENGTH = 10
 
+/** Password given to every account created by an admin or teacher. The user must change it at first login. */
+export const DEFAULT_NEW_ACCOUNT_PASSWORD = '123456'
+
+export const teacherPermissionsSchema = z.object({
+  /** Tạo học viên (từng người hoặc bằng Excel). */
+  createStudents: z.boolean(),
+  /** Kho đề, tạo và giao bài tập. */
+  manageAssignments: z.boolean(),
+  /** Xem tiến độ và bài làm của học viên. */
+  viewProgress: z.boolean(),
+})
+export type TeacherPermissions = z.infer<typeof teacherPermissionsSchema>
+
+export const FULL_TEACHER_PERMISSIONS: TeacherPermissions = {
+  createStudents: true,
+  manageAssignments: true,
+  viewProgress: true,
+}
+
+/** Admin always has every teacher grant. Students have none. Teachers use the flags stored on the account. */
+export function teacherGrants(role: Role, stored?: Partial<TeacherPermissions> | null): TeacherPermissions {
+  if (role === 'ADMIN') return { ...FULL_TEACHER_PERMISSIONS }
+  if (role !== 'TEACHER') return { createStudents: false, manageAssignments: false, viewProgress: false }
+  return {
+    createStudents: stored?.createStudents ?? false,
+    manageAssignments: stored?.manageAssignments ?? false,
+    viewProgress: stored?.viewProgress ?? false,
+  }
+}
+
 export const passwordSchema = z
   .string()
   .min(PASSWORD_MIN_LENGTH, `Mật khẩu tối thiểu ${PASSWORD_MIN_LENGTH} ký tự`)
@@ -62,6 +92,8 @@ export const createStudentSchema = z.object({
   email: z.string().trim().email('Email không hợp lệ').max(254).optional(),
   phone: z.string().trim().min(6).max(20).optional(),
   targetScore: z.number().int().min(10).max(990).optional(),
+  /** Class the new student joins. Teachers may omit this only when they manage exactly one class. */
+  classId: z.string().uuid().optional(),
 })
 export type CreateStudentInput = z.infer<typeof createStudentSchema>
 
@@ -76,13 +108,21 @@ export const createStaffSchema = z.object({
   fullName: z.string().trim().min(2).max(120),
   role: z.enum(['TEACHER', 'ADMIN']),
   email: z.string().trim().email().max(254).optional(),
+  /** Omitted grants default to all three, so older clients keep creating a full teacher. */
+  permissions: teacherPermissionsSchema.optional(),
 })
 export type CreateStaffInput = z.infer<typeof createStaffSchema>
+
+export const updateTeacherPermissionsSchema = z.object({
+  permissions: teacherPermissionsSchema,
+})
+export type UpdateTeacherPermissionsInput = z.infer<typeof updateTeacherPermissionsSchema>
 
 export const listUsersQuerySchema = z.object({
   role: z.enum(ROLES).optional(),
   status: z.enum(USER_STATUSES).optional(),
   q: z.string().trim().max(64).optional(),
+  classId: z.string().uuid().optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 })
@@ -103,8 +143,13 @@ export type UserDto = {
   /** 2-skill or 4-skill band the student chose; null when no goal is set. */
   goal: GoalDto
   mustChangePassword: boolean
+  /** What this teacher is allowed to do. Admin is always fully granted; students are always empty. */
+  permissions: TeacherPermissions
   lastLoginAt: string | null
   createdAt: string
+  /** Student's class. Null for staff and for a student who has not been placed. */
+  classId: string | null
+  className: string | null
 }
 
 export type SessionDto = {

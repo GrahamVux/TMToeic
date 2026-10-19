@@ -85,6 +85,41 @@
       "when": 1791700000000,
       "tag": "0011_attempt_focus",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792300000000,
+      "tag": "0012_teacher_permissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792400000000,
+      "tag": "0013_honor_classes",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792500000000,
+      "tag": "0014_class_teachers",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1792600000000,
+      "tag": "0015_fill_blank",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792700000000,
+      "tag": "0016_question_explanation",
+      "breakpoints": true
     }
   ]
 }

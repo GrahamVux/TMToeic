@@ -1,10 +1,14 @@
-import { scaledSectionScore, summarizeScores } from './scoring'
+import { PRACTICE_LISTENING_SCALE, PRACTICE_READING_SCALE, scaledSectionScore, summarizeScores } from './scoring'
 
 describe('scoring', () => {
   it('fallback scale maps 0..100 raw to 5..495 in steps of 5', () => {
     expect(scaledSectionScore(0, 'LISTENING')).toBe(5)
     expect(scaledSectionScore(100, 'READING')).toBe(495)
     expect(scaledSectionScore(50, 'LISTENING')).toBe(250)
+    expect(PRACTICE_LISTENING_SCALE).toHaveLength(101)
+    expect(PRACTICE_READING_SCALE).toHaveLength(101)
+    expect(scaledSectionScore(86, 'LISTENING')).toBe(475)
+    expect(scaledSectionScore(46, 'READING')).toBe(190)
     for (let r = 0; r <= 100; r++) expect(scaledSectionScore(r, 'READING') % 5).toBe(0)
   })
 

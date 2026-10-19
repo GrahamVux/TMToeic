@@ -1,5 +1,6 @@
 import type { INestApplication } from '@nestjs/common'
 import { CSRF_HEADER, CSRF_HEADER_VALUE, ERROR_CODES } from '@toeic/shared'
+import ExcelJS from 'exceljs'
 import request from 'supertest'
 import { DB, type Db } from '../db/database.module'
 import { auditLogs } from '../db/schema'
@@ -108,6 +109,12 @@ describe('Auth, RBAC & account management (e2e on PGlite)', () => {
       expect(t.res.status).toBe(200)
       await t.c.post('/auth/change-password').send({ currentPassword: pw, newPassword: 'Teacher12345' })
       teacher = t.c
+      const rooms = await admin.get('/classes')
+      const room = rooms.body[0] as { id: string; teachers: Array<{ id: string }> }
+      const teacherIds = [...new Set([...(room.teachers ?? []).map((item) => item.id), created.body.user.id as string])]
+      expect(
+        (await admin.agent.put(`/api/v1/classes/${room.id}/teachers`).set(CSRF_HEADER, CSRF_HEADER_VALUE).send({ teacherIds })).status,
+      ).toBe(200)
     })
 
     it('teacher creates a student: sequential code + one-time temporary password', async () => {
@@ -116,7 +123,7 @@ describe('Auth, RBAC & account management (e2e on PGlite)', () => {
       expect(res.body.user.studentCode).toMatch(/^TM-\d{4,}$/)
       expect(res.body.user.role).toBe('STUDENT')
       expect(res.body.user.mustChangePassword).toBe(true)
-      expect(res.body.temporaryPassword).toMatch(/^[A-Za-z0-9]{12}$/)
+      expect(res.body.temporaryPassword).toBe('123456')
       studentId = res.body.user.id
       studentCode = res.body.user.studentCode
       tempPassword = res.body.temporaryPassword
@@ -125,6 +132,26 @@ describe('Auth, RBAC & account management (e2e on PGlite)', () => {
       const n1 = Number(studentCode.split('-')[1])
       const n2 = Number(second.body.user.studentCode.split('-')[1])
       expect(n2).toBe(n1 + 1)
+    })
+
+    it('a teacher only adds and sees students of the classes they manage', async () => {
+      const other = await admin.post('/classes').send({ name: `Lop Rieng ${Date.now()}` })
+      expect(other.status).toBe(201)
+      const blocked = await teacher.post('/users/students').send({ fullName: 'Ngoài Lớp', phone: '0901000001', classId: other.body.id })
+      expect(blocked.status).toBe(403)
+
+      const made = await admin.post('/users/students').send({ fullName: 'Học viên lớp riêng', phone: '0901000002', classId: other.body.id })
+      expect(made.status).toBe(201)
+      expect(made.body.user.classId).toBe(other.body.id)
+
+      expect((await teacher.get(`/users/${made.body.user.id}`)).status).toBe(404)
+      const list = await teacher.get('/users?pageSize=100')
+      expect(list.body.items.some((u: { id: string }) => u.id === made.body.user.id)).toBe(false)
+
+      const mine = await teacher.post('/users/students').send({ fullName: 'Trong Lớp Của Thầy', phone: '0901000003' })
+      expect(mine.status).toBe(201)
+      expect(mine.body.user.className).toBeTruthy()
+      expect(mine.body.user.classId).not.toBe(other.body.id)
     })
 
     it('rejects duplicate email and invalid input', async () => {
@@ -242,6 +269,76 @@ describe('Auth, RBAC & account management (e2e on PGlite)', () => {
       const blob = JSON.stringify(rows)
       expect(blob).not.toContain(tempPassword)
       expect(blob).not.toContain('StudentPass99')
+    })
+
+    it('admin grants teacher permissions; a teacher without them cannot create students, manage exams, or view progress', async () => {
+      const created = await admin.post('/users/staff').send({
+        username: 'teacher.limited',
+        fullName: 'Cô Hạn chế',
+        role: 'TEACHER',
+        permissions: { createStudents: false, manageAssignments: false, viewProgress: false },
+      })
+      expect(created.status).toBe(201)
+      expect(created.body.temporaryPassword).toBe('123456')
+      expect(created.body.user.permissions).toEqual({ createStudents: false, manageAssignments: false, viewProgress: false })
+
+      const signedIn = await login(app, 'teacher.limited', '123456')
+      expect((await signedIn.c.post('/auth/change-password').send({ currentPassword: '123456', newPassword: 'Limited12345' })).status).toBe(200)
+      const limited = signedIn.c
+      expect((await limited.post('/users/students').send({ fullName: 'Không được tạo' })).status).toBe(403)
+      expect((await limited.get('/reports/class')).status).toBe(403)
+      expect((await limited.get('/exams')).status).toBe(403)
+
+      const patched = await admin.patch(`/users/${created.body.user.id}/permissions`).send({
+        permissions: { createStudents: true, manageAssignments: true, viewProgress: true },
+      })
+      expect(patched.status).toBe(200)
+      expect(patched.body.permissions).toEqual({ createStudents: true, manageAssignments: true, viewProgress: true })
+
+      const rooms = await admin.get('/classes')
+      const room = rooms.body[0] as { id: string; teachers: Array<{ id: string }> }
+      const teacherIds = [...new Set([...(room.teachers ?? []).map((item) => item.id), created.body.user.id as string])]
+      expect(
+        (await admin.agent.put(`/api/v1/classes/${room.id}/teachers`).set(CSRF_HEADER, CSRF_HEADER_VALUE).send({ teacherIds })).status,
+      ).toBe(200)
+
+      const student = await limited.post('/users/students').send({ fullName: 'Học viên sau khi cấp quyền' })
+      expect(student.status).toBe(201)
+      expect(student.body.temporaryPassword).toBe('123456')
+      expect((await limited.get('/reports/class')).status).toBe(200)
+      expect((await limited.get('/exams')).status).toBe(200)
+    })
+
+    it('imports an excel of names and phones and returns a workbook of accounts', async () => {
+      const book = new ExcelJS.Workbook()
+      const sheet = book.addWorksheet('Hoc vien')
+      sheet.addRow(['Họ tên', 'Số điện thoại'])
+      sheet.addRow(['Trần An', '0901234567'])
+      sheet.addRow(['Lê Bình', '0901234567'])
+      const raw = Buffer.from(await book.xlsx.writeBuffer())
+
+      const res = await teacher
+        .post('/users/students/import')
+        .set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        .send(raw)
+        .buffer(true)
+        .parse((response, callback) => {
+          const chunks: Buffer[] = []
+          response.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)))
+          response.on('end', () => callback(null, Buffer.concat(chunks)))
+        })
+
+      expect(res.status).toBe(200)
+      expect(res.headers['x-students-created']).toBe('1')
+      expect(res.headers['x-students-skipped']).toBe('1')
+      expect(res.headers['content-disposition']).toContain('tai-khoan-hoc-vien.xlsx')
+
+      const out = new ExcelJS.Workbook()
+      await out.xlsx.load(res.body)
+      const values = out.worksheets[0].getSheetValues().flat().map((cell) => String(cell ?? ''))
+      expect(values.some((cell) => cell.startsWith('TM-'))).toBe(true)
+      expect(values).toContain('123456')
+      expect(values).toContain('Trùng số điện thoại trong file')
     })
   })
 

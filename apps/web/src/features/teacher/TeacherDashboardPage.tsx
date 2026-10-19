@@ -1,13 +1,15 @@
+import { useAuth } from '@/app/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Badge, Card, Input } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { useClassReport } from '@/features/progress/progress.queries'
-import type { CredentialsIssuedDto, UserStatus } from '@toeic/shared'
-import { formatGoal } from '@toeic/shared'
+import { formatGoal, INACTIVE_AFTER_DAYS, SUPPORT_ACCURACY_BELOW, type UserStatus } from '@toeic/shared'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { InactiveList } from './ReportsPage'
-import { AccountActions, CreateStudentDialog, CredentialsDialog } from './StudentDialogs'
+import { ClassRooms, ClassSelect, TeacherClassPanels } from './ClassRooms'
+import { AccountActions, TeacherAccessPanel } from './StudentDialogs'
+import { useClasses } from './users.queries'
 import { useStudentStats, useStudents, type StudentFilters } from './users.queries'
 
 const PAGE_SIZE = 10
@@ -24,16 +26,23 @@ function useDebounced<T>(value: T, ms = 300) {
 const dateFmt = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
 
 export function TeacherDashboardPage() {
+  const { user } = useAuth()
+  const grants = user?.permissions
+  const isAdmin = user?.role === 'ADMIN'
+  const canCreate = isAdmin || !!grants?.createStudents
+  const canAssign = isAdmin || !!grants?.manageAssignments
+  const canView = isAdmin || !!grants?.viewProgress
+  const canSeeStudents = isAdmin || canCreate || canAssign || canView
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<UserStatus | ''>('')
   const [page, setPage] = useState(1)
-  const [creating, setCreating] = useState(false)
-  const [issued, setIssued] = useState<CredentialsIssuedDto | null>(null)
+  const [classId, setClassId] = useState('')
   const q = useDebounced(search.trim())
+  const rooms = useClasses()
 
-  const filters: StudentFilters = { q, status, page, pageSize: PAGE_SIZE }
-  const students = useStudents(filters)
-  const stats = useStudentStats()
+  const filters: StudentFilters = { q, status, classId, page, pageSize: PAGE_SIZE }
+  const students = useStudents(filters, canSeeStudents)
+  const stats = useStudentStats(canSeeStudents)
   const total = students.data?.total ?? 0
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
@@ -54,19 +63,26 @@ export function TeacherDashboardPage() {
           <p className="mt-2 text-sm text-ink/60">Tạo tài khoản, theo dõi tiến độ và xem bài làm chi tiết của từng học viên.</p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:gap-3">
-          <Link to="/admin/assignments" className="sm:w-auto"><Button className="w-full" variant="paper">Giao bài tập</Button></Link>
-          <Link to="/admin/exams" className="sm:w-auto"><Button className="w-full">Import đề mới</Button></Link>
-          <Button className="w-full sm:w-auto" variant="paper" onClick={() => setCreating(true)}>+ Thêm học viên</Button>
+          {canAssign ? <Link to="/admin/assignments" className="sm:w-auto"><Button className="w-full" variant="paper">Giao bài tập</Button></Link> : null}
+          {canAssign ? <Link to="/admin/exams" className="sm:w-auto"><Button className="w-full">Import đề mới</Button></Link> : null}
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      {isAdmin ? <TeacherAccessPanel /> : null}
+      {isAdmin ? <ClassRooms /> : canSeeStudents ? <TeacherClassPanels canCreate={canCreate} /> : null}
+      {!canSeeStudents ? (
+        <Card className="p-6">
+          <p className="text-sm text-ink/70">Tài khoản này chưa được cấp quyền. Quản trị viên cần bật tạo học viên, giao bài hoặc xem tiến độ.</p>
+        </Card>
+      ) : null}
+      {canSeeStudents ? <div className="grid gap-4 md:grid-cols-4">
         <Stat title="Tổng học viên" value={stats.data?.total} meta="Tài khoản do giáo viên cấp" />
         <Stat title="Đang hoạt động" value={stats.data?.active} meta="Có thể đăng nhập" />
         <Stat title="Chưa đổi mật khẩu tạm" value={stats.data?.pendingFirstLogin} meta="Cần nhắc học viên đăng nhập lần đầu" />
         <Stat title="Đã khóa" value={stats.data?.disabled} meta="Không thể đăng nhập" />
-      </div>
+      </div> : null}
 
+      {canSeeStudents ? <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           {chips.map((c) => (
@@ -83,6 +99,24 @@ export function TeacherDashboardPage() {
             </button>
           ))}
         </div>
+        {(rooms.data ?? []).length > 0 ? (
+          <select
+            className="rounded-xl border border-gold/40 bg-white px-3 py-2 text-sm"
+            aria-label="Lọc theo lớp"
+            value={classId}
+            onChange={(event) => {
+              setClassId(event.target.value)
+              setPage(1)
+            }}
+          >
+            <option value="">{isAdmin ? 'Mọi lớp' : 'Mọi lớp được giao'}</option>
+            {(rooms.data ?? []).map((room) => (
+              <option key={room.id} value={room.id}>
+                {room.name}
+              </option>
+            ))}
+          </select>
+        ) : null}
         <Input
           className="w-full sm:max-w-xs"
           placeholder="Tìm theo tên hoặc mã HV (TM-1000)…"
@@ -112,7 +146,7 @@ export function TeacherDashboardPage() {
             ) : !students.data?.items.length ? (
               <tr>
                 <td colSpan={5} className="px-4 py-10 text-center text-ink/55">
-                  {q || status ? 'Không có học viên khớp bộ lọc.' : 'Chưa có học viên nào. Bấm “+ Thêm học viên” để tạo tài khoản đầu tiên.'}
+                  {q || status ? 'Không có học viên khớp bộ lọc.' : 'Chưa có học viên nào. Hãy nhập file Excel để tạo tài khoản.'}
                 </td>
               </tr>
             ) : (
@@ -120,7 +154,8 @@ export function TeacherDashboardPage() {
                 <tr key={u.id} className="border-t border-gold/25">
                   <td className="px-4 py-3">
                     <p className="font-semibold">{u.fullName}</p>
-                    <p className="text-xs text-ink/50">{u.studentCode}{u.email ? ` • ${u.email}` : ''}</p>
+                    <p className="text-xs text-ink/50">{u.studentCode}{u.email ? ` • ${u.email}` : ''}{u.className ? ` • ${u.className}` : ''}</p>
+                    {isAdmin ? <ClassSelect userId={u.id} classId={u.classId} /> : null}
                   </td>
                   <td className="px-4 py-3">
                     {u.status === 'DISABLED' ? (
@@ -136,8 +171,8 @@ export function TeacherDashboardPage() {
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <AccountActions user={u} compact />
-                      <Link to={`/admin/students/${u.id}#bai-lam`}><Button variant="paper" className="px-3 py-1.5 text-xs">Bài làm</Button></Link>
-                      <Link to={`/admin/students/${u.id}`}><Button variant="paper" className="px-3 py-1.5 text-xs">Hồ sơ</Button></Link>
+                      {canView ? <Link to={`/admin/students/${u.id}#bai-lam`}><Button variant="paper" className="px-3 py-1.5 text-xs">Bài làm</Button></Link> : null}
+                      {canView ? <Link to={`/admin/students/${u.id}`}><Button variant="paper" className="px-3 py-1.5 text-xs">Hồ sơ</Button></Link> : null}
                     </div>
                   </td>
                 </tr>
@@ -155,19 +190,9 @@ export function TeacherDashboardPage() {
           </div>
         )}
       </div>
+      </> : null}
 
-      <NeedsAttention />
-
-      {creating && (
-        <CreateStudentDialog
-          onClose={() => setCreating(false)}
-          onCreated={(res) => {
-            setCreating(false)
-            setIssued(res)
-          }}
-        />
-      )}
-      {issued && <CredentialsDialog issued={issued} title="Đã tạo tài khoản học viên" onClose={() => setIssued(null)} />}
+      {canView ? <NeedsAttention /> : null}
     </div>
   )
 }
@@ -187,7 +212,10 @@ function NeedsAttention() {
   return (
     <Card className="p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="serif text-2xl">Học viên cần hỗ trợ</h2>
+        <div>
+          <h2 className="serif text-2xl">Học viên cần hỗ trợ</h2>
+          <p className="mt-1 text-xs text-ink/50">Tỉ lệ đúng dưới {SUPPORT_ACCURACY_BELOW}%, từ {INACTIVE_AFTER_DAYS} ngày không làm bài, hoặc bài giao đã quá hạn mà chưa nộp.</p>
+        </div>
         <Link to="/admin/reports"><Button variant="paper" className="px-3 py-1.5 text-xs">Báo cáo lớp</Button></Link>
       </div>
       {report.isPending ? <p className="mt-3 text-sm text-ink/55">Đang tải…</p> : null}

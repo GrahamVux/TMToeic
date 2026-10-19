@@ -5,7 +5,8 @@ import { Badge, Card, Input } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { partName, useArchiveExam, useExams, usePublishExam, useUploadExamAudio } from '@/features/exams/exams.queries'
 import { ApiError } from '@/lib/api'
-import { ERROR_CODES, OPTION_KEYS, PART_SEED, type ExamStatus, type ExamSummaryDto, type ImportAuthoredExamInput, type Skill } from '@toeic/shared'
+import { ERROR_CODES, importAuthoredExamSchema, OPTION_KEYS, PART_SEED, type ExamStatus, type ExamSummaryDto, type ImportAuthoredExamInput, type Skill } from '@toeic/shared'
+import { ImportReview } from './ImportReview'
 import { FileUp } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -57,11 +58,12 @@ function foreignPartCodes(raw: ImportAuthoredExamInput, skill: Skill) {
 function AuthoredImport({ skill }: { skill: Skill }) {
   const importExam = useImportAuthoredExam()
   const uploadAudio = useUploadExamAudio()
-  const parts = PART_SEED.filter((p) => p.skill === skill)
+  const parts = PART_SEED.filter((p) => p.skill === skill && p.code.startsWith('PART_'))
   const [title, setTitle] = useState('')
   const [minutes, setMinutes] = useState(20)
   const [partCode, setPartCode] = useState(skill === 'LISTENING' ? 'PART_2' : 'PART_5')
-  const [rows, setRows] = useState([{ prompt: '', a: '', b: '', c: '', d: '', correct: 'A' }])
+  const [rows, setRows] = useState([{ prompt: '', a: '', b: '', c: '', d: '', correct: 'A', explanation: '' }])
+  const [preview, setPreview] = useState<ImportAuthoredExamInput | null>(null)
   const [audio, setAudio] = useState<File | null>(null)
   const [jsonError, setJsonError] = useState<string | null>(null)
   const [ok, setOk] = useState<string | null>(null)
@@ -69,7 +71,7 @@ function AuthoredImport({ skill }: { skill: Skill }) {
   const busy = importExam.isPending || uploadAudio.isPending
 
   function addRow() {
-    setRows((r) => [...r, { prompt: '', a: '', b: '', c: '', d: '', correct: 'A' }])
+    setRows((r) => [...r, { prompt: '', a: '', b: '', c: '', d: '', correct: 'A', explanation: '' }])
   }
 
   async function attachAudio(examId: string) {
@@ -108,6 +110,7 @@ function AuthoredImport({ skill }: { skill: Skill }) {
         partCode,
         number: i + 1,
         prompt: r.prompt,
+        explanation: r.explanation.trim() || undefined,
         options: [
           { key: 'A' as const, text: r.a, correct: r.correct === 'A' },
           { key: 'B' as const, text: r.b, correct: r.correct === 'B' },
@@ -126,7 +129,7 @@ function AuthoredImport({ skill }: { skill: Skill }) {
       setOk(`Đã thêm “${exam.title}” vào ngân hàng (${exam.parts.map((p) => partName(p.code).split(' — ')[0]).join(', ')})${audio ? ' và đã gắn file nghe.' : '.'}`)
       setTitle('')
       setAudio(null)
-      setRows([{ prompt: '', a: '', b: '', c: '', d: '', correct: 'A' }])
+      setRows([{ prompt: '', a: '', b: '', c: '', d: '', correct: 'A', explanation: '' }])
     } catch (e) {
       setJsonError(e instanceof ApiError ? e.message : 'Không import được đề. Kiểm tra mỗi câu có 4 lựa chọn và đúng 1 đáp án.')
     }
@@ -136,8 +139,12 @@ function AuthoredImport({ skill }: { skill: Skill }) {
     setJsonError(null)
     setOk(null)
     try {
-      const raw = JSON.parse(await file.text()) as ImportAuthoredExamInput
-      const foreign = foreignPartCodes(raw, skill)
+      const parsed = importAuthoredExamSchema.safeParse(JSON.parse(await file.text()))
+      if (!parsed.success) {
+        setJsonError(parsed.error.issues.map((issue) => issue.message).join(' '))
+        return
+      }
+      const foreign = foreignPartCodes(parsed.data, skill)
       if (foreign.length > 0) {
         setJsonError(
           skill === 'LISTENING'
@@ -146,17 +153,42 @@ function AuthoredImport({ skill }: { skill: Skill }) {
         )
         return
       }
-      const exam = await importExam.mutateAsync({ ...raw, publish: raw.publish !== false })
+      setPreview(parsed.data)
+    } catch (e) {
+      setJsonError(e instanceof ApiError ? e.message : 'File JSON không hợp lệ hoặc mã đề đã tồn tại.')
+    }
+  }
+
+  async function savePreview(next: ImportAuthoredExamInput) {
+    setJsonError(null)
+    setOk(null)
+    try {
+      const exam = await importExam.mutateAsync({ ...next, publish: next.publish !== false })
       const audioError = await attachAudio(exam.id)
       if (audioError) {
         setJsonError(audioError)
         return
       }
+      setPreview(null)
       setOk(`Đã cập nhật ngân hàng: “${exam.title}”${audio ? ' và đã gắn file nghe.' : '.'}`)
       setAudio(null)
     } catch (e) {
-      setJsonError(e instanceof ApiError ? e.message : 'File JSON không hợp lệ hoặc mã đề đã tồn tại.')
+      setJsonError(e instanceof ApiError ? e.message : 'Không import được đề. Kiểm tra mỗi câu có đúng 1 đáp án.')
     }
+  }
+
+  if (preview) {
+    return (
+      <ImportReview
+        draft={preview}
+        busy={busy}
+        error={jsonError}
+        audioName={skill === 'LISTENING' ? audio?.name ?? null : undefined}
+        onAudio={skill === 'LISTENING' ? (file) => setAudio(file) : undefined}
+        onCancel={() => { setPreview(null); setJsonError(null) }}
+        onSave={(next) => void savePreview(next)}
+      />
+    )
   }
 
   return (
@@ -166,8 +198,8 @@ function AuthoredImport({ skill }: { skill: Skill }) {
         <h2 className="serif mt-2 text-2xl">{skill === 'LISTENING' ? 'Import JSON đề Listening' : 'Import JSON đề Reading'}</h2>
         <p className="mt-2 text-sm text-ink/60">
           {skill === 'LISTENING'
-            ? 'File gồm Part 1–4. File nghe (mp3, m4a, wav) chọn riêng bên dưới, tối đa 80MB.'
-            : 'File gồm Part 5–7. Mỗi đề chỉ thuộc một kỹ năng.'}
+            ? 'File gồm Part 1–4. Chọn file để xem lại câu hỏi, đáp án và lời giải trước khi lưu. File nghe chọn riêng bên dưới.'
+            : 'File gồm Part 5–7. Mỗi đề chỉ thuộc một kỹ năng. Chọn file để xem lại câu hỏi, đáp án và lời giải trước khi lưu.'}
         </p>
         <a className="mt-2 inline-block text-sm font-semibold text-gold-deep underline" href={sampleHref} download>
           Tải file mẫu
@@ -230,6 +262,13 @@ function AuthoredImport({ skill }: { skill: Skill }) {
                   />
                 ))}
               </div>
+              <textarea
+                className="mt-2 w-full rounded-xl border border-ink/10 bg-white px-3 py-2 text-sm"
+                rows={2}
+                placeholder="Lời giải thích"
+                value={r.explanation}
+                onChange={(e) => setRows((all) => all.map((x, j) => (j === i ? { ...x, explanation: e.target.value } : x)))}
+              />
               <label className="mt-2 flex items-center gap-2 text-xs">
                 Đáp án đúng
                 <select

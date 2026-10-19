@@ -4,7 +4,7 @@ import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Badge, Card } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { cn } from '@/lib/cn'
-import type { AttemptPlayerDto } from '@toeic/shared'
+import { FILL_QUESTION_TYPE, type AttemptPlayerDto } from '@toeic/shared'
 import { AlertTriangle, Headphones } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
@@ -41,8 +41,9 @@ function Player({ data }: { data: AttemptPlayerDto }) {
   const submit = useSubmitAttempt()
 
   const [store] = useState(() => {
-    const initial = Object.fromEntries(questions.map((q) => [q.id, q.selectedKey]))
-    return new AutosaveStore(attempt.id, initial, () => navigate(`/attempts/${attempt.id}/result`, { replace: true }))
+    const initial = Object.fromEntries(questions.map((q) => [q.id, q.type === FILL_QUESTION_TYPE ? q.answerText : q.selectedKey]))
+    const textIds = new Set(questions.filter((q) => q.type === FILL_QUESTION_TYPE).map((q) => q.id))
+    return new AutosaveStore(attempt.id, initial, () => navigate(`/attempts/${attempt.id}/result`, { replace: true }), textIds)
   })
   useEffect(() => {
     store.activate() // StrictMode mounts effects twice; a disposed store must be revivable
@@ -52,11 +53,12 @@ function Player({ data }: { data: AttemptPlayerDto }) {
   const focus = useFocusGuard(attempt.id, attempt.focusWatch)
 
   const [index, setIndex] = useState(() => {
-    const firstOpen = questions.findIndex((q) => q.selectedKey === null)
+    const firstOpen = questions.findIndex((q) => (q.type === FILL_QUESTION_TYPE ? !q.answerText : q.selectedKey === null))
     return firstOpen === -1 ? 0 : firstOpen
   })
   const [confirm, setConfirm] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [scoring, setScoring] = useState(false)
   const [finishing, setFinishing] = useState(false)
   const [textZoom, setTextZoom] = useState(1)
 
@@ -86,6 +88,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
     if (finishing) return
     setFinishing(true)
     setSubmitError(null)
+    if (reason === 'time') setScoring(true)
     // Give the autosave queue a chance to drain so the last picks are counted. After the deadline the server refuses late writes anyway.
     if (reason === 'manual') {
       const ok = await store.flush()
@@ -97,13 +100,22 @@ function Player({ data }: { data: AttemptPlayerDto }) {
     } else {
       await store.flush(3000)
     }
-    try {
-      await submit.mutateAsync(attempt.id)
-      navigate(`/attempts/${attempt.id}/result`, { replace: true })
-    } catch {
-      setFinishing(false)
-      setSubmitError('Không nộp được bài. Vui lòng thử lại.')
+    const tries = reason === 'time' ? 4 : 1
+    for (let i = 0; i < tries; i++) {
+      try {
+        await submit.mutateAsync(attempt.id)
+        navigate(`/attempts/${attempt.id}/result`, { replace: true })
+        return
+      } catch {
+        if (i < tries - 1) await new Promise((resolve) => setTimeout(resolve, 700))
+      }
     }
+    if (reason === 'time') {
+      navigate(`/attempts/${attempt.id}/result`, { replace: true })
+      return
+    }
+    setFinishing(false)
+    setSubmitError('Không nộp được bài. Vui lòng thử lại.')
   }
 
   const listening = isListeningPart(question.partCode)
@@ -138,6 +150,12 @@ function Player({ data }: { data: AttemptPlayerDto }) {
         </div>
       </div>
 
+      {scoring ? (
+        <p className="rounded-xl bg-teal-soft px-4 py-3 text-sm font-semibold text-teal" role="status">
+          Hết giờ. Đang chấm điểm…
+        </p>
+      ) : null}
+
       {focus.notice ? (
         <Modal title="Cảnh báo rời màn hình" onClose={focus.dismiss} dismissible={false}>
           <p className="flex gap-2 text-sm text-ink/80">
@@ -166,7 +184,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
             </div>
           ) : null}
 
-          {group ? (
+          {group && (group.passages.length > 0 || group.instructions || group.imageUrl) ? (
             <Card className="p-5">
               <div style={examTextStyle(textZoom)}>
                 <PassageView group={group} />
@@ -182,26 +200,37 @@ function Player({ data }: { data: AttemptPlayerDto }) {
                 <ZoomableImage src={question.imageUrl} alt={`Hình minh họa câu ${question.number}`} compact />
               </div>
             ) : null}
-            {question.prompt ? <SelectableText as="h2" className="mt-3 text-xl leading-8 font-medium" text={question.prompt} /> : null}
-            <div className="mt-6 grid gap-3" role="radiogroup" aria-label={`Đáp án câu ${question.number}`}>
-              {question.options.map((option) => {
-                const selected = save.answers[question.id] === option.key
-                return (
-                  <button
-                    key={option.key}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    onClick={() => choose(option.key)}
-                    className={cn('rounded-2xl border px-4 py-3 text-left transition', selected ? 'border-gold-deep bg-teal-soft' : 'border-ink/10 hover:bg-paper')}
-                  >
-                    <span className="mr-3 font-bold">{option.key}.</span>
-                    {option.text}
-                  </button>
-                )
-              })}
-            </div>
-            <p className="mt-3 text-xs text-ink/40">Bấm lại đáp án đã chọn để bỏ chọn.</p>
+            {question.type === FILL_QUESTION_TYPE ? (
+              <FillBlank
+                prompt={question.prompt}
+                blankIndex={question.blankIndex ?? 0}
+                value={save.answers[question.id] ?? ''}
+                onChange={(value) => store.typeText(question.id, value)}
+              />
+            ) : (
+              <>
+                {question.prompt ? <SelectableText as="h2" className="mt-3 text-xl leading-8 font-medium" text={question.prompt} /> : null}
+                <div className="mt-6 grid gap-3" role="radiogroup" aria-label={`Đáp án câu ${question.number}`}>
+                  {question.options.map((option) => {
+                    const selected = save.answers[question.id] === option.key
+                    return (
+                      <button
+                        key={option.key}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() => choose(option.key)}
+                        className={cn('rounded-2xl border px-4 py-3 text-left transition', selected ? 'border-gold-deep bg-teal-soft' : 'border-ink/10 hover:bg-paper')}
+                      >
+                        <span className="mr-3 font-bold">{option.key}.</span>
+                        {option.text}
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className="mt-3 text-xs text-ink/40">Bấm lại đáp án đã chọn để bỏ chọn.</p>
+              </>
+            )}
             <div className="mt-6 flex justify-between">
               <Button variant="ghost" disabled={index === 0} onClick={() => setIndex((i) => i - 1)}>Câu trước</Button>
               <Button variant="navy" disabled={index === questions.length - 1} onClick={() => setIndex((i) => i + 1)}>Câu tiếp</Button>
@@ -220,7 +249,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
                 onClick={() => setIndex(firstIndex)}
                 className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', question.partCode === code ? 'bg-gold-deep text-white' : 'bg-paper')}
               >
-                {code.replace('PART_', 'Part ')}
+                {code.startsWith('FILL_') ? 'Điền từ' : code.replace('PART_', 'Part ')}
               </button>
             ))}
           </div>
@@ -248,7 +277,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
           <Card className="w-full max-w-md p-6">
             <h2 id="submit-title" className="serif text-2xl">Nộp bài?</h2>
             <p className="mt-2 text-sm text-ink/65">
-              Bạn đã chọn {answered}/{questions.length} câu. Câu chưa chọn sẽ tính là bỏ trống. Sau khi nộp sẽ không sửa được đáp án.
+              Bạn đã trả lời {answered}/{questions.length} câu. Câu chưa làm sẽ tính là bỏ trống. Sau khi nộp sẽ không sửa được đáp án.
             </p>
             {submitError ? (
               <p className="mt-3 flex gap-2 rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral" role="alert">
@@ -270,6 +299,35 @@ function Player({ data }: { data: AttemptPlayerDto }) {
           Hết giờ — đang nộp bài…
         </div>
       ) : null}
+    </div>
+  )
+}
+
+function FillBlank({ prompt, blankIndex, value, onChange }: { prompt: string; blankIndex: number; value: string; onChange: (value: string) => void }) {
+  const pieces = prompt.split(/_{3,}/)
+  return (
+    <div className="mt-3">
+      <p className="text-xl leading-10 font-medium">
+        {pieces.map((piece, index) => (
+          <span key={index}>
+            {piece}
+            {index < pieces.length - 1 ? (
+              index === blankIndex ? (
+                <input
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                  aria-label={`Chỗ trống ${index + 1}`}
+                  className="mx-1 inline-block w-36 rounded-lg border border-gold-deep bg-white px-2 py-1 text-center text-lg"
+                  autoComplete="off"
+                />
+              ) : (
+                <span className="mx-1 text-ink/35">({index + 1})</span>
+              )
+            ) : null}
+          </span>
+        ))}
+      </p>
+      <p className="mt-3 text-xs text-ink/40">Gõ từ vào ô. Xóa hết chữ để bỏ trống chỗ này.</p>
     </div>
   )
 }

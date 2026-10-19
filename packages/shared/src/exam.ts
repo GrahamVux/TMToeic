@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { ExamMode, Skill } from './domain'
+import { PART_CODE_PATTERN, type ExamMode, type Skill } from './domain'
 
 export const EXAM_STATUSES = ['DRAFT', 'PROCESSING', 'PENDING_REVIEW', 'PUBLISHED', 'ARCHIVED', 'REJECTED'] as const
 export type ExamStatus = (typeof EXAM_STATUSES)[number]
@@ -15,7 +15,32 @@ export const STARTABLE_MODES = ['PRACTICE', 'TIMED', 'FULL_TEST', 'PART_DRILL'] 
 export const OPTION_KEYS = ['A', 'B', 'C', 'D'] as const
 
 // ------------------------------------------------------------------ teacher: exam definition
-const partCode = z.string().regex(/^PART_\d+$/, 'Mã part không hợp lệ (VD: PART_5)')
+const partCode = z.string().regex(PART_CODE_PATTERN, 'Mã part không hợp lệ (VD: PART_5)')
+
+/** Cloze homework. Three or more underscores in the prompt are one blank. */
+export const FILL_PART_CODE = 'FILL_1'
+export const FILL_QUESTION_TYPE = 'FILL_BLANK'
+export const FILL_EXAM_SOURCE = 'fill-blank'
+const BLANK_PATTERN = /_{3,}/g
+
+export function countBlanks(prompt: string): number {
+  return prompt.match(BLANK_PATTERN)?.length ?? 0
+}
+
+/** Case and surrounding punctuation do not change a cloze answer. Alternatives are already split. */
+export function normalizeFillAnswer(raw: string): string {
+  return raw.trim().toLowerCase().replace(/\s+/g, ' ').replace(/[.。,!?;:'"]+$/g, '')
+}
+
+export function fillAnswerMatches(given: string, accepted: readonly string[]): boolean {
+  const normalized = normalizeFillAnswer(given)
+  if (!normalized) return false
+  return accepted.some((answer) => normalizeFillAnswer(answer) === normalized)
+}
+
+export function splitFillAlternatives(raw: string): string[] {
+  return [...new Set(raw.split('|').map((part) => part.trim()).filter(Boolean))]
+}
 
 export const createExamSchema = z.object({
   code: z
@@ -69,6 +94,8 @@ const questionInput = z.object({
   groupKey: z.string().trim().min(1).max(40).optional(),
   type: z.string().trim().max(40).optional(),
   prompt: z.string().trim().max(5000).default(''),
+  /** Shown only after the sitting is submitted. */
+  explanation: z.string().trim().max(4000).optional(),
   difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).optional(),
   /** Picture for this question (Part 1 photograph). Must be an image asset. */
   imageAssetId: z.uuid().optional(),
@@ -128,11 +155,15 @@ export const startAttemptSchema = z
   })
 export type StartAttemptInput = z.infer<typeof startAttemptSchema>
 
-export const saveAnswerSchema = z.object({
-  /** `null` clears the answer. */
-  selectedKey: z.enum(OPTION_KEYS).nullable(),
-  timeSpentSeconds: z.number().int().min(0).max(3600).optional(),
-})
+export const saveAnswerSchema = z
+  .object({
+    /** Multiple choice. `null` clears the answer. */
+    selectedKey: z.enum(OPTION_KEYS).nullable().optional(),
+    /** Fill-in-the-blank. `null` or blank clears the answer. */
+    answerText: z.string().max(120).nullable().optional(),
+    timeSpentSeconds: z.number().int().min(0).max(3600).optional(),
+  })
+  .refine((v) => v.selectedKey !== undefined || v.answerText !== undefined, { message: 'Thiếu câu trả lời' })
 export type SaveAnswerInput = z.infer<typeof saveAnswerSchema>
 
 /** Absences shorter than this are a flicker (a click on the browser chrome) and are dropped. */
@@ -200,8 +231,12 @@ export type PlayerQuestionDto = {
   /** Signed URL of the question's picture (Part 1), or null. */
   imageUrl: string | null
   options: Array<{ key: string; text: string }>
-  /** The student's saved answer (autosave / resume). */
+  /** The student's saved choice (autosave / resume). Null on a fill-in blank. */
   selectedKey: string | null
+  /** Typed cloze answer. Null on a multiple-choice question. */
+  answerText: string | null
+  /** Which `___` in `prompt` this question is, starting at 0. Null on multiple choice. */
+  blankIndex: number | null
 }
 
 export type AttemptDto = {
@@ -267,5 +302,12 @@ export type AttemptResultDto = {
 }
 
 export type SheetImageDto = { id: string; url: string }
-export type ReviewQuestionDto = PlayerQuestionDto & { correctKey: string; isCorrect: boolean | null }
+export type ReviewQuestionDto = PlayerQuestionDto & {
+  correctKey: string
+  /** Accepted cloze answers, joined for display. Null on multiple choice. */
+  correctText: string | null
+  isCorrect: boolean | null
+  /** Null when this question has no written explanation. */
+  explanation: string | null
+}
 export type AttemptReviewDto = { result: AttemptResultDto; groups: GroupDto[]; questions: ReviewQuestionDto[]; audio: AudioTrackDto[]; sheetImages: SheetImageDto[] }

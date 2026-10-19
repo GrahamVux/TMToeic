@@ -3,10 +3,8 @@ import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Card } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { useClassReport } from '@/features/progress/progress.queries'
-import { INACTIVE_AFTER_DAYS } from '@toeic/shared'
+import { INACTIVE_AFTER_DAYS, SUPPORT_ACCURACY_BELOW, type InactiveStudentDto, type SupportReason } from '@toeic/shared'
 import { Link } from 'react-router-dom'
-
-const dateFmt = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
 
 export function ReportsPage() {
   const { data: r, isPending, error } = useClassReport()
@@ -26,7 +24,11 @@ export function ReportsPage() {
         <Kpi label="Học viên đang hoạt động trong tuần" value={`${r.week.activeStudents}/${r.students.active}`} meta="Có làm ít nhất 1 câu" />
         <Kpi label="Bài làm trong tuần" value={String(r.week.attempts)} meta={`${r.week.answered} câu đã làm`} />
         <Kpi label="Tỷ lệ đúng 30 ngày" value={r.accuracy30d === null ? '—' : `${r.accuracy30d}%`} meta="Trên các bài đã nộp" />
-        <Kpi label={`Cần hỗ trợ (≥${INACTIVE_AFTER_DAYS} ngày không làm bài)`} value={String(r.inactiveCount)} meta={`${r.students.pendingFirstLogin} bạn chưa đăng nhập lần đầu`} />
+        <Kpi
+          label="Học viên cần hỗ trợ"
+          value={String(r.inactiveCount)}
+          meta={`Đúng dưới ${SUPPORT_ACCURACY_BELOW}%, từ ${INACTIVE_AFTER_DAYS} ngày không làm bài, hoặc quá hạn bài giao`}
+        />
       </div>
 
       <Card className="p-6">
@@ -37,8 +39,15 @@ export function ReportsPage() {
   )
 }
 
-export function InactiveList({ items, total }: { items: Array<{ id: string; fullName: string; studentCode: string | null; lastActivityAt: string | null; daysInactive: number | null }>; total: number }) {
-  if (items.length === 0) return <p className="mt-3 rounded-2xl bg-paper p-4 text-sm text-ink/60">Không có học viên nào bị bỏ lỡ. Tất cả đang học đều đặn.</p>
+function reasonText(student: InactiveStudentDto, reason: SupportReason) {
+  if (reason === 'LOW_ACCURACY') return `Tỉ lệ đúng ${student.accuracy}%`
+  if (reason === 'OVERDUE') return `${student.overdueCount} bài đã quá hạn chưa nộp`
+  if (student.lastActivityAt) return `${student.daysInactive} ngày không làm bài`
+  return 'Đã đăng nhập nhưng chưa làm bài nào'
+}
+
+export function InactiveList({ items, total }: { items: InactiveStudentDto[]; total: number }) {
+  if (items.length === 0) return <p className="mt-3 rounded-2xl bg-paper p-4 text-sm text-ink/60">Không có học viên nào cần hỗ trợ.</p>
   return (
     <>
       <ul className="mt-4 space-y-2">
@@ -47,7 +56,8 @@ export function InactiveList({ items, total }: { items: Array<{ id: string; full
             <div>
               <p className="font-semibold">{s.fullName}</p>
               <p className="text-xs text-ink/55">
-                {s.studentCode} • {s.lastActivityAt ? `Làm bài lần cuối ${dateFmt.format(new Date(s.lastActivityAt))} (${s.daysInactive} ngày trước)` : 'Đã đăng nhập nhưng chưa làm bài nào'}
+                {s.studentCode ? `${s.studentCode} • ` : ''}
+                {s.reasons.map((reason) => reasonText(s, reason)).join(' • ')}
               </p>
             </div>
             <Link to={`/admin/students/${s.id}`}><Button variant="paper" className="px-3 py-1.5 text-xs">Xem hồ sơ</Button></Link>

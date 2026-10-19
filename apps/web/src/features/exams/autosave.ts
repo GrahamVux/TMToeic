@@ -38,10 +38,13 @@ export class AutosaveStore {
   private closed = false
   private readonly attemptId: string
   private readonly onClosed: () => void
+  private readonly textIds: ReadonlySet<string>
+  private readonly textTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
-  constructor(attemptId: string, initial: Record<string, string | null>, onClosed: () => void) {
+  constructor(attemptId: string, initial: Record<string, string | null>, onClosed: () => void, textIds: ReadonlySet<string> = new Set()) {
     this.attemptId = attemptId
     this.onClosed = onClosed
+    this.textIds = textIds
     for (const [id, key] of Object.entries(initial)) this.saved.set(id, key)
     this.snapshot = { answers: { ...initial }, pending: 0, status: 'saved' }
   }
@@ -81,8 +84,34 @@ export class AutosaveStore {
     void this.sync(questionId)
   }
 
+  /** Cloze answers wait a moment so each keystroke is not its own request. */
+  typeText(questionId: string, value: string) {
+    if (this.closed) return
+    this.desired.set(questionId, value.trim() ? value : null)
+    this.hardError = false
+    this.publish()
+    const previous = this.textTimers.get(questionId)
+    if (previous) {
+      clearTimeout(previous)
+      this.timers.delete(previous)
+    }
+    const timer = setTimeout(() => {
+      this.textTimers.delete(questionId)
+      this.timers.delete(timer)
+      void this.sync(questionId)
+    }, 400)
+    this.textTimers.set(questionId, timer)
+    this.timers.add(timer)
+  }
+
   /** Resolves true when everything has been confirmed by the server (or false on timeout / closed attempt). */
   async flush(timeoutMs = 15_000): Promise<boolean> {
+    for (const [id, timer] of this.textTimers) {
+      clearTimeout(timer)
+      this.timers.delete(timer)
+      void this.sync(id)
+    }
+    this.textTimers.clear()
     const deadline = Date.now() + timeoutMs
     for (;;) {
       if (this.closed) return false
@@ -130,7 +159,9 @@ export class AutosaveStore {
     try {
       await api(`/attempts/${this.attemptId}/answers/${questionId}`, {
         method: 'PUT',
-        body: { selectedKey: wanted, timeSpentSeconds: this.timeSpent(questionId) },
+        body: this.textIds.has(questionId)
+          ? { answerText: wanted, timeSpentSeconds: this.timeSpent(questionId) }
+          : { selectedKey: wanted, timeSpentSeconds: this.timeSpent(questionId) },
       })
       this.saved.set(questionId, wanted)
       this.retries.delete(questionId)

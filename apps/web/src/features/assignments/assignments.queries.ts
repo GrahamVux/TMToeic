@@ -1,6 +1,6 @@
 import { audioContentType, examKeys } from '@/features/exams/exams.queries'
 import { api, apiUpload } from '@/lib/api'
-import type { AssignmentDetailDto, AssignmentDto, AttemptDto, CreateAssignmentInput, ExamSummaryDto, ImportAuthoredExamInput } from '@toeic/shared'
+import type { AssignmentDetailDto, AssignmentDto, AttemptDto, CreateAssignmentInput, CreateFillAssignmentInput, ExamSummaryDto, ImportAuthoredExamInput } from '@toeic/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 const MAX_AUDIO_BYTES = 80 * 1024 * 1024
@@ -37,6 +37,25 @@ export function useCreateAssignment() {
   return useMutation({
     mutationFn: (input: CreateAssignmentInput) => api<AssignmentDto>('/assignments', { method: 'POST', body: input }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: assignmentKeys.all }),
+  })
+}
+
+export function useCreateFillAssignment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CreateFillAssignmentInput) => api<AssignmentDto>('/assignments/fill', { method: 'POST', body: input }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: assignmentKeys.all }),
+  })
+}
+
+export function useSaveAssignmentToBank() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api<AssignmentDto>(`/assignments/${id}/bank`, { method: 'POST' }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: assignmentKeys.all })
+      void qc.invalidateQueries({ queryKey: examKeys.exams })
+    },
   })
 }
 

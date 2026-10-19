@@ -2,15 +2,21 @@ import { Inject, Injectable } from '@nestjs/common'
 import {
   ENABLED_SKILLS,
   INACTIVE_AFTER_DAYS,
+  SUPPORT_ACCURACY_BELOW,
+  type SupportReason,
   MIN_ANSWERS_FOR_INSIGHT,
   PART_SEED,
   type AttemptSummaryDto,
   type ClassReportDto,
-  type LeaderboardEntryDto,
   type PartStatDto,
   type ScorePointDto,
   type SetGoalInput,
   type SkillStatDto,
+  HONOR_BOARD_SIZE,
+  rankFromXp,
+  type HonorBoardDto,
+  type HonorClassEntry,
+  type HonorStudentEntry,
   type StudentDashboardDto,
   type StudentProgressDto,
   type UpdateProfileInput,
@@ -22,13 +28,12 @@ import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { AuditService } from '../audit/audit.service'
 import { AppException } from '../common/app-exception'
 import { DB, type Db } from '../db/database.module'
-import { attempts, assignments, exams, users } from '../db/schema'
+import { attempts, assignments, classMembers, classTeachers, exams, siteSettings, users } from '../db/schema'
 import { toUserDto } from '../users/user.mapper'
 
 /** Class is in Vietnam: "today" and "this week" follow local time, not the server's. */
 const TZ = 'Asia/Ho_Chi_Minh'
 const TZ_SQL = sql.raw(`'${TZ}'`)
-const LEADERBOARD_SIZE = 5
 const HISTORY_SIZE = 12
 
 type Rows<T> = { rows: T[] }
@@ -59,6 +64,41 @@ export function computeStreak(activeDays: string[], today: string): { days: numb
 }
 
 const pct = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 100) : null)
+
+function toSupportStudent(
+  r: {
+    id: string
+    full_name: string
+    student_code: string | null
+    must_change: boolean
+    last_at: Date | string | null
+    correct: number
+    graded: number
+    overdue: number
+  },
+  now: Date,
+) {
+  const last = r.last_at ? new Date(r.last_at) : null
+  const daysInactive = last ? Math.floor((now.getTime() - last.getTime()) / 86_400_000) : null
+  const accuracy = pct(Number(r.correct), Number(r.graded))
+  const idleCutoff = now.getTime() - INACTIVE_AFTER_DAYS * 86_400_000
+  const reasons: SupportReason[] = []
+  const loggedIn = r.must_change === false || r.must_change === ('f' as unknown) || String(r.must_change) === 'false'
+  if (accuracy !== null && accuracy < SUPPORT_ACCURACY_BELOW) reasons.push('LOW_ACCURACY')
+  if (loggedIn && (last === null || last.getTime() < idleCutoff)) reasons.push('INACTIVE')
+  const overdueCount = Number(r.overdue) || 0
+  if (overdueCount > 0) reasons.push('OVERDUE')
+  return {
+    id: r.id,
+    fullName: r.full_name,
+    studentCode: r.student_code,
+    lastActivityAt: last ? last.toISOString() : null,
+    daysInactive,
+    accuracy,
+    overdueCount,
+    reasons,
+  }
+}
 
 const focusLeaveCountSql = sql<number>`(select count(*)::int from attempt_focus_leaves where attempt_id = ${attempts.id} and coalesce(away_seconds, 0) >= 1)`
 
@@ -106,7 +146,7 @@ export class ProgressService {
       .limit(1)
     if (!me) throw AppException.notFound('Không tìm thấy tài khoản')
 
-    const [scored, finishedRows, dayRows, skillRows, weekRows, weekStartRows] = await Promise.all([
+    const [scored, finishedRows, dayRows, skillRows, weekStartRows] = await Promise.all([
       this.db
         .select({
           attemptId: attempts.id,
@@ -141,19 +181,6 @@ export class ProgressService {
         join skills s on s.id = p.skill_id
         where a.user_id = ${userId} and a.status <> 'IN_PROGRESS'
         group by s.code`) as unknown as Promise<Rows<{ skill: SkillStatDto['skill']; attempts: number; answered: number; correct: number }>>,
-      this.db.execute(sql`
-        select u.id as id, u.full_name as name,
-               count(*)::int as answered,
-               count(*) filter (where aa.is_correct is true)::int as correct,
-               count(*) filter (where aa.is_correct is not null)::int as graded
-        from attempt_answers aa
-        join attempts a on a.id = aa.attempt_id
-        join users u on u.id = a.user_id
-        where u.role = 'STUDENT' and u.status = 'ACTIVE'
-          and aa.answered_at >= (date_trunc('week', ${now.toISOString()}::timestamptz at time zone ${TZ_SQL}) at time zone ${TZ_SQL})
-          and aa.answered_at <= ${now.toISOString()}::timestamptz
-        group by u.id, u.full_name
-        order by answered desc, correct desc, u.full_name asc`) as unknown as Promise<Rows<{ id: string; name: string; answered: number; correct: number; graded: number }>>,
       this.db.execute(sql`select to_char(date_trunc('week', ${now.toISOString()}::timestamptz at time zone ${TZ_SQL}), 'YYYY-MM-DD') as day`) as unknown as Promise<Rows<{ day: string }>>,
     ])
 
@@ -175,15 +202,8 @@ export class ProgressService {
       return { skill, attempts: r?.attempts ?? 0, answered: r?.answered ?? 0, correct: r?.correct ?? 0, accuracy: r ? pct(r.correct, r.answered) : null }
     })
 
-    const ranked: LeaderboardEntryDto[] = weekRows.rows.map((r, i) => ({
-      rank: i + 1,
-      name: r.name,
-      answered: r.answered,
-      accuracy: pct(r.correct, r.graded),
-      you: r.id === userId,
-    }))
-
     const goal = goalFromStored(me.goalTrack, me.targetScore)
+    const weekStart = weekStartRows.rows[0]?.day ?? localDay(now)
     return {
       targetScore: me.targetScore,
       goal,
@@ -196,21 +216,25 @@ export class ProgressService {
         dayRows.rows.map((r) => r.day),
         localDay(now),
       ),
-      weekStart: weekStartRows.rows[0]?.day ?? localDay(now),
-      leaderboard: {
-        entries: ranked.slice(0, LEADERBOARD_SIZE),
-        you: ranked.find((e) => e.you) ?? null,
-        participants: ranked.length,
-      },
+      weekStart,
+      honor: await this.honorBoard(userId, now, weekStart),
       skills,
     }
   }
 
   // ---------------------------------------------------------------- progress analytics
   /** Only students have progress; anything else is a 404 so ids of staff accounts are not probeable. */
-  async assertStudent(userId: string) {
+  async assertStudent(userId: string, teacherId?: string) {
     const [u] = await this.db.select({ id: users.id }).from(users).where(and(eq(users.id, userId), eq(users.role, 'STUDENT'))).limit(1)
     if (!u) throw AppException.notFound('Không tìm thấy học viên')
+    if (!teacherId) return
+    const [link] = await this.db
+      .select({ userId: classMembers.userId })
+      .from(classMembers)
+      .innerJoin(classTeachers, eq(classTeachers.classId, classMembers.classId))
+      .where(and(eq(classMembers.userId, userId), eq(classTeachers.userId, teacherId)))
+      .limit(1)
+    if (!link) throw AppException.notFound('Không tìm thấy học viên')
   }
 
   async studentProgress(userId: string, now = new Date()): Promise<StudentProgressDto> {
@@ -345,32 +369,70 @@ export class ProgressService {
     return rows.filter((r) => r.at !== null).map(toAttemptSummary)
   }
 
-  async classReport(now = new Date()): Promise<ClassReportDto> {
+  async classReport(now = new Date(), teacherId?: string): Promise<ClassReportDto> {
     const nowIso = now.toISOString()
+    const scope = teacherId
+      ? sql`and u.id in (select cm.user_id from class_members cm join class_teachers ct on ct.class_id = cm.class_id where ct.user_id = ${teacherId}::uuid)`
+      : sql``
     const weekStartSql = sql`(date_trunc('week', ${nowIso}::timestamptz at time zone ${TZ_SQL}) at time zone ${TZ_SQL})`
-    const [counts, week, acc, inactiveRows, weekLabel] = await Promise.all([
+    const [counts, week, acc, supportRows, weekLabel] = await Promise.all([
       this.db.execute(sql`
         select count(*)::int as total,
-               count(*) filter (where status = 'ACTIVE')::int as active,
-               count(*) filter (where status = 'ACTIVE' and must_change_password)::int as pending
-        from users where role = 'STUDENT'`) as unknown as Promise<Rows<{ total: number; active: number; pending: number }>>,
+               count(*) filter (where u.status = 'ACTIVE')::int as active,
+               count(*) filter (where u.status = 'ACTIVE' and u.must_change_password)::int as pending
+        from users u where u.role = 'STUDENT' ${scope}`) as unknown as Promise<Rows<{ total: number; active: number; pending: number }>>,
       this.db.execute(sql`
         select count(distinct a.user_id)::int as students, count(*)::int as answered, count(distinct a.id)::int as attempts
         from attempt_answers aa join attempts a on a.id = aa.attempt_id join users u on u.id = a.user_id
-        where u.role = 'STUDENT' and u.status = 'ACTIVE' and aa.answered_at >= ${weekStartSql} and aa.answered_at <= ${nowIso}::timestamptz`) as unknown as Promise<Rows<{ students: number; answered: number; attempts: number }>>,
+        where u.role = 'STUDENT' and u.status = 'ACTIVE' and aa.answered_at >= ${weekStartSql} and aa.answered_at <= ${nowIso}::timestamptz ${scope}`) as unknown as Promise<Rows<{ students: number; answered: number; attempts: number }>>,
       this.db.execute(sql`
         select count(*) filter (where aa.is_correct is true)::int as correct, count(*) filter (where aa.is_correct is not null)::int as graded
         from attempt_answers aa join attempts a on a.id = aa.attempt_id join users u on u.id = a.user_id
-        where u.role = 'STUDENT' and u.status = 'ACTIVE' and aa.answered_at >= ${nowIso}::timestamptz - interval '30 days'`) as unknown as Promise<Rows<{ correct: number; graded: number }>>,
+        where u.role = 'STUDENT' and u.status = 'ACTIVE' and aa.answered_at >= ${nowIso}::timestamptz - interval '30 days' ${scope}`) as unknown as Promise<Rows<{ correct: number; graded: number }>>,
       this.db.execute(sql`
-        select u.id as id, u.full_name as full_name, u.student_code as student_code, max(aa.answered_at) as last_at
-        from users u
-        left join attempts a on a.user_id = u.id
-        left join attempt_answers aa on aa.attempt_id = a.id
-        where u.role = 'STUDENT' and u.status = 'ACTIVE' and u.must_change_password = false
-        group by u.id, u.full_name, u.student_code
-        having max(aa.answered_at) is null or max(aa.answered_at) < ${nowIso}::timestamptz - make_interval(days => ${INACTIVE_AFTER_DAYS})
-        order by max(aa.answered_at) asc nulls first, u.full_name asc`) as unknown as Promise<Rows<{ id: string; full_name: string; student_code: string | null; last_at: Date | string | null }>>,
+        with activity as (
+          select u.id as id, u.full_name as full_name, u.student_code as student_code, u.must_change_password as must_change,
+                 max(aa.answered_at) as last_at,
+                 count(*) filter (where aa.is_correct is true)::int as correct,
+                 count(*) filter (where aa.is_correct is not null)::int as graded
+          from users u
+          left join attempts a on a.user_id = u.id and a.status in ('SUBMITTED', 'EXPIRED')
+          left join attempt_answers aa on aa.attempt_id = a.id
+          where u.role = 'STUDENT' and u.status = 'ACTIVE' ${scope}
+          group by u.id, u.full_name, u.student_code, u.must_change_password
+        ),
+        overdue as (
+          select s.user_id as user_id, count(*)::int as n
+          from assignment_students s
+          join assignments g on g.id = s.assignment_id
+          where g.due_at is not null
+            and g.due_at < ${nowIso}::timestamptz
+            and g.status in ('PUBLISHED', 'CLOSED')
+            and not exists (
+              select 1 from attempts t
+              where t.assignment_id = g.id and t.user_id = s.user_id and t.status in ('SUBMITTED', 'EXPIRED')
+            )
+          group by s.user_id
+        )
+        select act.id, act.full_name, act.student_code, act.must_change, act.last_at, act.correct, act.graded,
+               coalesce(o.n, 0)::int as overdue
+        from activity act
+        left join overdue o on o.user_id = act.id
+        where (act.graded > 0 and act.correct * 2 < act.graded)
+           or (act.must_change = false and (act.last_at is null or act.last_at < ${nowIso}::timestamptz - make_interval(days => ${INACTIVE_AFTER_DAYS})))
+           or coalesce(o.n, 0) > 0
+        order by act.full_name asc`) as unknown as Promise<
+        Rows<{
+          id: string
+          full_name: string
+          student_code: string | null
+          must_change: boolean
+          last_at: Date | string | null
+          correct: number
+          graded: number
+          overdue: number
+        }>
+      >,
       this.db.execute(sql`select to_char(date_trunc('week', ${nowIso}::timestamptz at time zone ${TZ_SQL}), 'YYYY-MM-DD') as day`) as unknown as Promise<Rows<{ day: string }>>,
     ])
 
@@ -379,17 +441,13 @@ export class ProgressService {
       students: { total: c?.total ?? 0, active: c?.active ?? 0, pendingFirstLogin: c?.pending ?? 0 },
       week: { start: weekLabel.rows[0]?.day ?? localDay(now), activeStudents: week.rows[0]?.students ?? 0, attempts: week.rows[0]?.attempts ?? 0, answered: week.rows[0]?.answered ?? 0 },
       accuracy30d: pct(acc.rows[0]?.correct ?? 0, acc.rows[0]?.graded ?? 0),
-      inactiveCount: inactiveRows.rows.length,
-      inactive: inactiveRows.rows.slice(0, 20).map((r) => {
-        const last = r.last_at ? new Date(r.last_at) : null
-        return {
-          id: r.id,
-          fullName: r.full_name,
-          studentCode: r.student_code,
-          lastActivityAt: last ? last.toISOString() : null,
-          daysInactive: last ? Math.floor((now.getTime() - last.getTime()) / 86_400_000) : null,
-        }
-      }),
+      ...(() => {
+        const support = supportRows.rows
+          .map((r) => toSupportStudent(r, now))
+          .filter((student) => student.reasons.length > 0)
+          .sort((a, b) => b.reasons.length - a.reasons.length || b.overdueCount - a.overdueCount || (a.accuracy ?? 101) - (b.accuracy ?? 101) || a.fullName.localeCompare(b.fullName, 'vi'))
+        return { inactiveCount: support.length, inactive: support.slice(0, 50) }
+      })(),
     }
   }
 
@@ -438,6 +496,134 @@ export class ProgressService {
       const e = err as { code?: string; cause?: { code?: string } }
       if (e?.code === '23505' || e?.cause?.code === '23505') throw AppException.conflict('Email đã được sử dụng bởi tài khoản khác')
       throw err
+    }
+  }
+
+  /**
+   * Weekly EXP boards. Classmates are named. The center board ranks classes only,
+   * so a student never receives another class's roster.
+   * EXP is the best percent-correct of each finished piece of work in the window.
+   * Rank uses EXP since 1 January (Asia/Ho_Chi_Minh); 100 EXP is one rank.
+   */
+  private async honorBoard(userId: string, now: Date, weekStart: string): Promise<HonorBoardDto> {
+    const iso = now.toISOString()
+    const [settings] = await this.db.select({ enabled: siteSettings.honorBoardEnabled }).from(siteSettings).limit(1)
+    const enabled = settings?.enabled ?? true
+    const yearRows = (await this.db.execute(sql`
+      select to_char(${iso}::timestamptz at time zone ${TZ_SQL}, 'YYYY') as year
+    `)) as unknown as Rows<{ year: string }>
+    const year = Number(yearRows.rows[0]?.year ?? weekStart.slice(0, 4))
+    const empty = (): HonorBoardDto => ({
+      enabled,
+      weekStart,
+      year,
+      className: null,
+      me: { weeklyXp: 0, yearlyXp: 0, rank: rankFromXp(0) },
+      classBoard: { entries: [], you: null, participants: 0 },
+      centerBoard: [],
+    })
+    if (!enabled) return empty()
+
+    const [xpRows, memberRows] = await Promise.all([
+      this.db.execute(sql`
+        with bounds as (
+          select
+            (date_trunc('week', ${iso}::timestamptz at time zone ${TZ_SQL}) at time zone ${TZ_SQL}) as week_start,
+            (date_trunc('year', ${iso}::timestamptz at time zone ${TZ_SQL}) at time zone ${TZ_SQL}) as year_start
+        ),
+        scored as (
+          select a.user_id, a.submitted_at,
+                 coalesce(a.assignment_id::text, a.id::text) as piece,
+                 case when a.total_questions > 0
+                   then round(coalesce(a.correct_count, 0) * 100.0 / a.total_questions)::int
+                   else 0 end as xp
+          from attempts a, bounds b
+          where a.status in ('SUBMITTED', 'EXPIRED')
+            and a.submitted_at is not null
+            and a.submitted_at <= ${iso}::timestamptz
+            and a.submitted_at >= b.year_start
+        ),
+        year_best as (
+          select distinct on (user_id, piece) user_id, xp
+          from scored
+          order by user_id, piece, xp desc, submitted_at desc
+        ),
+        week_best as (
+          select distinct on (s.user_id, s.piece) s.user_id, s.xp
+          from scored s, bounds b
+          where s.submitted_at >= b.week_start
+          order by s.user_id, s.piece, s.xp desc, s.submitted_at desc
+        )
+        select u.id as id, u.full_name as name,
+               coalesce(w.xp, 0)::int as weekly_xp,
+               coalesce(y.xp, 0)::int as yearly_xp
+        from users u
+        left join (select user_id, sum(xp)::int as xp from week_best group by user_id) w on w.user_id = u.id
+        left join (select user_id, sum(xp)::int as xp from year_best group by user_id) y on y.user_id = u.id
+        where u.role = 'STUDENT' and u.status = 'ACTIVE'
+      `) as unknown as Promise<Rows<{ id: string; name: string; weekly_xp: number; yearly_xp: number }>>,
+      this.db.execute(sql`
+        select cm.user_id as user_id, c.id as class_id, c.name as class_name
+        from class_members cm
+        join classes c on c.id = cm.class_id
+        join users u on u.id = cm.user_id
+        where u.role = 'STUDENT' and u.status = 'ACTIVE'
+      `) as unknown as Promise<Rows<{ user_id: string; class_id: string; class_name: string }>>,
+    ])
+
+    const xpByUser = new Map(xpRows.rows.map((row) => [row.id, { name: row.name, weeklyXp: Number(row.weekly_xp), yearlyXp: Number(row.yearly_xp) }]))
+    const mine = memberRows.rows.find((row) => row.user_id === userId) ?? null
+    const meXp = xpByUser.get(userId) ?? { name: '', weeklyXp: 0, yearlyXp: 0 }
+
+    const classmates = memberRows.rows
+      .filter((row) => mine && row.class_id === mine.class_id)
+      .map((row) => {
+        const xp = xpByUser.get(row.user_id) ?? { name: '', weeklyXp: 0, yearlyXp: 0 }
+        return { id: row.user_id, name: xp.name, weeklyXp: xp.weeklyXp, yearlyXp: xp.yearlyXp }
+      })
+      .filter((row) => row.weeklyXp > 0)
+      .sort((a, b) => b.weeklyXp - a.weeklyXp || a.name.localeCompare(b.name, 'vi'))
+
+    const ranked: HonorStudentEntry[] = classmates.map((row, index) => ({
+      place: index + 1,
+      name: row.name,
+      weeklyXp: row.weeklyXp,
+      yearlyXp: row.yearlyXp,
+      rank: rankFromXp(row.yearlyXp),
+      you: row.id === userId,
+    }))
+    const you = ranked.find((row) => row.you) ?? null
+
+    const byClass = new Map<string, { className: string; weeklyXp: number; members: number }>()
+    for (const row of memberRows.rows) {
+      const current = byClass.get(row.class_id) ?? { className: row.class_name, weeklyXp: 0, members: 0 }
+      current.members += 1
+      current.weeklyXp += xpByUser.get(row.user_id)?.weeklyXp ?? 0
+      byClass.set(row.class_id, current)
+    }
+    const center: HonorClassEntry[] = [...byClass.entries()]
+      .map(([id, row]) => ({ id, ...row }))
+      .sort((a, b) => b.weeklyXp - a.weeklyXp || a.className.localeCompare(b.className, 'vi'))
+      .map((row, index) => ({
+        place: index + 1,
+        className: row.className,
+        weeklyXp: row.weeklyXp,
+        members: row.members,
+        yours: row.id === mine?.class_id,
+      }))
+
+    return {
+      enabled: true,
+      weekStart,
+      year,
+      className: mine?.class_name ?? null,
+      me: { weeklyXp: meXp.weeklyXp, yearlyXp: meXp.yearlyXp, rank: rankFromXp(meXp.yearlyXp) },
+      classBoard: {
+        entries: ranked.slice(0, HONOR_BOARD_SIZE),
+        you,
+        participants: ranked.length,
+      },
+      centerBoard: center,
     }
   }
 }

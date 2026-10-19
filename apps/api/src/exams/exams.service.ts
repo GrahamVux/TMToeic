@@ -8,9 +8,10 @@ import {
   type ImportAuthoredExamInput,
   type ImportListeningDraftInput,
   type ReplaceExamContentInput,
+  FILL_EXAM_SOURCE,
   type Skill,
 } from '@toeic/shared'
-import { and, asc, count, desc, eq, ilike, inArray, sql, type SQL } from 'drizzle-orm'
+import { and, asc, count, desc, eq, ilike, inArray, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
 import { AuditService } from '../audit/audit.service'
 import { APP_CONFIG, type AppConfig } from '../config/app-config'
 import { AppException } from '../common/app-exception'
@@ -87,7 +88,9 @@ export class ExamsService {
 
   /** Students only ever see PUBLISHED exams; staff see everything. */
   async list(actor: Actor, filter: { status?: ExamStatus; q?: string }): Promise<ExamSummaryDto[]> {
-    const conditions: SQL[] = []
+    const conditions: SQL[] = [
+      or(isNull(exams.source), ne(exams.source, FILL_EXAM_SOURCE), eq(exams.status, 'PUBLISHED'))!,
+    ]
     if (actor.role === 'STUDENT') conditions.push(eq(exams.status, 'PUBLISHED'))
     else if (filter.status) conditions.push(eq(exams.status, filter.status))
     if (filter.q) conditions.push(ilike(exams.title, `%${escapeLike(filter.q)}%`))
@@ -144,6 +147,7 @@ export class ExamsService {
         groupId: q.groupId,
         type: q.type,
         prompt: q.prompt,
+        explanation: q.explanation,
         imageAssetId: q.imageAssetId,
         options: opts.filter((o) => o.questionId === q.id).map((o) => ({ key: o.optionKey, text: o.optionText, correct: o.isCorrect })),
       })),
@@ -228,6 +232,8 @@ export class ExamsService {
             questionNumber: q.number,
             type: q.type,
             prompt: q.prompt,
+            explanation: q.explanation?.trim() || null,
+            explanationStatus: q.explanation?.trim() ? 'READY' : 'NONE',
             difficulty: q.difficulty,
             imageAssetId: q.imageAssetId,
           })
@@ -303,6 +309,7 @@ export class ExamsService {
         partCode: q.partCode,
         type: q.type,
         prompt: q.prompt,
+        explanation: q.explanation,
         groupKey: q.groupKey,
         imageAssetId: q.imageObjectKey ? assetId.get(q.imageObjectKey) : undefined,
         options: q.options,

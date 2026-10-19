@@ -56,6 +56,19 @@ function RequireAuth({ audience }: { audience: 'student' | 'staff' }) {
   )
 }
 
+function StaffGrant({ need }: { need: 'manage' | 'assignments' | 'progress' | 'admin' }) {
+  const { user } = useAuth()
+  if (!user) return null
+  if (need === 'admin') return user.role === 'ADMIN' ? <Outlet /> : <Navigate to="/admin" replace />
+  if (user.role === 'ADMIN') return <Outlet />
+  const grants = user.permissions
+  const allowed =
+    need === 'manage' ? grants.manageAssignments
+    : need === 'assignments' ? grants.manageAssignments || grants.viewProgress
+    : grants.viewProgress
+  return allowed ? <Outlet /> : <Navigate to="/admin" replace />
+}
+
 function AppRoutes() {
   const { status, user } = useAuth()
   const home = user ? (user.mustChangePassword ? '/change-password' : homePathForRole(user.role)) : '/login'
@@ -84,15 +97,23 @@ function AppRoutes() {
       </Route>
       <Route element={<RequireAuth audience="staff" />}>
         <Route path="/admin" element={<TeacherDashboardPage />} />
-        <Route path="/admin/students/:studentId" element={<StudentDetailPage />} />
-        <Route path="/admin/students/:studentId/attempts/:attemptId" element={<ResultPage />} />
-        <Route path="/admin/students/:studentId/attempts/:attemptId/review" element={<ReviewPage />} />
-        <Route path="/admin/exams" element={<ExamBankPage />} />
-        <Route path="/admin/assignments" element={<TeacherAssignmentsPage />} />
-        <Route path="/admin/study" element={<AdminStudyPage />} />
-        <Route path="/admin/reports" element={<ReportsPage />} />
-        <Route path="/admin/bugs" element={<BugReportsPage />} />
-        <Route path="/admin/settings" element={<SiteSettingsPage />} />
+        <Route element={<StaffGrant need="progress" />}>
+          <Route path="/admin/students/:studentId" element={<StudentDetailPage />} />
+          <Route path="/admin/students/:studentId/attempts/:attemptId" element={<ResultPage />} />
+          <Route path="/admin/students/:studentId/attempts/:attemptId/review" element={<ReviewPage />} />
+          <Route path="/admin/reports" element={<ReportsPage />} />
+        </Route>
+        <Route element={<StaffGrant need="manage" />}>
+          <Route path="/admin/exams" element={<ExamBankPage />} />
+        </Route>
+        <Route element={<StaffGrant need="assignments" />}>
+          <Route path="/admin/assignments" element={<TeacherAssignmentsPage />} />
+        </Route>
+        <Route element={<StaffGrant need="admin" />}>
+          <Route path="/admin/study" element={<AdminStudyPage />} />
+          <Route path="/admin/bugs" element={<BugReportsPage />} />
+          <Route path="/admin/settings" element={<SiteSettingsPage />} />
+        </Route>
       </Route>
       <Route path="*" element={status === 'loading' ? <FullPageSpinner /> : <NotFoundPage />} />
     </Routes>

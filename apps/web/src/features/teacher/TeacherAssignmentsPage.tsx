@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { FilePick } from '@/components/ui/FilePick'
 import { Modal } from '@/components/ui/Modal'
@@ -8,8 +9,9 @@ import { useStudents } from '@/features/teacher/users.queries'
 import type { AssignmentDetailDto, AssignmentDto, ExamSummaryDto, StudentAssignmentStatus } from '@toeic/shared'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ApiError } from '@/lib/api'
-import { useAssignment, useAssignments, useCloseAssignment, useCreateAssignment, useUploadAssignmentAudio, useUploadAssignmentImages } from '@/features/assignments/assignments.queries'
+import { ApiError, apiGetFile } from '@/lib/api'
+import { useAssignment, useAssignments, useCloseAssignment, useCreateAssignment, useSaveAssignmentToBank, useUploadAssignmentAudio, useUploadAssignmentImages } from '@/features/assignments/assignments.queries'
+import { FillAssignForm } from './FillAssignForm'
 
 function toLocalInput(d: Date) {
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -31,13 +33,15 @@ const STATUS_TONE: Record<StudentAssignmentStatus, 'paper' | 'warn' | 'olive' | 
 }
 
 export function TeacherAssignmentsPage() {
-  const exams = useExams()
+  const { user } = useAuth()
+  const canManage = user?.role === 'ADMIN' || !!user?.permissions.manageAssignments
+  const exams = useExams(canManage)
   const assignments = useAssignments()
   const create = useCreateAssignment()
   const uploadAudio = useUploadAssignmentAudio()
   const uploadImages = useUploadAssignmentImages()
   const close = useCloseAssignment()
-  const students = useStudents({ q: '', status: 'ACTIVE', page: 1, pageSize: 100 })
+  const students = useStudents({ q: '', status: 'ACTIVE', classId: '', page: 1, pageSize: 100 })
   const [params] = useSearchParams()
 
   const published = (exams.data ?? []).filter((e) => e.status === 'PUBLISHED')
@@ -53,6 +57,7 @@ export function TeacherAssignmentsPage() {
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [formError, setFormError] = useState<string | null>(null)
   const [checkingId, setCheckingId] = useState<string | null>(null)
+  const [composer, setComposer] = useState<'bank' | 'fill'>('bank')
 
   const exam = published.find((e) => e.id === examId) ?? null
 
@@ -71,6 +76,14 @@ export function TeacherAssignmentsPage() {
   const selectedParts = exam?.parts.filter((p) => partCodes.includes(p.code)) ?? []
   const questionCount = selectedParts.reduce((s, p) => s + p.questionCount, 0)
   const listening = selectedParts.some((p) => p.skill === 'LISTENING')
+  const wholeExam = !!exam && exam.parts.length > 0 && exam.parts.every((p) => partCodes.includes(p.code))
+
+  function assignWhole(target: ExamSummaryDto) {
+    setExamId(target.id)
+    setPartCodes(target.parts.map((p) => p.code))
+    setMinutes(Math.min(240, Math.max(1, Math.round(target.durationSeconds / 60))))
+    setTitle((current) => (current.trim().length >= 3 ? current : target.title))
+  }
   const saving = create.isPending || uploadAudio.isPending || uploadImages.isPending
 
   const roster = students.data?.items ?? []
@@ -121,15 +134,26 @@ export function TeacherAssignmentsPage() {
         <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Giao bài từ ngân hàng đề</p>
         <h1 className="serif mt-2 text-3xl sm:text-4xl">Bài tập về nhà</h1>
         <p className="mt-2 text-sm text-ink/60">
-          Mỗi đề trong ngân hàng đã tách theo part. Chọn các part cần giao, hoặc{' '}
-          <Link to="/admin/exams" className="text-gold-deep">
-            import đề tự soạn
-          </Link>{' '}
-          để cập nhật ngân hàng rồi giao.
+          {canManage
+            ? 'Giao part hoặc cả bộ đề từ ngân hàng, hoặc soạn bài điền từ. Bài điền từ có thể lưu vào bộ đề sau khi giao.'
+            : 'Danh sách bài đã giao và tiến độ nộp bài của học viên.'}
         </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+      {canManage ? (
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className={composer === 'bank' ? 'rounded-full bg-gold-deep px-4 py-2 text-sm font-semibold text-white' : 'rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink/70 ring-1 ring-ink/10'} onClick={() => setComposer('bank')}>
+            Từ bộ đề
+          </button>
+          <button type="button" className={composer === 'fill' ? 'rounded-full bg-gold-deep px-4 py-2 text-sm font-semibold text-white' : 'rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink/70 ring-1 ring-ink/10'} onClick={() => setComposer('fill')}>
+            Điền từ
+          </button>
+        </div>
+      ) : null}
+
+      {canManage && composer === 'fill' ? <FillAssignForm roster={roster} /> : null}
+
+      {canManage && composer === 'bank' ? <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <Card className="p-5">
           <h2 className="serif text-2xl">1. Chọn đề & part</h2>
           {exams.isPending ? <p className="mt-3 text-sm text-ink/55">Đang tải ngân hàng…</p> : null}
@@ -144,7 +168,15 @@ export function TeacherAssignmentsPage() {
           ) : null}
           <div className="mt-4 space-y-3">
             {published.map((e) => (
-              <ExamPick key={e.id} exam={e} selected={examId === e.id} partCodes={examId === e.id ? partCodes : []} onSelect={setExamId} onParts={setPartCodes} />
+              <ExamPick
+                key={e.id}
+                exam={e}
+                selected={examId === e.id}
+                partCodes={examId === e.id ? partCodes : []}
+                onSelect={setExamId}
+                onParts={setPartCodes}
+                onWhole={() => assignWhole(e)}
+              />
             ))}
           </div>
         </Card>
@@ -175,7 +207,11 @@ export function TeacherAssignmentsPage() {
           </div>
           <p className="mt-3 text-sm text-ink/55">
             {exam ? `${exam.title} • ${selectedParts.length} part • ${questionCount} câu` : 'Chưa chọn đề'}
+            {wholeExam ? ' • cả bộ đề' : ''}
           </p>
+          {wholeExam ? (
+            <p className="mt-1 text-sm text-ink/55">Khi mọi học viên nộp xong hoặc hết giờ, mở Kiểm tra bài làm để tải báo cáo Excel.</p>
+          ) : null}
           {listening ? (
             <div className="mt-4">
               <FilePick
@@ -224,7 +260,7 @@ export function TeacherAssignmentsPage() {
             {saving ? 'Đang giao…' : 'Giao bài tập'}
           </Button>
         </Card>
-      </div>
+      </div> : null}
 
       <section>
         <h2 className="serif text-2xl">Bài đã giao ({assignments.data?.length ?? 0})</h2>
@@ -235,6 +271,9 @@ export function TeacherAssignmentsPage() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <Badge tone={a.status === 'PUBLISHED' ? 'olive' : a.status === 'CLOSED' ? 'paper' : 'warn'}>{a.status}</Badge>
+                  {a.wholeExam ? <Badge tone="gold">Cả bộ đề</Badge> : null}
+                  {a.fillBlank ? <Badge tone="gold">Điền từ</Badge> : null}
+                  {a.fillBlank && a.inBank ? <Badge tone="olive">Đã vào bộ đề</Badge> : null}
                   <h3 className="mt-2 font-semibold">{a.title}</h3>
                   <p className="text-sm text-ink/55">
                     {a.examTitle} • {a.parts.map((p) => partName(p.code).split(' — ')[0]).join(', ')} • {a.submittedCount}/{a.studentCount} đã nộp
@@ -245,14 +284,15 @@ export function TeacherAssignmentsPage() {
                   <Button variant="navy" onClick={() => setCheckingId(a.id)}>
                     Kiểm tra bài làm
                   </Button>
-                  {a.status === 'PUBLISHED' ? (
+                  {canManage && a.fillBlank && !a.inBank ? <SaveToBankButton id={a.id} /> : null}
+                  {canManage && a.status === 'PUBLISHED' ? (
                     <Button variant="paper" disabled={close.isPending} onClick={() => void close.mutateAsync(a.id).catch(() => undefined)}>
                       Đóng bài
                     </Button>
                   ) : null}
                 </div>
               </div>
-              <AssignmentFiles assignment={a} />
+              <AssignmentFiles assignment={a} canManage={canManage} />
             </Card>
           ))}
         </div>
@@ -273,6 +313,28 @@ function AssignmentCheckModal({ assignmentId, onClose }: { assignmentId: string;
   const q = useAssignment(assignmentId)
   const students = q.data?.students ?? []
   const done = students.filter((s) => s.status === 'COMPLETED').length
+  const pending = students.length - done
+  const ready = !!q.data?.wholeExam && students.length > 0 && pending === 0
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
+
+  async function downloadReport() {
+    setExporting(true)
+    setExportError(null)
+    try {
+      const file = await apiGetFile(`/assignments/${assignmentId}/report`)
+      const url = URL.createObjectURL(file.blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = file.filename
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      setExportError(e instanceof ApiError ? e.message : 'Không tải được báo cáo.')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <Modal wide title={q.data?.title ?? 'Bài làm học viên'} onClose={onClose}>
@@ -308,6 +370,18 @@ function AssignmentCheckModal({ assignmentId, onClose }: { assignmentId: string;
               ))}
             </ul>
           )}
+          {q.data?.wholeExam ? (
+            <div className="mt-4">
+              <Button type="button" variant="navy" disabled={!ready || exporting} onClick={() => void downloadReport()}>
+                {exporting ? 'Đang xuất…' : ready ? 'Tải báo cáo Excel' : `Còn ${pending} học viên chưa nộp`}
+              </Button>
+              {exportError ? (
+                <p className="mt-2 text-sm text-coral" role="alert">
+                  {exportError}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <div className="mt-5 flex justify-end">
             <Button type="button" variant="paper" onClick={onClose}>
               Đóng
@@ -319,7 +393,27 @@ function AssignmentCheckModal({ assignmentId, onClose }: { assignmentId: string;
   )
 }
 
-function AssignmentFiles({ assignment }: { assignment: AssignmentDto }) {
+function SaveToBankButton({ id }: { id: string }) {
+  const save = useSaveAssignmentToBank()
+  const [note, setNote] = useState<string | null>(null)
+  return (
+    <div>
+      <Button
+        variant="navy"
+        disabled={save.isPending}
+        onClick={() => {
+          setNote(null)
+          void save.mutateAsync(id).then(() => setNote('Đã lưu vào bộ đề.')).catch((e: unknown) => setNote(e instanceof ApiError ? e.message : 'Không lưu được vào bộ đề.'))
+        }}
+      >
+        {save.isPending ? 'Đang lưu…' : 'Lưu vào bộ đề'}
+      </Button>
+      {note ? <p className="mt-1 text-xs text-ink/55">{note}</p> : null}
+    </div>
+  )
+}
+
+function AssignmentFiles({ assignment, canManage }: { assignment: AssignmentDto; canManage: boolean }) {
   const uploadAudio = useUploadAssignmentAudio()
   const uploadImages = useUploadAssignmentImages()
   const listening = assignment.parts.some((p) => p.skill === 'LISTENING')
@@ -357,7 +451,7 @@ function AssignmentFiles({ assignment }: { assignment: AssignmentDto }) {
         {listening ? (assignment.hasAudio ? 'Đã có file nghe. ' : 'Chưa có file nghe. ') : ''}
         {assignment.imageCount > 0 ? `${assignment.imageCount} ảnh đề.` : 'Chưa có ảnh đề.'} Học viên thấy các file này khi làm bài.
       </p>
-      <div className="mt-2 flex flex-wrap gap-2">
+      {canManage ? <div className="mt-2 flex flex-wrap gap-2">
         {listening ? (
           <FilePick
             label={busy && uploadAudio.isPending ? 'Đang tải file nghe…' : assignment.hasAudio ? 'Đổi file nghe' : 'Thêm file nghe'}
@@ -378,7 +472,7 @@ function AssignmentFiles({ assignment }: { assignment: AssignmentDto }) {
             if (files.length) void onImages(files)
           }}
         />
-      </div>
+      </div> : null}
       {note ? (
         <p className={`mt-2 text-sm ${failed ? 'text-coral' : 'text-olive'}`} role={failed ? 'alert' : 'status'}>
           {note}
@@ -394,12 +488,14 @@ function ExamPick({
   partCodes,
   onSelect,
   onParts,
+  onWhole,
 }: {
   exam: ExamSummaryDto
   selected: boolean
   partCodes: string[]
   onSelect: (id: string) => void
   onParts: (codes: string[]) => void
+  onWhole: () => void
 }) {
   return (
     <div className={`rounded-2xl border p-4 ${selected ? 'border-gold-deep bg-teal-soft/40' : 'border-gold/30 bg-white'}`}>
@@ -409,7 +505,10 @@ function ExamPick({
           {exam.code} • {exam.totalQuestions} câu
         </p>
       </button>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button type="button" className="rounded-full bg-navy px-3 py-1.5 text-xs font-semibold text-white" onClick={onWhole}>
+          Giao cả bộ đề
+        </button>
         {exam.parts.map((p) => {
           const on = selected && partCodes.includes(p.code)
           return (

@@ -46,6 +46,7 @@ export function SiteSettingsPage() {
       legalNote: remote.data.legalNote,
       copyright: remote.data.copyright,
       theme: { ...remote.data.theme },
+      honorBoardEnabled: remote.data.honorBoardEnabled,
     })
   }, [remote.data])
 
@@ -96,6 +97,19 @@ export function SiteSettingsPage() {
         <h1 className="serif mt-2 text-3xl sm:text-4xl">Logo, khẩu hiệu, footer & màu theme</h1>
         <p className="mt-2 text-sm text-ink/60">Thay đổi được lưu vào hệ thống và hiện ngay trên trang học viên, không cần sửa database.</p>
       </header>
+
+      <Card className="p-6">
+        <h2 className="serif text-2xl">Bảng vinh danh</h2>
+        <label className="mt-3 flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.honorBoardEnabled ?? true}
+            onChange={(e) => set('honorBoardEnabled', e.target.checked)}
+          />
+          Hiện bảng vinh danh tuần trên trang học viên
+        </label>
+        <p className="mt-2 text-xs text-ink/55">Tắt thì cả hai bảng (trong lớp và trong trung tâm) biến mất, kể cả hạng EXP.</p>
+      </Card>
 
       <Card className="p-6">
         <h2 className="serif text-2xl">Thương hiệu</h2>

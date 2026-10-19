@@ -7,6 +7,7 @@ import { cn } from '@/lib/cn'
 import { useMemo, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { AudioPlayer } from './AudioPlayer'
+import { FILL_QUESTION_TYPE } from '@toeic/shared'
 import { partName, useAttemptReview } from './exams.queries'
 import { FocusNote } from './FocusNote'
 import { SelectableText } from '@/features/study/SelectableText'
@@ -91,7 +92,7 @@ export function ReviewPage() {
       <div className="grid gap-4">
         {visible.map((q) => {
           const group = q.groupId ? groups.get(q.groupId) : undefined
-          const showPassage = group && !shownGroups.has(group.id)
+          const showPassage = group && !shownGroups.has(group.id) && (group.passages.length > 0 || !!group.instructions || !!group.imageUrl)
           if (group) shownGroups.add(group.id)
           return (
             <Card key={q.id} className="p-5">
@@ -110,6 +111,18 @@ export function ReviewPage() {
                   <ZoomableImage src={q.imageUrl} alt={`Hình minh họa câu ${q.number}`} compact />
                 </div>
               ) : null}
+              {q.type === FILL_QUESTION_TYPE ? (
+                <div className="mt-3 space-y-2 text-sm">
+                  <p className="text-lg leading-8 font-medium">{q.prompt}</p>
+                  <p>
+                    Đã điền: <strong>{q.answerText || '—'}</strong>
+                  </p>
+                  <p>
+                    Đáp án: <strong>{q.correctText}</strong>
+                  </p>
+                </div>
+              ) : (
+                <>
               {q.prompt ? <SelectableText className="mt-2 text-lg leading-8 font-medium" text={q.prompt} /> : null}
               <ul className="mt-3 grid gap-2">
                 {q.options.map((o) => {
@@ -133,6 +146,14 @@ export function ReviewPage() {
                   )
                 })}
               </ul>
+                </>
+              )}
+              {q.explanation ? (
+                <div className="mt-4 rounded-xl bg-[#f7f1e4] p-3 text-sm">
+                  <p className="text-xs font-semibold tracking-wide text-gold-deep uppercase">Giải thích</p>
+                  <p className="mt-1 leading-6 whitespace-pre-line">{q.explanation}</p>
+                </div>
+              ) : null}
               </div>
             </Card>
           )
