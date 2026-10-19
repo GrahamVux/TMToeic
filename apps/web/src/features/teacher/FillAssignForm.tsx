@@ -1,8 +1,9 @@
 import { Button } from '@/components/ui/Button'
+import { FilePick } from '@/components/ui/FilePick'
 import { Card, Input } from '@/components/ui/Primitives'
 import { useCreateFillAssignment } from '@/features/assignments/assignments.queries'
 import { ApiError } from '@/lib/api'
-import { countBlanks } from '@toeic/shared'
+import { countBlanks, createFillAssignmentSchema } from '@toeic/shared'
 import { useState } from 'react'
 
 type Item = { prompt: string; answers: string[]; explanation: string }
@@ -31,6 +32,37 @@ export function FillAssignForm({ roster }: { roster: RosterUser[] }) {
   const [done, setDone] = useState<string | null>(null)
 
   const blankTotal = items.reduce((sum, item) => sum + countBlanks(item.prompt), 0)
+  const [jsonName, setJsonName] = useState<string | null>(null)
+
+  async function loadJson(file: File) {
+    setFormError(null)
+    setDone(null)
+    try {
+      const parsed = createFillAssignmentSchema.safeParse(JSON.parse(await file.text()))
+      if (!parsed.success) {
+        setJsonName(null)
+        setFormError(parsed.error.issues.map((issue) => issue.message).join(' '))
+        return
+      }
+      const draft = parsed.data
+      setTitle(draft.title)
+      setDescription(draft.description ?? '')
+      setMinutes(Math.max(1, Math.round(draft.durationSeconds / 60)))
+      if (draft.dueAt) setDueAt(toLocalInput(new Date(draft.dueAt)))
+      setItems(
+        draft.items.map((item) => ({
+          prompt: item.prompt,
+          answers: item.answers,
+          explanation: item.explanation ?? '',
+        })),
+      )
+      setJsonName(file.name)
+      setDone('Đã mở file. Kiểm tra câu hỏi, đáp án và lời giải, rồi bấm Giao bài điền từ.')
+    } catch {
+      setJsonName(null)
+      setFormError('File JSON không hợp lệ.')
+    }
+  }
 
   function update(index: number, next: Item) {
     setItems((rows) => rows.map((row, i) => (i === index ? next : row)))
@@ -86,6 +118,21 @@ export function FillAssignForm({ roster }: { roster: RosterUser[] }) {
     <Card className="p-5">
       <h2 className="serif text-2xl">Soạn bài điền từ</h2>
       <p className="mt-1 text-sm text-ink/55">Viết ___ tại mỗi chỗ trống. Nhiều đáp án đúng thì cách nhau bằng dấu |, ví dụ color | colour.</p>
+      <a className="mt-2 inline-block text-sm font-semibold text-gold-deep underline" href="/mau-import-dien-tu.json" download>
+        Tải file mẫu
+      </a>
+      <div className="mt-3">
+        <FilePick
+          label="Chọn file JSON"
+          accept="application/json,.json"
+          chosen={jsonName}
+          hint="Mở vào form để sửa trước khi giao. Chưa lưu bài."
+          onFiles={(files) => {
+            const file = files[0]
+            if (file) void loadJson(file)
+          }}
+        />
+      </div>
       <label className="mt-4 block text-sm font-medium" htmlFor="fill-title">Tiêu đề</label>
       <Input id="fill-title" className="mt-1" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="VD: Điền từ tuần 12" />
       <label className="mt-3 block text-sm font-medium" htmlFor="fill-desc">Ghi chú cho học viên</label>

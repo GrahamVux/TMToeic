@@ -1,0 +1,22 @@
+{
+  "title": "Điền từ mẫu — tuần 1",
+  "description": "File mẫu bài điền từ. Mỗi chỗ trống là ___. Nhiều đáp án đúng cách nhau bằng dấu |.",
+  "durationSeconds": 900,
+  "items": [
+    {
+      "prompt": "The meeting was ___ because the train was late.",
+      "answers": ["cancelled | canceled"],
+      "explanation": "was + quá khứ phân từ. cancelled và canceled đều được chấp nhận."
+    },
+    {
+      "prompt": "Please ___ the form and ___ it today.",
+      "answers": ["complete", "submit | send"],
+      "explanation": "Please + động từ nguyên mẫu. Chỗ thứ hai nhận submit hoặc send."
+    },
+    {
+      "prompt": "Ms. Chen is responsible ___ training the new employees.",
+      "answers": ["for"],
+      "explanation": "Cụm cố định: responsible for + danh từ hoặc V-ing."
+    }
+  ]
+}
