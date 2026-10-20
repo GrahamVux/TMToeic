@@ -5,7 +5,7 @@ import { UserMenu } from '@/components/layout/UserMenu'
 import { useSite } from '@/features/site/SiteSettingsProvider'
 import { BugReportWidget } from '@/features/bugs/BugReportWidget'
 import { useBugReportSummary } from '@/features/bugs/bugs.queries'
-import { BarChart3, Bell, BookOpen, Bug, ClipboardList, Library, LogOut, Menu, Settings, Users, X } from 'lucide-react'
+import { BarChart3, Bell, BookOpen, Bug, ClipboardList, Library, LogOut, Menu, Settings, Trophy, Users, X } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 
@@ -195,6 +195,7 @@ const adminNav = [
   { to: '/admin/exams', label: 'Kho đề', short: 'Kho đề', icon: BookOpen, end: false },
   { to: '/admin/assignments', label: 'Bài tập', short: 'Bài tập', icon: ClipboardList, end: false },
   { to: '/admin/reports', label: 'Báo cáo', short: 'Báo cáo', icon: BarChart3, end: false },
+  { to: '/admin/honor', label: 'Xếp hạng', short: 'Xếp hạng', icon: Trophy, end: false },
 ]
 
 export function AdminShell({ children }: { children: ReactNode }) {

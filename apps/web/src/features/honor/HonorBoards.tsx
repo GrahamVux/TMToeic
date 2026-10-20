@@ -1,5 +1,5 @@
 import { Card } from '@/components/ui/Primitives'
-import { XP_PER_RANK, type HonorBoardDto, type HonorClassEntry, type HonorStudentEntry } from '@toeic/shared'
+import { XP_PER_RANK, type HonorBoardDto, type HonorClassEntry, type HonorStudentEntry, type StaffHonorDto } from '@toeic/shared'
 import type { ReactNode } from 'react'
 import { PodiumMark, RankBadge } from './RankBadge'
 
@@ -86,13 +86,57 @@ function StudentRow({ row }: { row: HonorStudentEntry }) {
   )
 }
 
-function ClassRow({ row }: { row: HonorClassEntry }) {
+export function StaffHonorBoards({ honor }: { honor: StaffHonorDto }) {
+  if (!honor.enabled) {
+    return <p className="rounded-2xl bg-paper p-4 text-sm text-ink/60">Bảng vinh danh đang tắt.</p>
+  }
+  const [y, m, day] = honor.weekStart.split('-')
+  return (
+    <section className="space-y-4">
+      <header>
+        <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">EXP hoàn thành bài • mỗi {XP_PER_RANK} EXP lên một hạng</p>
+        <h2 className="serif mt-1 text-2xl">Bảng xếp hạng tuần</h2>
+        <p className="mt-1 text-sm text-ink/60">
+          Tính từ thứ Hai {day}/{m}/{y}. Hạng giữ trong năm {honor.year}.
+        </p>
+      </header>
+      <div className="grid gap-6 lg:grid-cols-2">
+        {honor.classes.length === 0 ? (
+          <Board title="Vinh danh trong lớp" hint="Lớp bạn được giao">
+            <Empty text="Bạn chưa được giao lớp nào. Bảng xếp hạng tổng vẫn hiện bên cạnh." />
+          </Board>
+        ) : (
+          honor.classes.map((room) => (
+            <Board key={room.classId} title={room.className} hint={`${room.participants} học viên có EXP tuần này`}>
+              {room.entries.length === 0 ? <Empty text="Tuần này chưa ai trong lớp hoàn thành bài." /> : null}
+              <ul className="space-y-3">
+                {room.entries.map((row) => (
+                  <StudentRow key={row.place} row={row} />
+                ))}
+              </ul>
+            </Board>
+          ))
+        )}
+        <Board title="Bảng xếp hạng tổng" hint="Xếp theo tổng EXP của từng lớp. Không hiện học viên lớp khác.">
+          {honor.centerBoard.length === 0 ? <Empty text="Chưa có lớp nào trên bảng." /> : null}
+          <ul className="space-y-3">
+            {honor.centerBoard.map((row) => (
+              <ClassRow key={row.place} row={row} yoursLabel="Lớp bạn" />
+            ))}
+          </ul>
+        </Board>
+      </div>
+    </section>
+  )
+}
+
+function ClassRow({ row, yoursLabel = 'Lớp bạn' }: { row: HonorClassEntry; yoursLabel?: string }) {
   return (
     <li className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-3 ${row.yours ? 'bg-gold/15' : 'bg-paper'}`}>
       <div className="flex min-w-0 items-center gap-3">
         {row.place <= 3 ? <PodiumMark place={row.place} /> : <span className="w-8 text-center text-sm font-semibold text-ink/45">{row.place}</span>}
         <div className="min-w-0">
-          <p className="truncate font-semibold">{row.className}{row.yours ? ' (Lớp bạn)' : ''}</p>
+          <p className="truncate font-semibold">{row.className}{row.yours ? ` (${yoursLabel})` : ''}</p>
           <p className="text-xs text-ink/55">{row.members} học viên</p>
         </div>
       </div>

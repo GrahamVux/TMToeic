@@ -17,6 +17,7 @@ import {
   type HonorBoardDto,
   type HonorClassEntry,
   type HonorStudentEntry,
+  type StaffHonorDto,
   type StudentDashboardDto,
   type StudentProgressDto,
   type UpdateProfileInput,
@@ -28,7 +29,7 @@ import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { AuditService } from '../audit/audit.service'
 import { AppException } from '../common/app-exception'
 import { DB, type Db } from '../db/database.module'
-import { attempts, assignments, classMembers, classTeachers, exams, siteSettings, users } from '../db/schema'
+import { attempts, assignments, classMembers, classes, classTeachers, exams, siteSettings, users } from '../db/schema'
 import { toUserDto } from '../users/user.mapper'
 
 /** Class is in Vietnam: "today" and "this week" follow local time, not the server's. */
@@ -37,6 +38,14 @@ const TZ_SQL = sql.raw(`'${TZ}'`)
 const HISTORY_SIZE = 12
 
 type Rows<T> = { rows: T[] }
+
+type HonorSnapshot = {
+  enabled: boolean
+  weekStart: string
+  year: number
+  xpByUser: Map<string, { name: string; weeklyXp: number; yearlyXp: number }>
+  members: Array<{ userId: string; classId: string; className: string }>
+}
 
 const dayFormat = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' })
 export const localDay = (d: Date) => dayFormat.format(d) // YYYY-MM-DD in TZ
@@ -506,6 +515,123 @@ export class ProgressService {
    * Rank uses EXP since 1 January (Asia/Ho_Chi_Minh); 100 EXP is one rank.
    */
   private async honorBoard(userId: string, now: Date, weekStart: string): Promise<HonorBoardDto> {
+    const snap = await this.honorSnapshot(now, weekStart)
+    const empty = (): HonorBoardDto => ({
+      enabled: snap.enabled,
+      weekStart: snap.weekStart,
+      year: snap.year,
+      className: null,
+      me: { weeklyXp: 0, yearlyXp: 0, rank: rankFromXp(0) },
+      classBoard: { entries: [], you: null, participants: 0 },
+      centerBoard: [],
+    })
+    if (!snap.enabled) return empty()
+
+    const mine = snap.members.find((row) => row.userId === userId) ?? null
+    const meXp = snap.xpByUser.get(userId) ?? { name: '', weeklyXp: 0, yearlyXp: 0 }
+    const ranked = this.rankClass(snap, mine?.classId ?? null, userId)
+    return {
+      enabled: true,
+      weekStart: snap.weekStart,
+      year: snap.year,
+      className: mine?.className ?? null,
+      me: { weeklyXp: meXp.weeklyXp, yearlyXp: meXp.yearlyXp, rank: rankFromXp(meXp.yearlyXp) },
+      classBoard: {
+        entries: ranked.slice(0, HONOR_BOARD_SIZE),
+        you: ranked.find((row) => row.you) ?? null,
+        participants: ranked.length,
+      },
+      centerBoard: this.centerBoard(snap, mine ? new Set([mine.classId]) : new Set()),
+    }
+  }
+
+  /**
+   * Staff view. A teacher sees student names only in classes they manage, plus every class on the center board.
+   * An admin sees every class roster.
+   */
+  async staffHonor(actor: { id: string; role: string }, now = new Date()): Promise<StaffHonorDto> {
+    const weekRows = (await this.db.execute(sql`select to_char(date_trunc('week', ${now.toISOString()}::timestamptz at time zone ${TZ_SQL}), 'YYYY-MM-DD') as day`)) as unknown as Rows<{ day: string }>
+    const weekStart = weekRows.rows[0]?.day ?? localDay(now)
+    const snap = await this.honorSnapshot(now, weekStart)
+    const managed =
+      actor.role === 'ADMIN'
+        ? null
+        : new Set(
+            (
+              await this.db.select({ classId: classTeachers.classId }).from(classTeachers).where(eq(classTeachers.userId, actor.id))
+            ).map((row) => row.classId),
+          )
+    const roomRows =
+      managed === null
+        ? await this.db.select({ id: classes.id, name: classes.name }).from(classes)
+        : await this.db
+            .select({ id: classes.id, name: classes.name })
+            .from(classes)
+            .innerJoin(classTeachers, eq(classTeachers.classId, classes.id))
+            .where(eq(classTeachers.userId, actor.id))
+    if (!snap.enabled) {
+      return { enabled: false, weekStart: snap.weekStart, year: snap.year, classes: [], centerBoard: [] }
+    }
+    return {
+      enabled: true,
+      weekStart: snap.weekStart,
+      year: snap.year,
+      classes: roomRows
+        .map((room) => {
+          const entries = this.rankClass(snap, room.id, null)
+          return { classId: room.id, className: room.name, entries, participants: entries.length }
+        })
+        .sort((a, b) => a.className.localeCompare(b.className, 'vi')),
+      centerBoard: this.centerBoard(snap, managed ?? new Set()),
+    }
+  }
+
+  private rankClass(
+    snap: HonorSnapshot,
+    classId: string | null,
+    viewerId: string | null,
+  ): HonorStudentEntry[] {
+    if (!classId) return []
+    return snap.members
+      .filter((row) => row.classId === classId)
+      .map((row) => {
+        const xp = snap.xpByUser.get(row.userId) ?? { name: '', weeklyXp: 0, yearlyXp: 0 }
+        return { id: row.userId, name: xp.name, weeklyXp: xp.weeklyXp, yearlyXp: xp.yearlyXp }
+      })
+      .filter((row) => row.weeklyXp > 0)
+      .sort((a, b) => b.weeklyXp - a.weeklyXp || a.name.localeCompare(b.name, 'vi'))
+      .map((row, index) => ({
+        place: index + 1,
+        name: row.name,
+        weeklyXp: row.weeklyXp,
+        yearlyXp: row.yearlyXp,
+        rank: rankFromXp(row.yearlyXp),
+        you: row.id === viewerId,
+      }))
+  }
+
+  private centerBoard(snap: HonorSnapshot, yours: Set<string>): HonorClassEntry[] {
+    const byClass = new Map<string, { className: string; weeklyXp: number; members: number }>()
+    for (const row of snap.members) {
+      const current = byClass.get(row.classId) ?? { className: row.className, weeklyXp: 0, members: 0 }
+      current.members += 1
+      current.weeklyXp += snap.xpByUser.get(row.userId)?.weeklyXp ?? 0
+      byClass.set(row.classId, current)
+    }
+    return [...byClass.entries()]
+      .map(([id, row]) => ({ id, ...row }))
+      .sort((a, b) => b.weeklyXp - a.weeklyXp || a.className.localeCompare(b.className, 'vi'))
+      .map((row, index) => ({
+        place: index + 1,
+        className: row.className,
+        weeklyXp: row.weeklyXp,
+        members: row.members,
+        yours: yours.has(row.id),
+      }))
+  }
+
+  /** Finished-work EXP and class membership used by both the student board and the staff board. */
+  private async honorSnapshot(now: Date, weekStart: string): Promise<HonorSnapshot> {
     const iso = now.toISOString()
     const [settings] = await this.db.select({ enabled: siteSettings.honorBoardEnabled }).from(siteSettings).limit(1)
     const enabled = settings?.enabled ?? true
@@ -513,16 +639,7 @@ export class ProgressService {
       select to_char(${iso}::timestamptz at time zone ${TZ_SQL}, 'YYYY') as year
     `)) as unknown as Rows<{ year: string }>
     const year = Number(yearRows.rows[0]?.year ?? weekStart.slice(0, 4))
-    const empty = (): HonorBoardDto => ({
-      enabled,
-      weekStart,
-      year,
-      className: null,
-      me: { weeklyXp: 0, yearlyXp: 0, rank: rankFromXp(0) },
-      classBoard: { entries: [], you: null, participants: 0 },
-      centerBoard: [],
-    })
-    if (!enabled) return empty()
+    if (!enabled) return { enabled, weekStart, year, xpByUser: new Map(), members: [] }
 
     const [xpRows, memberRows] = await Promise.all([
       this.db.execute(sql`
@@ -571,59 +688,12 @@ export class ProgressService {
       `) as unknown as Promise<Rows<{ user_id: string; class_id: string; class_name: string }>>,
     ])
 
-    const xpByUser = new Map(xpRows.rows.map((row) => [row.id, { name: row.name, weeklyXp: Number(row.weekly_xp), yearlyXp: Number(row.yearly_xp) }]))
-    const mine = memberRows.rows.find((row) => row.user_id === userId) ?? null
-    const meXp = xpByUser.get(userId) ?? { name: '', weeklyXp: 0, yearlyXp: 0 }
-
-    const classmates = memberRows.rows
-      .filter((row) => mine && row.class_id === mine.class_id)
-      .map((row) => {
-        const xp = xpByUser.get(row.user_id) ?? { name: '', weeklyXp: 0, yearlyXp: 0 }
-        return { id: row.user_id, name: xp.name, weeklyXp: xp.weeklyXp, yearlyXp: xp.yearlyXp }
-      })
-      .filter((row) => row.weeklyXp > 0)
-      .sort((a, b) => b.weeklyXp - a.weeklyXp || a.name.localeCompare(b.name, 'vi'))
-
-    const ranked: HonorStudentEntry[] = classmates.map((row, index) => ({
-      place: index + 1,
-      name: row.name,
-      weeklyXp: row.weeklyXp,
-      yearlyXp: row.yearlyXp,
-      rank: rankFromXp(row.yearlyXp),
-      you: row.id === userId,
-    }))
-    const you = ranked.find((row) => row.you) ?? null
-
-    const byClass = new Map<string, { className: string; weeklyXp: number; members: number }>()
-    for (const row of memberRows.rows) {
-      const current = byClass.get(row.class_id) ?? { className: row.class_name, weeklyXp: 0, members: 0 }
-      current.members += 1
-      current.weeklyXp += xpByUser.get(row.user_id)?.weeklyXp ?? 0
-      byClass.set(row.class_id, current)
-    }
-    const center: HonorClassEntry[] = [...byClass.entries()]
-      .map(([id, row]) => ({ id, ...row }))
-      .sort((a, b) => b.weeklyXp - a.weeklyXp || a.className.localeCompare(b.className, 'vi'))
-      .map((row, index) => ({
-        place: index + 1,
-        className: row.className,
-        weeklyXp: row.weeklyXp,
-        members: row.members,
-        yours: row.id === mine?.class_id,
-      }))
-
     return {
       enabled: true,
       weekStart,
       year,
-      className: mine?.class_name ?? null,
-      me: { weeklyXp: meXp.weeklyXp, yearlyXp: meXp.yearlyXp, rank: rankFromXp(meXp.yearlyXp) },
-      classBoard: {
-        entries: ranked.slice(0, HONOR_BOARD_SIZE),
-        you,
-        participants: ranked.length,
-      },
-      centerBoard: center,
+      xpByUser: new Map(xpRows.rows.map((row) => [row.id, { name: row.name, weeklyXp: Number(row.weekly_xp), yearlyXp: Number(row.yearly_xp) }])),
+      members: memberRows.rows.map((row) => ({ userId: row.user_id, classId: row.class_id, className: row.class_name })),
     }
   }
 }

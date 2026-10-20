@@ -1,5 +1,5 @@
 import { api } from '@/lib/api'
-import type { AttemptSummaryDto, ClassReportDto, StudentProgressDto } from '@toeic/shared'
+import type { AttemptSummaryDto, ClassReportDto, StaffHonorDto, StudentProgressDto } from '@toeic/shared'
 import { useQuery } from '@tanstack/react-query'
 
 export function useMyProgress() {
@@ -21,4 +21,8 @@ export function useStudentAttempts(id: string | undefined) {
 
 export function useClassReport() {
   return useQuery({ queryKey: ['reports', 'class'], queryFn: () => api<ClassReportDto>('/reports/class'), refetchOnMount: 'always' })
+}
+
+export function useStaffHonor() {
+  return useQuery({ queryKey: ['reports', 'honor'], queryFn: () => api<StaffHonorDto>('/reports/honor'), refetchOnMount: 'always' })
 }

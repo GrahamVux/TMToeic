@@ -288,7 +288,7 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     it('new account: every enabled part listed with no data, no weakness declared', async () => {
       const s = await newStudent('Tiến Độ Mới')
       const p = await progress(s)
-      expect(p.parts.map((x) => x.partCode)).toEqual(['PART_1', 'PART_2', 'PART_3', 'PART_4', 'PART_5', 'PART_6', 'PART_7'])
+      expect(p.parts.map((x) => x.partCode)).toEqual(['PART_1', 'PART_2', 'PART_3', 'PART_4', 'PART_5', 'PART_6', 'PART_7', 'FILL_1'])
       expect(p.parts.every((x) => x.answered === 0 && x.accuracy === null && x.avgSeconds === null)).toBe(true)
       expect(p.weakestPart).toBeNull()
       expect(p.totals).toEqual({ attemptsFinished: 0, answered: 0, correct: 0, accuracy: null, avgSeconds: null })
@@ -345,7 +345,7 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
 
       const asTeacher = await teacher.get(`/students/${sid}/progress`)
       expect(asTeacher.status).toBe(200)
-      expect(asTeacher.body.parts).toHaveLength(7)
+      expect(asTeacher.body.parts).toHaveLength(8)
       expect((await admin.get(`/students/${sid}/progress`)).status).toBe(200)
       expect((await s.get(`/students/${sid}/progress`)).status).toBe(403)
 
@@ -444,6 +444,50 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
       expect(missed?.reasons).toContain('OVERDUE')
       expect(missed?.overdueCount).toBeGreaterThanOrEqual(1)
       expect(missed?.reasons).not.toContain('LOW_ACCURACY')
+    })
+
+    it('shows a teacher only the classes they manage, and an admin every class board', async () => {
+      const examId = await publishedExam(SMALL as typeof FULL)
+      const home = await admin.post('/users/students').send({ fullName: 'Hạng K42' })
+      expect(home.status).toBe(201)
+      const homePupil = (await login(app, home.body.user.studentCode as string, home.body.temporaryPassword as string)).c
+      expect((await homePupil.post('/auth/change-password').send({ currentPassword: home.body.temporaryPassword, newPassword: 'StudentPass99' })).status).toBe(200)
+      await practice(homePupil, examId, 2, true)
+
+      const created = await admin.post('/users/students').send({ fullName: 'Hạng Riêng' })
+      expect(created.status).toBe(201)
+      const room = await admin.post('/classes').send({ name: 'Lớp Giáo Viên A' })
+      expect(room.status).toBe(201)
+      expect((await put(admin, '/classes/members', { userId: created.body.user.id, classId: room.body.id })).status).toBe(200)
+      const pupil = (await login(app, created.body.user.studentCode as string, created.body.temporaryPassword as string)).c
+      expect((await pupil.post('/auth/change-password').send({ currentPassword: created.body.temporaryPassword, newPassword: 'StudentPass99' })).status).toBe(200)
+      await practice(pupil, examId, 3, true)
+
+      const staff = await admin.post('/users/staff').send({ username: 'teacher.honor', fullName: 'Thầy Hạng', role: 'TEACHER' })
+      expect(staff.status).toBe(201)
+      const narrow = (await login(app, 'teacher.honor', staff.body.temporaryPassword as string)).c
+      expect((await narrow.post('/auth/change-password').send({ currentPassword: staff.body.temporaryPassword, newPassword: 'TeacherPass99' })).status).toBe(200)
+      expect((await put(admin, `/classes/${room.body.id}/teachers`, { teacherIds: [staff.body.user.id] })).status).toBe(200)
+
+      const mine = (await narrow.get('/reports/honor')).body as import('@toeic/shared').StaffHonorDto
+      expect(mine.enabled).toBe(true)
+      expect(mine.classes.map((row) => row.className)).toEqual(['Lớp Giáo Viên A'])
+      expect(mine.classes[0]?.entries.map((row) => row.name)).toEqual(['Hạng Riêng'])
+      expect(JSON.stringify(mine.classes)).not.toContain('Chăm Chỉ')
+      expect(mine.centerBoard.map((row) => row.className)).toEqual(expect.arrayContaining(['Lớp Giáo Viên A', 'Lớp K42']))
+      expect(mine.centerBoard.find((row) => row.className === 'Lớp Giáo Viên A')?.yours).toBe(true)
+      expect(JSON.stringify(mine.centerBoard)).not.toContain('Hạng Riêng')
+
+      const k42 = (await teacher.get('/reports/honor')).body as import('@toeic/shared').StaffHonorDto
+      expect(k42.classes.map((row) => row.className)).toEqual(['Lớp K42'])
+      expect(k42.classes[0]?.entries.map((row) => row.name)).toContain('Hạng K42')
+      expect(k42.classes[0]?.entries.map((row) => row.name)).not.toContain('Hạng Riêng')
+      expect(k42.centerBoard.some((row) => row.className === 'Lớp Giáo Viên A')).toBe(true)
+
+      const all = (await admin.get('/reports/honor')).body as import('@toeic/shared').StaffHonorDto
+      expect(all.classes.map((row) => row.className)).toEqual(expect.arrayContaining(['Lớp K42', 'Lớp Giáo Viên A']))
+      expect(all.classes.find((row) => row.className === 'Lớp Giáo Viên A')?.entries.map((row) => row.name)).toEqual(['Hạng Riêng'])
+      expect((await pupil.get('/reports/honor')).status).toBe(403)
     })
   })
 

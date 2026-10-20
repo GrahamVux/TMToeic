@@ -28,4 +28,10 @@ export class ReportsController {
     assertTeacherGrant(user, 'viewProgress')
     return this.progress.classReport(new Date(), user.role === 'TEACHER' ? user.id : undefined)
   }
+
+  /** Class boards the viewer may see, plus the center-wide class ranking. */
+  @Get('reports/honor')
+  honor(@CurrentUser() user: AuthUser) {
+    return this.progress.staffHonor({ id: user.id, role: user.role })
+  }
 }

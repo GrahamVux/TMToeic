@@ -96,6 +96,23 @@ export type HonorBoardDto = {
   centerBoard: HonorClassEntry[]
 }
 
+/** One class roster on the staff honor page. Student names stay inside this class. */
+export type StaffClassBoardDto = {
+  classId: string
+  className: string
+  entries: HonorStudentEntry[]
+  participants: number
+}
+
+/** Teachers receive only the classes they manage. Admins receive every class. Both receive the center board. */
+export type StaffHonorDto = {
+  enabled: boolean
+  weekStart: string
+  year: number
+  classes: StaffClassBoardDto[]
+  centerBoard: HonorClassEntry[]
+}
+
 export const createClassBodySchema = z.object({
   name: z.string().trim().min(2, 'Tên lớp quá ngắn').max(80),
 })

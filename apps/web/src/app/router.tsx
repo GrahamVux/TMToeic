@@ -21,6 +21,7 @@ import { ExamBankPage } from '@/features/teacher/ExamBankPage'
 import { ReportsPage } from '@/features/teacher/ReportsPage'
 import { StudentDetailPage } from '@/features/teacher/StudentDetailPage'
 import { BugReportsPage } from '@/features/bugs/BugReportsPage'
+import { StaffHonorPage } from '@/features/honor/StaffHonorPage'
 import { SiteSettingsPage } from '@/features/teacher/SiteSettingsPage'
 import { TeacherAssignmentsPage } from '@/features/teacher/TeacherAssignmentsPage'
 import { TeacherDashboardPage } from '@/features/teacher/TeacherDashboardPage'
@@ -97,6 +98,7 @@ function AppRoutes() {
       </Route>
       <Route element={<RequireAuth audience="staff" />}>
         <Route path="/admin" element={<TeacherDashboardPage />} />
+        <Route path="/admin/honor" element={<StaffHonorPage />} />
         <Route element={<StaffGrant need="progress" />}>
           <Route path="/admin/students/:studentId" element={<StudentDetailPage />} />
           <Route path="/admin/students/:studentId/attempts/:attemptId" element={<ResultPage />} />
