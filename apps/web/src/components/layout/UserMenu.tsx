@@ -1,5 +1,5 @@
 import { cn } from '@/lib/cn'
-import { Bell, ChevronDown, LogOut, Settings, Target, UserRound } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, Target, UserRound } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -61,7 +61,6 @@ export function UserMenu({ name, code, initials, settingsPath = '/settings', onS
     { to: settingsPath, label: 'Thông tin cá nhân', icon: UserRound },
     { to: `${settingsPath}#goal`, label: 'Mục tiêu điểm số', icon: Target },
     { to: `${settingsPath}#notify`, label: 'Thông báo & nhắc học', icon: Bell },
-    { to: settingsPath, label: 'Cài đặt tài khoản', icon: Settings },
   ]
 
   return (

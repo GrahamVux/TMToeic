@@ -1,6 +1,6 @@
 import { cn } from '@/lib/cn'
 import { Maximize2, Minus, Plus, X } from 'lucide-react'
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode, type TouchEvent, type WheelEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode, type TouchEvent, type WheelEvent } from 'react'
 import { createPortal } from 'react-dom'
 
 const STEPS = [0.75, 1, 1.25, 1.5, 2, 2.5, 3] as const
@@ -33,17 +33,22 @@ export function TextZoomBar({ scale, onChange }: { scale: number; onChange: (nex
   )
 }
 
-export function examTextStyle(scale: number): { fontSize: string } {
-  return { fontSize: `${scale}em` }
+export function examTextStyle(scale: number): CSSProperties {
+  return { '--exam-scale': String(scale) } as CSSProperties
 }
 
-/** Exam figure / scanned page: zoom in place and open a full-screen viewer. */
-export function ZoomableImage({ src, alt, compact = false }: { src: string; alt: string; compact?: boolean }) {
+/** Exam figure. `frame` fills the question width. `listening` stays short so the choices stay in view. */
+export function ZoomableImage({ src, alt, fit = 'frame' }: { src: string; alt: string; fit?: 'frame' | 'listening' }) {
   const [scale, setScale] = useState(1)
   const [open, setOpen] = useState(false)
+  const fitted = scale <= 1
+  const listening = fit === 'listening'
 
   return (
-    <div className="space-y-2">
+    <div
+      className={cn('exam-figure w-full min-w-0 space-y-2', listening && 'exam-listen-fit', listening && !fitted && 'is-zoomed')}
+      style={listening ? ({ '--fig-zoom': String(scale) } as CSSProperties) : undefined}
+    >
       <ZoomToolbar
         scale={scale}
         onZoomOut={() => setScale((s) => stepFrom(s, -1))}
@@ -51,20 +56,15 @@ export function ZoomableImage({ src, alt, compact = false }: { src: string; alt:
         onReset={() => setScale(1)}
         onExpand={() => setOpen(true)}
       />
-      <div
-        className={cn(
-          'overflow-auto rounded-2xl border border-ink/10 bg-white',
-          compact ? 'max-h-80' : 'max-h-[min(70vh,40rem)]',
-        )}
-      >
-        <button type="button" className="block w-full cursor-zoom-in p-0" onClick={() => setOpen(true)} aria-label={`${alt} — mở phóng to`}>
+      <div className={cn('w-full min-w-0 rounded-2xl border border-ink/10 bg-white', fitted ? 'overflow-hidden' : 'overflow-auto')}>
+        <button type="button" className="block w-full max-w-full cursor-zoom-in p-0" onClick={() => setOpen(true)} aria-label={`${alt} — mở phóng to`}>
           <img
             src={src}
             alt={alt}
             draggable={false}
             loading="lazy"
-            className="mx-auto block bg-white object-contain"
-            style={{ width: `${scale * 100}%`, maxWidth: 'none' }}
+            className="mx-auto block h-auto bg-white"
+            style={listening && fitted ? undefined : { width: `${scale * 100}%`, maxWidth: fitted ? '100%' : 'none' }}
           />
         </button>
       </div>

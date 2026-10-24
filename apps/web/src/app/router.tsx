@@ -76,6 +76,7 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/" element={status === 'loading' ? <FullPageSpinner /> : <Navigate to={home} replace />} />
       <Route path="/login" element={status === 'loading' ? <FullPageSpinner /> : user ? <Navigate to={home} replace /> : <LoginPage />} />
       <Route path="/change-password" element={status === 'loading' ? <FullPageSpinner /> : <ChangePasswordPage />} />
       <Route path="/404" element={<NotFoundPage />} />

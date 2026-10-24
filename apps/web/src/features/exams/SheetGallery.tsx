@@ -3,13 +3,13 @@ import { useState } from 'react'
 import { Card } from '@/components/ui/Primitives'
 import { ZoomableImage } from './ZoomableImage'
 
-/** Scanned exam pages attached to a homework assignment. */
-export function SheetGallery({ images }: { images: SheetImageDto[] }) {
+/** Scanned exam pages. Embedded pages sit inside the question frame; otherwise they get their own card. */
+export function SheetGallery({ images, embedded = false, fit = 'frame' }: { images: SheetImageDto[]; embedded?: boolean; fit?: 'frame' | 'listening' }) {
   const [index, setIndex] = useState(0)
   if (images.length === 0) return null
   const current = images[Math.min(index, images.length - 1)]
-  return (
-    <Card className="p-4">
+  const body = (
+    <>
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-semibold">Ảnh đề</p>
         {images.length > 1 ? (
@@ -27,8 +27,10 @@ export function SheetGallery({ images }: { images: SheetImageDto[] }) {
         ) : null}
       </div>
       <div className="mt-3">
-        <ZoomableImage src={current.url} alt={`Ảnh đề ${Math.min(index, images.length - 1) + 1}`} />
+        <ZoomableImage src={current.url} alt={`Ảnh đề ${Math.min(index, images.length - 1) + 1}`} fit={fit} />
       </div>
-    </Card>
+    </>
   )
+  if (embedded) return <div className="mb-4 min-w-0">{body}</div>
+  return <Card className="min-w-0 p-4">{body}</Card>
 }

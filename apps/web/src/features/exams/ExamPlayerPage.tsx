@@ -119,6 +119,8 @@ function Player({ data }: { data: AttemptPlayerDto }) {
   }
 
   const listening = isListeningPart(question.partCode)
+  const passageOpen = Boolean(group && (group.passages.length > 0 || group.instructions))
+  const listeningFigure = listening && (data.sheetImages.length > 0 || !!group?.imageUrl || !!question.imageUrl)
   const partsInOrder = useMemo(() => {
     const seen = new Map<string, number>()
     questions.forEach((q, i) => {
@@ -168,10 +170,9 @@ function Player({ data }: { data: AttemptPlayerDto }) {
         </Modal>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
-        <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="min-w-0 space-y-4">
           <AudioPlayer attemptId={attempt.id} tracks={audio} partCode={question.partCode} mode={attempt.mode} />
-          <SheetGallery images={data.sheetImages} />
           {listening && !trackForPart(audio, question.partCode) ? (
             <div className="flex items-center gap-3 rounded-2xl bg-teal-soft px-4 py-3">
               <Headphones className="size-5 text-teal" />
@@ -184,22 +185,49 @@ function Player({ data }: { data: AttemptPlayerDto }) {
             </div>
           ) : null}
 
-          {group && (group.passages.length > 0 || group.instructions || group.imageUrl) ? (
-            <Card className="p-5">
-              <div style={examTextStyle(textZoom)}>
-                <PassageView group={group} />
+          {passageOpen && group ? (
+            <Card className="min-w-0 p-5">
+              {!listening ? <SheetGallery images={data.sheetImages} embedded /> : null}
+              {!listening && group.imageUrl ? <ZoomableImage src={group.imageUrl} alt="Hình hoặc bảng biểu của đoạn đọc" /> : null}
+              <div className="exam-scale" style={examTextStyle(textZoom)}>
+                <PassageView group={group} showImage={false} />
               </div>
             </Card>
           ) : null}
 
-          <Card className="p-6">
-            <div style={examTextStyle(textZoom)}>
-            <p className="text-sm text-ink/50">{partName(question.partCode)} • Câu {question.number}</p>
-            {question.imageUrl ? (
-              <div className="mt-3">
-                <ZoomableImage src={question.imageUrl} alt={`Hình minh họa câu ${question.number}`} compact />
+          <Card className="min-w-0 p-6">
+            <div className={listeningFigure ? 'grid items-start gap-5 lg:grid-cols-2' : undefined}>
+            {listeningFigure ? (
+              <div className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-6rem)] lg:overflow-auto">
+                <SheetGallery images={data.sheetImages} embedded fit="listening" />
+                {group?.imageUrl ? (
+                  <div className="mb-4">
+                    <ZoomableImage src={group.imageUrl} alt="Hình của phần nghe" fit="listening" />
+                  </div>
+                ) : null}
+                {question.imageUrl ? (
+                  <div className="mb-4">
+                    <ZoomableImage src={question.imageUrl} alt={`Hình minh họa câu ${question.number}`} fit="listening" />
+                  </div>
+                ) : null}
               </div>
-            ) : null}
+            ) : (
+              <>
+                {(listening || !passageOpen) ? <SheetGallery images={data.sheetImages} embedded /> : null}
+                {(listening || !passageOpen) && group?.imageUrl ? (
+                  <div className="mb-4">
+                    <ZoomableImage src={group.imageUrl} alt="Hình hoặc bảng biểu của đoạn đọc" />
+                  </div>
+                ) : null}
+                {question.imageUrl ? (
+                  <div className="mb-4">
+                    <ZoomableImage src={question.imageUrl} alt={`Hình minh họa câu ${question.number}`} />
+                  </div>
+                ) : null}
+              </>
+            )}
+            <div className="exam-scale" style={examTextStyle(textZoom)}>
+            <p className="text-sm text-ink/50">{partName(question.partCode)} • Câu {question.number}</p>
             {question.type === FILL_QUESTION_TYPE ? (
               <FillBlank
                 prompt={question.prompt}
@@ -234,6 +262,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
             <div className="mt-6 flex justify-between">
               <Button variant="ghost" disabled={index === 0} onClick={() => setIndex((i) => i - 1)}>Câu trước</Button>
               <Button variant="navy" disabled={index === questions.length - 1} onClick={() => setIndex((i) => i + 1)}>Câu tiếp</Button>
+            </div>
             </div>
             </div>
           </Card>
@@ -307,7 +336,7 @@ function FillBlank({ prompt, blankIndex, value, onChange }: { prompt: string; bl
   const pieces = prompt.split(/_{3,}/)
   return (
     <div className="mt-3">
-      <p className="text-xl leading-10 font-medium">
+      <p className="text-xl leading-8 font-medium">
         {pieces.map((piece, index) => (
           <span key={index}>
             {piece}
@@ -317,7 +346,7 @@ function FillBlank({ prompt, blankIndex, value, onChange }: { prompt: string; bl
                   value={value}
                   onChange={(e) => onChange(e.target.value)}
                   aria-label={`Chỗ trống ${index + 1}`}
-                  className="mx-1 inline-block w-36 rounded-lg border border-gold-deep bg-white px-2 py-1 text-center text-lg"
+                  className="mx-1 inline-block w-[8em] min-w-28 rounded-lg border border-gold-deep bg-white px-2 py-1 text-center text-lg"
                   autoComplete="off"
                 />
               ) : (

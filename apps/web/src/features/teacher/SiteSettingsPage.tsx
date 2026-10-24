@@ -1,5 +1,6 @@
 import { useAuth } from '@/app/AuthContext'
 import { Button } from '@/components/ui/Button'
+import { CornerNotice, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { Badge, Card, Input } from '@/components/ui/Primitives'
 import { applySiteTheme, useSiteSettings, useUpdateSiteSettings } from '@/features/site/site.queries'
 import { useSite } from '@/features/site/SiteSettingsProvider'
@@ -25,7 +26,7 @@ export function SiteSettingsPage() {
   const site = useSite()
   const save = useUpdateSiteSettings()
   const [form, setForm] = useState<UpdateSiteSettingsInput>({})
-  const [ok, setOk] = useState(false)
+  const [notice, setNotice] = useState<CornerNoticeState | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
   useEffect(() => {
@@ -61,7 +62,6 @@ export function SiteSettingsPage() {
 
   function set<K extends keyof UpdateSiteSettingsInput>(key: K, value: UpdateSiteSettingsInput[K]) {
     setForm((f) => ({ ...f, [key]: value }))
-    setOk(false)
   }
 
   async function onFile(kind: 'logoUrl' | 'faviconUrl', file: File | undefined) {
@@ -77,11 +77,10 @@ export function SiteSettingsPage() {
 
   async function submit() {
     setErr(null)
-    setOk(false)
     try {
       const next = await save.mutateAsync(form)
       applySiteTheme(next)
-      setOk(true)
+      setNotice(flashNotice('Đã lưu. Logo, footer và màu theme đã cập nhật trên web.'))
     } catch {
       setErr('Không lưu được. Kiểm tra ảnh (định dạng/kích thước) và các ô bắt buộc.')
     }
@@ -92,6 +91,7 @@ export function SiteSettingsPage() {
 
   return (
     <div className="space-y-6">
+      <CornerNotice notice={notice} />
       <header>
         <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Cài đặt cổng học</p>
         <h1 className="serif mt-2 text-3xl sm:text-4xl">Logo, khẩu hiệu, footer & màu theme</h1>
@@ -236,12 +236,6 @@ export function SiteSettingsPage() {
           {err}
         </p>
       ) : null}
-      {ok ? (
-        <p className="rounded-xl bg-[#e4efd8] p-3 text-sm text-olive" role="status">
-          Đã lưu. Logo, footer và màu theme đã cập nhật trên web.
-        </p>
-      ) : null}
-
       <Button disabled={save.isPending} onClick={() => void submit()}>
         {save.isPending ? 'Đang lưu…' : 'Lưu cài đặt'}
       </Button>

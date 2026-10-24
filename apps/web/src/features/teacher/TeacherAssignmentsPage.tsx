@@ -225,11 +225,15 @@ export function TeacherAssignmentsPage() {
           ) : null}
           <div className="mt-3">
             <FilePick
-              label="Chọn ảnh đề"
+              label={listening ? 'Chọn ảnh đề Listening' : 'Chọn ảnh đoạn Reading'}
               accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
               multiple
               chosen={imageFiles.length > 0 ? imageFiles.map((file) => file.name).join(', ') : null}
-              hint="Ảnh trang đề, mỗi ảnh tối đa 8MB. Học viên xem khi làm bài."
+              hint={
+                listening
+                  ? 'Ảnh hiện trong khung câu hỏi, rộng tối đa bằng khung để xem hết hình. Mỗi ảnh tối đa 8MB.'
+                  : 'Ảnh hoặc bảng biểu hiện cùng đoạn đọc, vừa khung đề. Mỗi ảnh tối đa 8MB.'
+              }
               onFiles={setImageFiles}
             />
           </div>
@@ -464,7 +468,7 @@ function AssignmentFiles({ assignment, canManage }: { assignment: AssignmentDto;
           />
         ) : null}
         <FilePick
-          label={busy && uploadImages.isPending ? 'Đang tải ảnh…' : 'Thêm ảnh đề'}
+          label={busy && uploadImages.isPending ? 'Đang tải ảnh…' : listening ? 'Thêm ảnh Listening' : 'Thêm ảnh Reading'}
           accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
           multiple
           disabled={busy}

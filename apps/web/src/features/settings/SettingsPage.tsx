@@ -1,11 +1,13 @@
 import { useAuth } from '@/app/AuthContext'
 import { Button } from '@/components/ui/Button'
+import { CornerNotice, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { ChangePasswordForm } from '@/features/auth/PasswordFields'
 import { Card } from '@/components/ui/Primitives'
 import { useDashboard, useSetGoal } from '@/features/dashboard/dashboard.queries'
 import { useUpdateProfile } from '@/features/site/site.queries'
 import { ApiError } from '@/lib/api'
 import { cn } from '@/lib/cn'
+import { useNotifyPrefs, type NotifyKind } from '@/lib/notify-prefs'
 import { GOAL_TRACK_BOUNDS, GOAL_TRACKS, formatGoal, remainingToGoal, type GoalDto, type GoalTrack } from '@toeic/shared'
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
@@ -21,6 +23,7 @@ function Toggle({ checked, onChange, label, hint, disabled }: { checked: boolean
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-label={label}
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn('relative h-6 w-11 shrink-0 rounded-full transition-colors', checked ? 'bg-gold-deep' : 'bg-ink/15')}
@@ -59,12 +62,12 @@ export function SettingsPage() {
   const savedGoal = user?.goal ?? null
   const [track, setTrack] = useState<GoalTrack | null>(savedGoal?.track ?? null)
   const [scores, setScores] = useState({ TWO_SKILL: scoreFor('TWO_SKILL', savedGoal), FOUR_SKILL: scoreFor('FOUR_SKILL', savedGoal) })
-  const [saved, setSaved] = useState(false)
   const [fullName, setFullName] = useState(user?.fullName ?? '')
   const [email, setEmail] = useState(user?.email ?? '')
   const [phone, setPhone] = useState(user?.phone ?? '')
-  const [profileSaved, setProfileSaved] = useState(false)
+  const [notice, setNotice] = useState<CornerNoticeState | null>(null)
   const [profileError, setProfileError] = useState<string | null>(null)
+  const [notify, setNotify] = useNotifyPrefs()
   const latest = dashboard.data?.latestScore?.totalScore ?? null
   const currentGoal: GoalDto = track ? { track, score: scores[track] } : null
   const dirty = JSON.stringify(currentGoal) !== JSON.stringify(savedGoal)
@@ -89,28 +92,28 @@ export function SettingsPage() {
 
   async function submitProfile() {
     setProfileError(null)
-    setProfileSaved(false)
     try {
       const res = await saveProfile.mutateAsync({ fullName, email, phone })
       updateUser(res.user)
-      setProfileSaved(true)
-      window.setTimeout(() => setProfileSaved(false), 2500)
+      setNotice(flashNotice('Đã lưu thông tin.'))
     } catch (err) {
       setProfileError(err instanceof ApiError && err.status === 409 ? 'Email đã được dùng bởi tài khoản khác.' : 'Không lưu được thông tin. Kiểm tra họ tên, email và số điện thoại.')
     }
   }
 
   async function saveGoal() {
-    setSaved(false)
     try {
       const goal = clampedGoal()
       if (goal) setScores((prev) => ({ ...prev, [goal.track]: goal.score }))
       await setGoal.mutateAsync(goal)
-      setSaved(true)
-      window.setTimeout(() => setSaved(false), 2500)
+      setNotice(flashNotice('Đã lưu mục tiêu.'))
     } catch {
       // error text is rendered from setGoal.error
     }
+  }
+
+  function setKind(kind: NotifyKind, value: boolean) {
+    setNotify({ ...notify, [kind]: value })
   }
 
   function clampedGoal(): GoalDto {
@@ -122,6 +125,7 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      <CornerNotice notice={notice} />
       <header>
         <p className="text-xs text-ink/50">Trang chủ / Cài đặt cá nhân</p>
         <h1 className="serif mt-2 text-3xl">Cài đặt cá nhân</h1>
@@ -155,7 +159,6 @@ export function SettingsPage() {
           </p>
         ) : null}
         <div className="mt-4 flex items-center justify-end gap-3">
-          {profileSaved ? <span className="text-sm text-olive">Đã lưu thông tin ✓</span> : null}
           <Button disabled={!profileDirty || saveProfile.isPending} onClick={() => void submitProfile()}>
             {saveProfile.isPending ? 'Đang lưu…' : 'Lưu thông tin'}
           </Button>
@@ -167,7 +170,7 @@ export function SettingsPage() {
           <h2 className="text-base font-semibold">Đổi mật khẩu</h2>
           <p className="mt-1 mb-4 text-xs text-ink/55">Sau khi đổi, các thiết bị khác đang đăng nhập sẽ bị đăng xuất.</p>
           <div className="max-w-md">
-            <ChangePasswordForm onSubmit={changePassword} />
+            <ChangePasswordForm hideSuccess onSubmit={changePassword} onDone={() => setNotice(flashNotice('Đã đổi mật khẩu thành công.'))} />
           </div>
         </div>
       </Card>
@@ -221,7 +224,6 @@ export function SettingsPage() {
               </p>
             ) : null}
             <div className="mt-4 flex items-center justify-end gap-3">
-              {saved ? <span className="text-sm text-olive">Đã lưu mục tiêu ✓</span> : null}
               {track !== null ? (
                 <Button variant="ghost" disabled={setGoal.isPending} onClick={() => setTrack(null)}>
                   Bỏ mục tiêu
@@ -238,11 +240,12 @@ export function SettingsPage() {
       <Card className="p-6">
         <div id="notify" className="scroll-mt-24">
           <h2 className="text-base font-semibold">Thông báo & nhắc học</h2>
-          <p className="mt-1 text-xs text-ink/55">Tính năng nhắc học qua email sẽ có ở bản sau; hiện chưa có thông báo nào được gửi.</p>
-          <div className="mt-2 divide-y divide-gold/20 opacity-60">
-            <Toggle disabled checked={false} onChange={() => {}} label="Nhắc ôn từ vựng mỗi ngày" hint="Gửi lúc 20:00 nếu chưa hoàn thành flashcard." />
-            <Toggle disabled checked={false} onChange={() => {}} label="Nhắc hạn nộp bài tập" hint="Báo trước 24 giờ khi bài tập sắp hết hạn." />
-            <Toggle disabled checked={false} onChange={() => {}} label="Báo cáo tiến độ hằng tuần" hint="Tóm tắt điểm số và bảng vinh danh qua email." />
+          <p className="mt-1 text-xs text-ink/55">Bật hoặc tắt từng loại nhắc trên icon chuông. Thay đổi có hiệu lực ngay.</p>
+          <div className="mt-2 divide-y divide-gold/20">
+            <Toggle checked={notify.overdue} onChange={(value) => setKind('overdue', value)} label="Bài tập quá hạn" hint="Hiện khi bài đã quá hạn nộp." />
+            <Toggle checked={notify.dueSoon} onChange={(value) => setKind('dueSoon', value)} label="Bài sắp hết hạn" hint="Hiện khi bài còn dưới 24 giờ." />
+            <Toggle checked={notify.inProgress} onChange={(value) => setKind('inProgress', value)} label="Bài đang làm dở" hint="Nhắc bài đã mở nhưng chưa nộp." />
+            <Toggle checked={notify.vocab} onChange={(value) => setKind('vocab', value)} label="Thẻ từ đến hạn" hint="Nhắc thẻ trong kho từ và sổ tay cần ôn." />
           </div>
         </div>
       </Card>

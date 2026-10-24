@@ -8,7 +8,7 @@ import { useMemo, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { AudioPlayer } from './AudioPlayer'
 import { FILL_QUESTION_TYPE } from '@toeic/shared'
-import { partName, useAttemptReview } from './exams.queries'
+import { isListeningPart, partName, useAttemptReview } from './exams.queries'
 import { FocusNote } from './FocusNote'
 import { SelectableText } from '@/features/study/SelectableText'
 import { PassageView } from './PassageView'
@@ -72,7 +72,11 @@ export function ReviewPage() {
         </div>
       ) : null}
 
-      <SheetGallery images={data.sheetImages} />
+      {data.sheetImages.length > 0 ? (
+        <Card className="min-w-0 p-5">
+          <SheetGallery images={data.sheetImages} embedded />
+        </Card>
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         {([['all', 'Tất cả'], ['wrong', 'Câu sai'], ['blank', 'Bỏ trống']] as const).map(([id, label]) => (
@@ -94,23 +98,35 @@ export function ReviewPage() {
           const group = q.groupId ? groups.get(q.groupId) : undefined
           const showPassage = group && !shownGroups.has(group.id) && (group.passages.length > 0 || !!group.instructions || !!group.imageUrl)
           if (group) shownGroups.add(group.id)
+          const listening = isListeningPart(q.partCode)
+          const hasFigure = Boolean((showPassage && group?.imageUrl) || q.imageUrl)
           return (
-            <Card key={q.id} className="p-5">
-              <div style={examTextStyle(textZoom)}>
+            <Card key={q.id} className="min-w-0 p-5">
+              <div className={listening && hasFigure ? 'grid items-start gap-4 lg:grid-cols-2' : undefined}>
+              {hasFigure ? (
+                <div className={cn('min-w-0', listening && 'lg:sticky lg:top-4 lg:max-h-[calc(100vh-6rem)] lg:overflow-auto')}>
+                  {showPassage && group?.imageUrl ? (
+                    <div className="mb-4">
+                      <ZoomableImage src={group.imageUrl} alt={listening ? 'Hình của phần nghe' : 'Hình hoặc bảng biểu của đoạn'} fit={listening ? 'listening' : 'frame'} />
+                    </div>
+                  ) : null}
+                  {q.imageUrl ? (
+                    <div className="mb-4">
+                      <ZoomableImage src={q.imageUrl} alt={`Hình minh họa câu ${q.number}`} fit={listening ? 'listening' : 'frame'} />
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+              <div className="exam-scale" style={examTextStyle(textZoom)}>
               {showPassage ? (
                 <div className="mb-4">
-                  <PassageView group={group} />
+                  <PassageView group={group} showImage={false} />
                 </div>
               ) : null}
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-ink/50">{partName(q.partCode)} • Câu {q.number}</span>
                 {q.isCorrect === true ? <Badge tone="olive">Đúng</Badge> : q.isCorrect === false ? <Badge tone="danger">Sai</Badge> : <Badge tone="paper">Bỏ trống</Badge>}
               </div>
-              {q.imageUrl ? (
-                <div className="mt-2">
-                  <ZoomableImage src={q.imageUrl} alt={`Hình minh họa câu ${q.number}`} compact />
-                </div>
-              ) : null}
               {q.type === FILL_QUESTION_TYPE ? (
                 <div className="mt-3 space-y-2 text-sm">
                   <p className="text-lg leading-8 font-medium">{q.prompt}</p>
@@ -154,6 +170,7 @@ export function ReviewPage() {
                   <p className="mt-1 leading-6 whitespace-pre-line">{q.explanation}</p>
                 </div>
               ) : null}
+              </div>
               </div>
             </Card>
           )

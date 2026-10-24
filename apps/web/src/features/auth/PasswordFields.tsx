@@ -16,10 +16,12 @@ export function ChangePasswordForm({
   onSubmit,
   submitLabel = 'Đổi mật khẩu',
   onDone,
+  hideSuccess = false,
 }: {
   onSubmit: (input: { currentPassword: string; newPassword: string }) => Promise<unknown>
   submitLabel?: string
   onDone?: () => void
+  hideSuccess?: boolean
 }) {
   const [currentPassword, setCurrent] = useState('')
   const [newPassword, setNew] = useState('')
@@ -86,7 +88,7 @@ export function ChangePasswordForm({
       {formError && (
         <p role="alert" className="rounded-xl bg-[#f8dcd8] px-3 py-2 text-sm text-coral">{formError}</p>
       )}
-      {done && <p role="status" className="text-sm text-olive">Đã đổi mật khẩu thành công ✓</p>}
+      {done && !hideSuccess && <p role="status" className="text-sm text-olive">Đã đổi mật khẩu thành công ✓</p>}
       <Button type="submit" disabled={busy} className="w-full">
         {busy ? 'Đang xử lý…' : submitLabel}
       </Button>

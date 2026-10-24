@@ -1,11 +1,12 @@
 import { useAuth } from '@/app/AuthContext'
 import { cn } from '@/lib/cn'
 import { HeaderSearch } from '@/components/layout/HeaderSearch'
+import { NotificationBell } from '@/components/layout/NotificationBell'
 import { UserMenu } from '@/components/layout/UserMenu'
 import { useSite } from '@/features/site/SiteSettingsProvider'
 import { BugReportWidget } from '@/features/bugs/BugReportWidget'
 import { useBugReportSummary } from '@/features/bugs/bugs.queries'
-import { BarChart3, Bell, BookOpen, Bug, ClipboardList, Library, LogOut, Menu, Settings, Trophy, Users, X } from 'lucide-react'
+import { BarChart3, BookOpen, Bug, ClipboardList, Library, LogOut, Menu, MoreHorizontal, Settings, Trophy, Users, X } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 
@@ -117,14 +118,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
             {/* Search – thu nhỏ mặc định, bấm để kéo giãn */}
             <HeaderSearch />
 
-            {/* Bell */}
-            <button
-              className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gold/35 bg-white text-ink/60 transition hover:border-gold-deep hover:text-gold-deep"
-              type="button"
-              aria-label="Thông báo"
-            >
-              <Bell className="size-4" />
-            </button>
+            <NotificationBell />
 
             {/* Tài khoản: cài đặt + đăng xuất */}
             <UserMenu
@@ -203,6 +197,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [open, setOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
   const roleLabel = user?.role === 'ADMIN' ? 'Quản trị viên' : 'Giáo viên'
   const bugs = useBugReportSummary(user?.role === 'ADMIN')
   const openCount = bugs.data?.openCount ?? 0
@@ -224,8 +219,17 @@ export function AdminShell({ children }: { children: ReactNode }) {
         ]
       : teacherNav
 
+  const mobilePrimaryPaths = ['/admin', '/admin/exams', '/admin/assignments', '/admin/settings']
+  const mobilePrimary = mobilePrimaryPaths.flatMap((to) => nav.filter((item) => item.to === to))
+  const mobileMore = nav.filter((item) => !mobilePrimaryPaths.includes(item.to))
+  const moreActive = mobileMore.some((item) => (item.end ? location.pathname === item.to : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)))
+  const mobileCols = mobilePrimary.length + (mobileMore.length > 0 ? 1 : 0)
+  const mobileGrid =
+    mobileCols >= 5 ? 'grid-cols-5' : mobileCols === 4 ? 'grid-cols-4' : mobileCols === 3 ? 'grid-cols-3' : mobileCols === 2 ? 'grid-cols-2' : 'grid-cols-1'
+
   useEffect(() => {
     setOpen(false)
+    setMoreOpen(false)
   }, [location.pathname])
 
   async function signOut() {
@@ -324,12 +328,36 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
       <main className="mx-auto max-w-[1400px] px-4 py-6 pb-24 sm:px-6 sm:py-8 lg:pb-8">{children}</main>
 
+      {moreOpen ? (
+        <button type="button" className="fixed inset-0 z-20 bg-ink/25 lg:hidden" aria-label="Đóng xem thêm" onClick={() => setMoreOpen(false)} />
+      ) : null}
+
       <nav
         className="fixed inset-x-0 bottom-0 z-30 border-t border-gold/30 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
         aria-label="Menu quản lý"
       >
-        <div className={cn('mx-auto grid max-w-[1400px]', nav.length >= 6 ? 'grid-cols-6' : nav.length > 4 ? 'grid-cols-5' : 'grid-cols-4')}>
-          {nav.map((item) => (
+        {moreOpen && mobileMore.length > 0 ? (
+          <div className="border-b border-gold/25 bg-white px-3 py-2">
+            {mobileMore.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold',
+                    isActive ? 'bg-gold-deep text-white' : 'text-ink/75 hover:bg-paper',
+                  )
+                }
+              >
+                <item.icon className="size-4" />
+                {item.label}
+              </NavLink>
+            ))}
+          </div>
+        ) : null}
+        <div className={cn('mx-auto grid max-w-[1400px]', mobileGrid)}>
+          {mobilePrimary.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -345,6 +373,21 @@ export function AdminShell({ children }: { children: ReactNode }) {
               {item.short}
             </NavLink>
           ))}
+          {mobileMore.length > 0 ? (
+            <button
+              type="button"
+              className={cn(
+                'flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold',
+                moreOpen || moreActive ? 'text-gold-deep' : 'text-ink/50',
+              )}
+              aria-expanded={moreOpen}
+              aria-label="Xem thêm"
+              onClick={() => setMoreOpen(!moreOpen)}
+            >
+              <MoreHorizontal className="size-5" />
+              Xem thêm
+            </button>
+          ) : null}
         </div>
       </nav>
     </div>
