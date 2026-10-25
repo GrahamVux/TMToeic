@@ -26,8 +26,8 @@ export function Badge({
   )
 }
 
-export function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return <section className={cn('rounded-2xl border border-gold/35 bg-cream shadow-[0_12px_40px_rgba(43,138,156,0.06)]', className)}>{children}</section>
+export function Card({ children, className, id }: { children: ReactNode; className?: string; id?: string }) {
+  return <section id={id} className={cn('rounded-2xl border border-gold/35 bg-cream shadow-[0_12px_40px_rgba(43,138,156,0.06)]', className)}>{children}</section>
 }
 
 export function ProgressBar({ value, className }: { value: number; className?: string }) {
