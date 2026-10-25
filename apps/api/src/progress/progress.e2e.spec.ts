@@ -200,7 +200,7 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     expect(d.skills.find((k) => k.skill === 'LISTENING')).toMatchObject({ attempts: 0, accuracy: null })
     expect(d.honor.classBoard.you).toMatchObject({ name: 'Chăm Chỉ', weeklyXp: 67, you: true })
     expect(d.honor.me.rank.label).toBe('Đồng III')
-    expect(d.honor.centerBoard.every((row) => !('name' in row))).toBe(true)
+    expect(d.honor.centerBoard.some((row) => row.name === 'Chăm Chỉ' && row.className === 'Lớp K42' && row.you)).toBe(true)
   })
 
   it('ranks classmates by weekly questions, limits to top 5, still shows you beyond the top, and shares only names', async () => {
@@ -222,7 +222,7 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     expect(last.honor.classBoard.participants).toBeGreaterThanOrEqual(7)
     for (const e of last.honor.classBoard.entries) expect(Object.keys(e).sort()).toEqual(['name', 'place', 'rank', 'weeklyXp', 'yearlyXp', 'you'])
     expect(last.honor.classBoard.entries.every((e) => e.rank.label.length > 0)).toBe(true)
-    expect(last.honor.centerBoard.some((row) => row.className !== 'Lớp K42')).toBe(false)
+    expect(last.honor.centerBoard.every((row) => row.className === 'Lớp K42' && row.name.length > 0)).toBe(true)
 
     const first = await dash(clients[0])
     expect(first.honor.classBoard.you!.place).toBeLessThan(last.honor.classBoard.you!.place)
@@ -493,15 +493,15 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
       expect(mine.classes.map((row) => row.className)).toEqual(['Lớp Giáo Viên A'])
       expect(mine.classes[0]?.entries.map((row) => row.name)).toEqual(['Hạng Riêng'])
       expect(JSON.stringify(mine.classes)).not.toContain('Chăm Chỉ')
-      expect(mine.centerBoard.map((row) => row.className)).toEqual(expect.arrayContaining(['Lớp Giáo Viên A', 'Lớp K42']))
-      expect(mine.centerBoard.find((row) => row.className === 'Lớp Giáo Viên A')?.yours).toBe(true)
-      expect(JSON.stringify(mine.centerBoard)).not.toContain('Hạng Riêng')
+      expect(mine.centerBoard.map((row) => row.name)).toEqual(expect.arrayContaining(['Hạng Riêng', 'Hạng K42']))
+      expect(mine.centerBoard.find((row) => row.name === 'Hạng Riêng')).toMatchObject({ className: 'Lớp Giáo Viên A', yours: true })
+      expect(mine.centerBoard.find((row) => row.name === 'Hạng K42')?.yours).toBe(false)
 
       const k42 = (await teacher.get('/reports/honor')).body as import('@toeic/shared').StaffHonorDto
       expect(k42.classes.map((row) => row.className)).toEqual(['Lớp K42'])
       expect(k42.classes[0]?.entries.map((row) => row.name)).toContain('Hạng K42')
       expect(k42.classes[0]?.entries.map((row) => row.name)).not.toContain('Hạng Riêng')
-      expect(k42.centerBoard.some((row) => row.className === 'Lớp Giáo Viên A')).toBe(true)
+      expect(k42.centerBoard.some((row) => row.name === 'Hạng Riêng' && row.className === 'Lớp Giáo Viên A')).toBe(true)
 
       const all = (await admin.get('/reports/honor')).body as import('@toeic/shared').StaffHonorDto
       expect(all.classes.map((row) => row.className)).toEqual(expect.arrayContaining(['Lớp K42', 'Lớp Giáo Viên A']))
@@ -534,8 +534,9 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     expect(boardB.honor.className).toBe('Lớp Bí Mật')
     expect(boardA.honor.classBoard.entries.map((e) => e.name)).not.toContain('Lớp B Hai')
     expect(boardB.honor.classBoard.entries.map((e) => e.name)).toEqual(['Lớp B Hai'])
-    expect(JSON.stringify(boardA.honor.centerBoard)).not.toContain('Lớp B Hai')
-    expect(boardA.honor.centerBoard.map((row) => row.className).sort()).toEqual(expect.arrayContaining(['Lớp K42', 'Lớp Bí Mật']))
+    expect(boardA.honor.centerBoard.map((row) => row.name)).toEqual(expect.arrayContaining(['Lớp A Một', 'Lớp B Hai']))
+    expect(boardA.honor.centerBoard.find((row) => row.name === 'Lớp B Hai')?.className).toBe('Lớp Bí Mật')
+    expect(boardB.honor.centerBoard.find((row) => row.name === 'Lớp B Hai')?.you).toBe(true)
 
     expect((await put(admin, '/site-settings', { honorBoardEnabled: false })).status).toBe(200)
     const hidden = await dash(a)

@@ -19,7 +19,7 @@ import {
   HONOR_BOARD_SIZE,
   rankFromXp,
   type HonorBoardDto,
-  type HonorClassEntry,
+  type HonorCenterEntry,
   type HonorStudentEntry,
   type StaffHonorDto,
   type StudentDashboardDto,
@@ -609,8 +609,8 @@ export class ProgressService {
   }
 
   /**
-   * Weekly EXP boards. Classmates are named. The center board ranks classes only,
-   * so a student never receives another class's roster.
+   * Weekly EXP boards. The class board names only classmates.
+   * The center board ranks every student who earned EXP this week, across classes.
    * EXP is the best percent-correct of each finished piece of work in the window.
    * Rank uses EXP since 1 January (Asia/Ho_Chi_Minh); 100 EXP is one rank.
    */
@@ -641,13 +641,13 @@ export class ProgressService {
         you: ranked.find((row) => row.you) ?? null,
         participants: ranked.length,
       },
-      centerBoard: this.centerBoard(snap, mine ? new Set([mine.classId]) : new Set()),
+      centerBoard: this.centerStudents(snap, userId, new Set()),
     }
   }
 
   /**
-   * Staff view. A teacher sees student names only in classes they manage, plus every class on the center board.
-   * An admin sees every class roster.
+   * Staff view. A teacher sees student names on the class boards only for classes they manage.
+   * The center board ranks students from every class. An admin sees every class roster.
    */
   async staffHonor(actor: { id: string; role: string }, now = new Date()): Promise<StaffHonorDto> {
     const weekRows = (await this.db.execute(sql`select to_char(date_trunc('week', ${now.toISOString()}::timestamptz at time zone ${TZ_SQL}), 'YYYY-MM-DD') as day`)) as unknown as Rows<{ day: string }>
@@ -682,7 +682,7 @@ export class ProgressService {
           return { classId: room.id, className: room.name, entries, participants: entries.length }
         })
         .sort((a, b) => a.className.localeCompare(b.className, 'vi')),
-      centerBoard: this.centerBoard(snap, managed ?? new Set()),
+      centerBoard: this.centerStudents(snap, null, managed ?? new Set()),
     }
   }
 
@@ -710,23 +710,24 @@ export class ProgressService {
       }))
   }
 
-  private centerBoard(snap: HonorSnapshot, yours: Set<string>): HonorClassEntry[] {
-    const byClass = new Map<string, { className: string; weeklyXp: number; members: number }>()
-    for (const row of snap.members) {
-      const current = byClass.get(row.classId) ?? { className: row.className, weeklyXp: 0, members: 0 }
-      current.members += 1
-      current.weeklyXp += snap.xpByUser.get(row.userId)?.weeklyXp ?? 0
-      byClass.set(row.classId, current)
-    }
-    return [...byClass.entries()]
-      .map(([id, row]) => ({ id, ...row }))
-      .sort((a, b) => b.weeklyXp - a.weeklyXp || a.className.localeCompare(b.className, 'vi'))
+  /** Students from every class, ordered by this week's EXP. */
+  private centerStudents(snap: HonorSnapshot, viewerId: string | null, yours: Set<string>): HonorCenterEntry[] {
+    return snap.members
+      .map((row) => {
+        const xp = snap.xpByUser.get(row.userId) ?? { name: '', weeklyXp: 0, yearlyXp: 0 }
+        return { id: row.userId, name: xp.name, classId: row.classId, className: row.className, weeklyXp: xp.weeklyXp, yearlyXp: xp.yearlyXp }
+      })
+      .filter((row) => row.weeklyXp > 0)
+      .sort((a, b) => b.weeklyXp - a.weeklyXp || a.name.localeCompare(b.name, 'vi'))
       .map((row, index) => ({
         place: index + 1,
+        name: row.name,
         className: row.className,
         weeklyXp: row.weeklyXp,
-        members: row.members,
-        yours: yours.has(row.id),
+        yearlyXp: row.yearlyXp,
+        rank: rankFromXp(row.yearlyXp),
+        you: row.id === viewerId,
+        yours: yours.has(row.classId),
       }))
   }
 

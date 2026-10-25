@@ -1,5 +1,5 @@
 import { Card } from '@/components/ui/Primitives'
-import { XP_PER_RANK, type HonorBoardDto, type HonorClassEntry, type HonorStudentEntry, type StaffHonorDto } from '@toeic/shared'
+import { XP_PER_RANK, type HonorBoardDto, type HonorCenterEntry, type HonorStudentEntry, type StaffHonorDto } from '@toeic/shared'
 import type { ReactNode } from 'react'
 import { PodiumMark, RankBadge } from './RankBadge'
 
@@ -44,11 +44,11 @@ export function HonorBoards({ honor }: { honor: HonorBoardDto }) {
           </ul>
         </Board>
 
-        <Board title="Vinh danh trong trung tâm" hint="Xếp theo tổng EXP của từng lớp. Không hiện học viên lớp khác.">
-          {honor.centerBoard.length === 0 ? <Empty text="Chưa có lớp nào trên bảng." /> : null}
+        <Board title="Vinh danh trong trung tâm" hint="Xếp học viên của mọi lớp theo EXP tuần này.">
+          {honor.centerBoard.length === 0 ? <Empty text="Tuần này chưa có học viên nào hoàn thành bài." /> : null}
           <ul className="space-y-3">
             {honor.centerBoard.map((row) => (
-              <ClassRow key={row.place} row={row} />
+              <CenterRow key={`${row.className}-${row.place}`} row={row} />
             ))}
           </ul>
         </Board>
@@ -117,11 +117,11 @@ export function StaffHonorBoards({ honor }: { honor: StaffHonorDto }) {
             </Board>
           ))
         )}
-        <Board title="Bảng xếp hạng tổng" hint="Xếp theo tổng EXP của từng lớp. Không hiện học viên lớp khác.">
-          {honor.centerBoard.length === 0 ? <Empty text="Chưa có lớp nào trên bảng." /> : null}
+        <Board title="Bảng xếp hạng tổng" hint="Xếp học viên của mọi lớp theo EXP tuần này.">
+          {honor.centerBoard.length === 0 ? <Empty text="Tuần này chưa có học viên nào hoàn thành bài." /> : null}
           <ul className="space-y-3">
             {honor.centerBoard.map((row) => (
-              <ClassRow key={row.place} row={row} yoursLabel="Lớp bạn" />
+              <CenterRow key={`${row.className}-${row.place}`} row={row} />
             ))}
           </ul>
         </Board>
@@ -130,17 +130,17 @@ export function StaffHonorBoards({ honor }: { honor: StaffHonorDto }) {
   )
 }
 
-function ClassRow({ row, yoursLabel = 'Lớp bạn' }: { row: HonorClassEntry; yoursLabel?: string }) {
+function CenterRow({ row }: { row: HonorCenterEntry }) {
   return (
-    <li className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-3 ${row.yours ? 'bg-gold/15' : 'bg-paper'}`}>
+    <li className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-3 ${row.you || row.yours ? 'bg-gold/15' : 'bg-paper'}`}>
       <div className="flex min-w-0 items-center gap-3">
         {row.place <= 3 ? <PodiumMark place={row.place} /> : <span className="w-8 text-center text-sm font-semibold text-ink/45">{row.place}</span>}
         <div className="min-w-0">
-          <p className="truncate font-semibold">{row.className}{row.yours ? ` (${yoursLabel})` : ''}</p>
-          <p className="text-xs text-ink/55">{row.members} học viên</p>
+          <p className="truncate font-semibold">{row.name}{row.you ? ' (Bạn)' : ''}</p>
+          <p className="text-xs text-ink/55">{row.className} • {row.weeklyXp} EXP tuần này • {row.rank.label}</p>
         </div>
       </div>
-      <p className="text-sm font-semibold text-ink/70">{row.weeklyXp} EXP</p>
+      <RankBadge rank={row.rank} size={28} />
     </li>
   )
 }

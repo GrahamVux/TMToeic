@@ -77,12 +77,16 @@ export type HonorStudentEntry = {
   you: boolean
 }
 
-/** Center standing of a class. No student names from any class. */
-export type HonorClassEntry = {
+/** One student on the center-wide board, ranked against students from every class. */
+export type HonorCenterEntry = {
   place: number
+  name: string
   className: string
   weeklyXp: number
-  members: number
+  yearlyXp: number
+  rank: HonorRankDto
+  you: boolean
+  /** True when this student sits in a class the viewer manages. */
   yours: boolean
 }
 
@@ -93,7 +97,7 @@ export type HonorBoardDto = {
   className: string | null
   me: { weeklyXp: number; yearlyXp: number; rank: HonorRankDto }
   classBoard: { entries: HonorStudentEntry[]; you: HonorStudentEntry | null; participants: number }
-  centerBoard: HonorClassEntry[]
+  centerBoard: HonorCenterEntry[]
 }
 
 /** One class roster on the staff honor page. Student names stay inside this class. */
@@ -104,13 +108,13 @@ export type StaffClassBoardDto = {
   participants: number
 }
 
-/** Teachers receive only the classes they manage. Admins receive every class. Both receive the center board. */
+/** Teachers receive only the classes they manage. Admins receive every class. The center board ranks students from every class. */
 export type StaffHonorDto = {
   enabled: boolean
   weekStart: string
   year: number
   classes: StaffClassBoardDto[]
-  centerBoard: HonorClassEntry[]
+  centerBoard: HonorCenterEntry[]
 }
 
 export const createClassBodySchema = z.object({
