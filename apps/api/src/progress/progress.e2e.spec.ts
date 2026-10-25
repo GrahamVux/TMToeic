@@ -368,6 +368,25 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
       expect((await s.get(`/students/${sid}/attempts`)).status).toBe(403)
     })
 
+    it('exam report rolls finished sittings up by exam', async () => {
+      const examId = await publishedExam([{ partCode: 'PART_5', questionStart: 101, questionEnd: 103 }] as typeof FULL)
+      const quiet = await publishedExam([{ partCode: 'PART_5', questionStart: 101, questionEnd: 102 }] as typeof FULL)
+      const pupil = await newStudent('Báo Cáo Đề')
+      await practice(pupil, examId, 3, true)
+
+      expect((await pupil.get('/reports/exams')).status).toBe(403)
+      const res = await teacher.get('/reports/exams')
+      expect(res.status).toBe(200)
+      const body = res.body as import('@toeic/shared').ExamReportDto
+      const row = body.exams.find((exam) => exam.id === examId)
+      expect(row).toMatchObject({ attempts: 1, students: 1, accuracy: 100, correct: 3, answered: 3 })
+      expect(row?.parts).toEqual([expect.objectContaining({ partCode: 'PART_5', correct: 3, answered: 3, accuracy: 100 })])
+      expect(row?.weakestPart?.partCode).toBe('PART_5')
+      expect(JSON.stringify(body)).not.toContain('Báo Cáo Đề')
+      const empty = body.exams.find((exam) => exam.id === quiet)
+      expect(empty).toMatchObject({ attempts: 0, students: 0, accuracy: null, parts: [] })
+    })
+
     it('class report: staff only; counts, weekly activity, accuracy and inactive students', async () => {
       const examId = await publishedExam([{ partCode: 'PART_5', questionStart: 101, questionEnd: 104 }] as typeof FULL)
       const pending = await admin.post('/users/students').send({ fullName: 'Chưa Đăng Nhập' }) // never changed the temp password

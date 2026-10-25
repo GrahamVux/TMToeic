@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { Skill } from './domain'
+import type { ExamStatus } from './exam'
 import type { HonorBoardDto } from './honor'
 
 export const GOAL_TRACKS = ['TWO_SKILL', 'FOUR_SKILL'] as const
@@ -172,4 +173,33 @@ export type ClassReportDto = {
    * (or none since login), or assigned homework still unfinished after the due date. Capped list.
    */
   inactive: InactiveStudentDto[]
+}
+
+export type ExamReportPartDto = {
+  partCode: string
+  answered: number
+  correct: number
+  accuracy: number | null
+}
+
+/** One published exam, with finished sittings rolled up. No student names. */
+export type ExamReportItemDto = {
+  id: string
+  code: string
+  title: string
+  status: ExamStatus
+  totalQuestions: number
+  students: number
+  attempts: number
+  answered: number
+  correct: number
+  accuracy: number | null
+  averageScore: number | null
+  lastSubmittedAt: string | null
+  weakestPart: ExamReportPartDto | null
+  parts: ExamReportPartDto[]
+}
+
+export type ExamReportDto = {
+  exams: ExamReportItemDto[]
 }

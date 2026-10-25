@@ -8,6 +8,10 @@ import {
   PART_SEED,
   type AttemptSummaryDto,
   type ClassReportDto,
+  type ExamReportDto,
+  type ExamReportItemDto,
+  type ExamReportPartDto,
+  type ExamStatus,
   type PartStatDto,
   type ScorePointDto,
   type SetGoalInput,
@@ -458,6 +462,102 @@ export class ProgressService {
         return { inactiveCount: support.length, inactive: support.slice(0, 50) }
       })(),
     }
+  }
+
+  /** Finished sittings rolled up per exam. Teachers only count students in the classes they manage. */
+  async examReport(teacherId?: string): Promise<ExamReportDto> {
+    const scope = teacherId
+      ? sql`and a.user_id in (select cm.user_id from class_members cm join class_teachers ct on ct.class_id = cm.class_id where ct.user_id = ${teacherId}::uuid)`
+      : sql``
+    const [examRows, partRows] = await Promise.all([
+      this.db.execute(sql`
+        select e.id, e.code, e.title, e.status, e.total_questions,
+               count(distinct a.user_id)::int as students,
+               count(a.id)::int as attempts,
+               coalesce(sum(a.correct_count), 0)::int as correct,
+               coalesce(sum(a.total_questions), 0)::int as answered,
+               round(avg(a.total_score) filter (where a.total_score is not null))::int as average_score,
+               max(a.submitted_at) as last_submitted_at
+        from exams e
+        left join attempts a on a.exam_id = e.id and a.status in ('SUBMITTED', 'EXPIRED') ${scope}
+        where e.status = 'PUBLISHED'
+           or e.id in (
+             select a.exam_id from attempts a
+             where a.status in ('SUBMITTED', 'EXPIRED') ${scope}
+           )
+        group by e.id
+        order by count(a.id) desc, e.title asc`) as unknown as Promise<
+        Rows<{
+          id: string
+          code: string
+          title: string
+          status: ExamStatus
+          total_questions: number
+          students: number
+          attempts: number
+          correct: number
+          answered: number
+          average_score: number | null
+          last_submitted_at: Date | string | null
+        }>
+      >,
+      this.db.execute(sql`
+        select a.exam_id, p.code as part_code,
+               count(*) filter (where aa.is_correct is not null)::int as graded,
+               count(*) filter (where aa.is_correct is true)::int as correct
+        from attempt_answers aa
+        join attempts a on a.id = aa.attempt_id
+        join questions q on q.id = aa.question_id
+        join exam_parts ep on ep.id = q.exam_part_id
+        join parts p on p.id = ep.part_id
+        where a.status in ('SUBMITTED', 'EXPIRED') ${scope}
+        group by a.exam_id, p.code`) as unknown as Promise<Rows<{ exam_id: string; part_code: string; graded: number; correct: number }>>,
+    ])
+
+    const partsByExam = new Map<string, ExamReportPartDto[]>()
+    for (const row of partRows.rows) {
+      const graded = Number(row.graded)
+      if (graded <= 0) continue
+      const part: ExamReportPartDto = {
+        partCode: row.part_code,
+        answered: graded,
+        correct: Number(row.correct),
+        accuracy: pct(Number(row.correct), graded),
+      }
+      const list = partsByExam.get(row.exam_id) ?? []
+      list.push(part)
+      partsByExam.set(row.exam_id, list)
+    }
+
+    const exams: ExamReportItemDto[] = examRows.rows.map((row) => {
+      const parts = (partsByExam.get(row.id) ?? []).sort(
+        (a, b) => PART_SEED.findIndex((p) => p.code === a.partCode) - PART_SEED.findIndex((p) => p.code === b.partCode),
+      )
+      const weakestPart = parts.reduce<ExamReportPartDto | null>((weak, part) => {
+        if (part.accuracy === null) return weak
+        if (!weak || weak.accuracy === null || part.accuracy < weak.accuracy) return part
+        return weak
+      }, null)
+      const at = row.last_submitted_at
+      const last = at instanceof Date ? at : at ? new Date(at) : null
+      return {
+        id: row.id,
+        code: row.code,
+        title: row.title,
+        status: row.status,
+        totalQuestions: Number(row.total_questions),
+        students: Number(row.students),
+        attempts: Number(row.attempts),
+        answered: Number(row.answered),
+        correct: Number(row.correct),
+        accuracy: pct(Number(row.correct), Number(row.answered)),
+        averageScore: row.average_score === null || row.average_score === undefined ? null : Number(row.average_score),
+        lastSubmittedAt: last && !Number.isNaN(last.getTime()) ? last.toISOString() : null,
+        weakestPart,
+        parts,
+      }
+    })
+    return { exams }
   }
 
   private async activeDays(userId: string): Promise<string[]> {

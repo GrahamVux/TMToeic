@@ -213,10 +213,10 @@ function NeedsAttention() {
     <Card className="p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="serif text-2xl">Học viên cần hỗ trợ</h2>
+          <h2 className="serif text-2xl">Học viên cần lưu tâm</h2>
           <p className="mt-1 text-xs text-ink/50">Tỉ lệ đúng dưới {SUPPORT_ACCURACY_BELOW}%, từ {INACTIVE_AFTER_DAYS} ngày không làm bài, hoặc bài giao đã quá hạn mà chưa nộp.</p>
         </div>
-        <Link to="/admin/reports"><Button variant="paper" className="px-3 py-1.5 text-xs">Báo cáo lớp</Button></Link>
+        <Link to="/admin/reports#luu-tam"><Button variant="paper" className="px-3 py-1.5 text-xs">Xem đầy đủ</Button></Link>
       </div>
       {report.isPending ? <p className="mt-3 text-sm text-ink/55">Đang tải…</p> : null}
       {report.isError ? <p className="mt-3 text-sm text-coral">Không tải được dữ liệu hoạt động.</p> : null}

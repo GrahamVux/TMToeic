@@ -29,6 +29,13 @@ export class ReportsController {
     return this.progress.classReport(new Date(), user.role === 'TEACHER' ? user.id : undefined)
   }
 
+  /** Finished work grouped by exam. Teachers only see sittings from their own classes. */
+  @Get('reports/exams')
+  examReport(@CurrentUser() user: AuthUser) {
+    assertTeacherGrant(user, 'viewProgress')
+    return this.progress.examReport(user.role === 'TEACHER' ? user.id : undefined)
+  }
+
   /** Class boards the viewer may see, plus the center-wide class ranking. */
   @Get('reports/honor')
   honor(@CurrentUser() user: AuthUser) {
