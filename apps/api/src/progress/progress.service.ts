@@ -47,8 +47,9 @@ type HonorSnapshot = {
   enabled: boolean
   weekStart: string
   year: number
-  xpByUser: Map<string, { name: string; weeklyXp: number; yearlyXp: number }>
+  xpByUser: Map<string, { name: string; weeklyXp: number; yearlyXp: number; classXp: number }>
   members: Array<{ userId: string; classId: string; className: string }>
+  resets: Map<string, string | null>
 }
 
 const dayFormat = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' })
@@ -609,10 +610,10 @@ export class ProgressService {
   }
 
   /**
-   * Weekly EXP boards. The class board names only classmates.
-   * The center board ranks every student who earned EXP this week, across classes.
+   * Yearly EXP boards. Both the class board and the center board count EXP since 1 January.
+   * An admin reset moves one class board's start to that moment; the center board stays on the calendar year.
    * EXP is the best percent-correct of each finished piece of work in the window.
-   * Rank uses EXP since 1 January (Asia/Ho_Chi_Minh); 100 EXP is one rank.
+   * Rank uses the EXP shown on that board; 100 EXP is one rank.
    */
   private async honorBoard(userId: string, now: Date, weekStart: string): Promise<HonorBoardDto> {
     const snap = await this.honorSnapshot(now, weekStart)
@@ -622,13 +623,13 @@ export class ProgressService {
       year: snap.year,
       className: null,
       me: { weeklyXp: 0, yearlyXp: 0, rank: rankFromXp(0) },
-      classBoard: { entries: [], you: null, participants: 0 },
+      classBoard: { entries: [], you: null, participants: 0, resetAt: null },
       centerBoard: [],
     })
     if (!snap.enabled) return empty()
 
     const mine = snap.members.find((row) => row.userId === userId) ?? null
-    const meXp = snap.xpByUser.get(userId) ?? { name: '', weeklyXp: 0, yearlyXp: 0 }
+    const meXp = snap.xpByUser.get(userId) ?? { name: '', weeklyXp: 0, yearlyXp: 0, classXp: 0 }
     const ranked = this.rankClass(snap, mine?.classId ?? null, userId)
     return {
       enabled: true,
@@ -640,6 +641,7 @@ export class ProgressService {
         entries: ranked.slice(0, HONOR_BOARD_SIZE),
         you: ranked.find((row) => row.you) ?? null,
         participants: ranked.length,
+        resetAt: mine ? (snap.resets.get(mine.classId) ?? null) : null,
       },
       centerBoard: this.centerStudents(snap, userId, new Set()),
     }
@@ -647,7 +649,8 @@ export class ProgressService {
 
   /**
    * Staff view. A teacher sees student names on the class boards only for classes they manage.
-   * The center board ranks every class's students by EXP since 1 January. An admin sees every class roster.
+   * Every board ranks by EXP since 1 January. An admin reset restarts one class board only.
+   * An admin sees every class roster.
    */
   async staffHonor(actor: { id: string; role: string }, now = new Date()): Promise<StaffHonorDto> {
     const weekRows = (await this.db.execute(sql`select to_char(date_trunc('week', ${now.toISOString()}::timestamptz at time zone ${TZ_SQL}), 'YYYY-MM-DD') as day`)) as unknown as Rows<{ day: string }>
@@ -679,7 +682,7 @@ export class ProgressService {
       classes: roomRows
         .map((room) => {
           const entries = this.rankClass(snap, room.id, null)
-          return { classId: room.id, className: room.name, entries, participants: entries.length }
+          return { classId: room.id, className: room.name, entries, participants: entries.length, resetAt: snap.resets.get(room.id) ?? null }
         })
         .sort((a, b) => a.className.localeCompare(b.className, 'vi')),
       centerBoard: this.centerStudents(snap, null, managed ?? new Set()),
@@ -695,11 +698,11 @@ export class ProgressService {
     return snap.members
       .filter((row) => row.classId === classId)
       .map((row) => {
-        const xp = snap.xpByUser.get(row.userId) ?? { name: '', weeklyXp: 0, yearlyXp: 0 }
-        return { id: row.userId, name: xp.name, weeklyXp: xp.weeklyXp, yearlyXp: xp.yearlyXp }
+        const xp = snap.xpByUser.get(row.userId) ?? { name: '', weeklyXp: 0, yearlyXp: 0, classXp: 0 }
+        return { id: row.userId, name: xp.name, weeklyXp: xp.weeklyXp, yearlyXp: xp.classXp }
       })
-      .filter((row) => row.weeklyXp > 0)
-      .sort((a, b) => b.weeklyXp - a.weeklyXp || a.name.localeCompare(b.name, 'vi'))
+      .filter((row) => row.yearlyXp > 0)
+      .sort((a, b) => b.yearlyXp - a.yearlyXp || a.name.localeCompare(b.name, 'vi'))
       .map((row, index) => ({
         place: index + 1,
         name: row.name,
@@ -714,7 +717,7 @@ export class ProgressService {
   private centerStudents(snap: HonorSnapshot, viewerId: string | null, yours: Set<string>): HonorCenterEntry[] {
     return snap.members
       .map((row) => {
-        const xp = snap.xpByUser.get(row.userId) ?? { name: '', weeklyXp: 0, yearlyXp: 0 }
+        const xp = snap.xpByUser.get(row.userId) ?? { name: '', weeklyXp: 0, yearlyXp: 0, classXp: 0 }
         return { id: row.userId, name: xp.name, classId: row.classId, className: row.className, weeklyXp: xp.weeklyXp, yearlyXp: xp.yearlyXp }
       })
       .filter((row) => row.yearlyXp > 0)
@@ -740,9 +743,9 @@ export class ProgressService {
       select to_char(${iso}::timestamptz at time zone ${TZ_SQL}, 'YYYY') as year
     `)) as unknown as Rows<{ year: string }>
     const year = Number(yearRows.rows[0]?.year ?? weekStart.slice(0, 4))
-    if (!enabled) return { enabled, weekStart, year, xpByUser: new Map(), members: [] }
+    if (!enabled) return { enabled, weekStart, year, xpByUser: new Map(), members: [], resets: new Map() }
 
-    const [xpRows, memberRows] = await Promise.all([
+    const [xpRows, memberRows, resetRows] = await Promise.all([
       this.db.execute(sql`
         with bounds as (
           select
@@ -771,15 +774,25 @@ export class ProgressService {
           from scored s, bounds b
           where s.submitted_at >= b.week_start
           order by s.user_id, s.piece, s.xp desc, s.submitted_at desc
+        ),
+        class_best as (
+          select distinct on (s.user_id, s.piece) s.user_id, s.xp
+          from scored s
+          join class_members cm on cm.user_id = s.user_id
+          join classes c on c.id = cm.class_id
+          where c.honor_reset_at is null or s.submitted_at >= c.honor_reset_at
+          order by s.user_id, s.piece, s.xp desc, s.submitted_at desc
         )
         select u.id as id, u.full_name as name,
                coalesce(w.xp, 0)::int as weekly_xp,
-               coalesce(y.xp, 0)::int as yearly_xp
+               coalesce(y.xp, 0)::int as yearly_xp,
+               coalesce(cx.xp, 0)::int as class_xp
         from users u
         left join (select user_id, sum(xp)::int as xp from week_best group by user_id) w on w.user_id = u.id
         left join (select user_id, sum(xp)::int as xp from year_best group by user_id) y on y.user_id = u.id
+        left join (select user_id, sum(xp)::int as xp from class_best group by user_id) cx on cx.user_id = u.id
         where u.role = 'STUDENT' and u.status = 'ACTIVE'
-      `) as unknown as Promise<Rows<{ id: string; name: string; weekly_xp: number; yearly_xp: number }>>,
+      `) as unknown as Promise<Rows<{ id: string; name: string; weekly_xp: number; yearly_xp: number; class_xp: number }>>,
       this.db.execute(sql`
         select cm.user_id as user_id, c.id as class_id, c.name as class_name
         from class_members cm
@@ -787,14 +800,18 @@ export class ProgressService {
         join users u on u.id = cm.user_id
         where u.role = 'STUDENT' and u.status = 'ACTIVE'
       `) as unknown as Promise<Rows<{ user_id: string; class_id: string; class_name: string }>>,
+      this.db.execute(sql`
+        select id as id, honor_reset_at as reset_at from classes
+      `) as unknown as Promise<Rows<{ id: string; reset_at: Date | string | null }>>,
     ])
 
     return {
       enabled: true,
       weekStart,
       year,
-      xpByUser: new Map(xpRows.rows.map((row) => [row.id, { name: row.name, weeklyXp: Number(row.weekly_xp), yearlyXp: Number(row.yearly_xp) }])),
+      xpByUser: new Map(xpRows.rows.map((row) => [row.id, { name: row.name, weeklyXp: Number(row.weekly_xp), yearlyXp: Number(row.yearly_xp), classXp: Number(row.class_xp) }])),
       members: memberRows.rows.map((row) => ({ userId: row.user_id, classId: row.class_id, className: row.class_name })),
+      resets: new Map(resetRows.rows.map((row) => [row.id, row.reset_at ? new Date(row.reset_at).toISOString() : null])),
     }
   }
 }

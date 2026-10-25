@@ -34,6 +34,12 @@ export class ClassesController {
   }
 
   @Roles('ADMIN')
+  @Post(':id/honor-reset')
+  resetHonor(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.classes.resetHonor(id)
+  }
+
+  @Roles('ADMIN')
   @Put(':id/teachers')
   setTeachers(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: unknown) {
     return this.classes.setTeachers(id, parse(setClassTeachersSchema, body))

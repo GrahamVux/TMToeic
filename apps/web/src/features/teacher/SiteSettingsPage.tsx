@@ -106,7 +106,7 @@ export function SiteSettingsPage() {
             checked={form.honorBoardEnabled ?? true}
             onChange={(e) => set('honorBoardEnabled', e.target.checked)}
           />
-          Hiện bảng vinh danh tuần trên trang học viên
+          Hiện bảng vinh danh năm trên trang học viên
         </label>
         <p className="mt-2 text-xs text-ink/55">Tắt thì cả hai bảng (trong lớp và trong trung tâm) biến mất, kể cả hạng EXP.</p>
       </Card>

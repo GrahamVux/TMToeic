@@ -76,6 +76,17 @@ export class ClassesService {
     return { id: room.id, name: room.name, memberCount: count?.n ?? 0, teachers: await this.teachersOf(id) }
   }
 
+  /** Restarts one class board. EXP already earned this year stays on the center board. */
+  async resetHonor(id: string): Promise<{ resetAt: string }> {
+    const [row] = await this.db
+      .update(classes)
+      .set({ honorResetAt: new Date(), updatedAt: new Date() })
+      .where(eq(classes.id, id))
+      .returning({ honorResetAt: classes.honorResetAt })
+    if (!row?.honorResetAt) throw AppException.notFound('Không tìm thấy lớp')
+    return { resetAt: row.honorResetAt.toISOString() }
+  }
+
   private async summaries(): Promise<ClassSummaryDto[]> {
     const rows = await this.db
       .select({

@@ -96,7 +96,7 @@ export type HonorBoardDto = {
   year: number
   className: string | null
   me: { weeklyXp: number; yearlyXp: number; rank: HonorRankDto }
-  classBoard: { entries: HonorStudentEntry[]; you: HonorStudentEntry | null; participants: number }
+  classBoard: { entries: HonorStudentEntry[]; you: HonorStudentEntry | null; participants: number; resetAt: string | null }
   centerBoard: HonorCenterEntry[]
 }
 
@@ -106,9 +106,11 @@ export type StaffClassBoardDto = {
   className: string
   entries: HonorStudentEntry[]
   participants: number
+  /** ISO time of the last admin reset. Null means the board still starts on 1 January. */
+  resetAt: string | null
 }
 
-/** Teachers receive only the classes they manage. Admins receive every class. The center board ranks students from every class by this year's EXP. */
+/** Teachers receive only the classes they manage. Admins receive every class. Every board ranks by this year's EXP. An admin can restart one class board. */
 export type StaffHonorDto = {
   enabled: boolean
   weekStart: string

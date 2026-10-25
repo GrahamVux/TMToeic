@@ -217,6 +217,7 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     expect(last.honor.classBoard.entries).toHaveLength(5)
     expect(last.honor.classBoard.entries.map((e) => e.place)).toEqual([1, 2, 3, 4, 5])
     expect(last.honor.classBoard.entries.every((e, i, arr) => i === 0 || arr[i - 1].weeklyXp >= e.weeklyXp)).toBe(true)
+    expect(last.honor.classBoard.entries.every((e, i, arr) => i === 0 || arr[i - 1].yearlyXp >= e.yearlyXp)).toBe(true)
     expect(last.honor.classBoard.you).toMatchObject({ name: 'Hạng F', you: true })
     expect(last.honor.classBoard.you!.place).toBeGreaterThan(5)
     expect(last.honor.classBoard.participants).toBeGreaterThanOrEqual(7)
@@ -262,7 +263,8 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     expect(board.honor.centerBoard.every((row, i, arr) => i === 0 || arr[i - 1].yearlyXp >= row.yearlyXp)).toBe(true)
     if (weekStart.getTime() > yearStart.getTime()) {
       expect(earlyRow!.weeklyXp).toBe(0)
-      expect(board.honor.classBoard.entries.some((row) => row.name === 'Đầu Năm')).toBe(false)
+      const earlyBoard = await dash(early)
+      expect(earlyBoard.honor.classBoard.you).toMatchObject({ name: 'Đầu Năm', yearlyXp: 100, weeklyXp: 0 })
     }
     expect(recentId).toBeTruthy()
   })
@@ -583,6 +585,51 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     expect(hidden.honor.classBoard.entries).toEqual([])
     expect(hidden.honor.centerBoard).toEqual([])
     expect((await put(admin, '/site-settings', { honorBoardEnabled: true })).status).toBe(200)
+  })
+
+  it('lets an admin restart one class board without clearing the yearly center board', async () => {
+    const examId = await publishedExam(SMALL as typeof FULL)
+    const created = await admin.post('/users/students').send({ fullName: 'Reset Riêng' })
+    expect(created.status).toBe(201)
+    const room = await admin.post('/classes').send({ name: `Lớp Reset ${seq}` })
+    expect(room.status).toBe(201)
+    expect((await put(admin, '/classes/members', { userId: created.body.user.id, classId: room.body.id })).status).toBe(200)
+    const pupil = (await login(app, created.body.user.studentCode as string, created.body.temporaryPassword as string)).c
+    expect((await pupil.post('/auth/change-password').send({ currentPassword: created.body.temporaryPassword, newPassword: 'StudentPass99' })).status).toBe(200)
+    await practice(pupil, examId, 3, true)
+
+    const before = await dash(pupil)
+    expect(before.honor.classBoard.you).toMatchObject({ name: 'Reset Riêng', yearlyXp: 100 })
+    expect(before.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 100, className: room.body.name })
+
+    expect((await pupil.post(`/classes/${room.body.id}/honor-reset`)).status).toBe(403)
+    const username = `teacher.reset.${seq}`
+    const staff = await admin.post('/users/staff').send({ username, fullName: 'Thầy Reset', role: 'TEACHER' })
+    expect(staff.status).toBe(201)
+    const teacher = (await login(app, username, staff.body.temporaryPassword as string)).c
+    expect((await teacher.post('/auth/change-password').send({ currentPassword: staff.body.temporaryPassword, newPassword: 'TeacherPass99' })).status).toBe(200)
+    expect((await teacher.post(`/classes/${room.body.id}/honor-reset`)).status).toBe(403)
+
+    const reset = await admin.post(`/classes/${room.body.id}/honor-reset`)
+    expect(reset.status).toBe(201)
+    expect(typeof reset.body.resetAt).toBe('string')
+
+    const cleared = await dash(pupil)
+    expect(cleared.honor.classBoard.resetAt).toBe(reset.body.resetAt)
+    expect(cleared.honor.classBoard.you).toBeNull()
+    expect(cleared.honor.me.yearlyXp).toBe(100)
+    expect(cleared.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 100 })
+
+    await practice(pupil, examId, 1, true)
+    const again = await dash(pupil)
+    expect(again.honor.classBoard.you).toMatchObject({ yearlyXp: 33 })
+    expect(again.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 133 })
+
+    const staffBoard = (await admin.get('/reports/honor')).body as import('@toeic/shared').StaffHonorDto
+    const listed = staffBoard.classes.find((row) => row.classId === room.body.id)
+    expect(listed?.resetAt).toBe(reset.body.resetAt)
+    expect(listed?.entries.map((row) => row.name)).toEqual(['Reset Riêng'])
+    expect((await admin.post('/classes/00000000-0000-4000-8000-000000000099/honor-reset')).status).toBe(404)
   })
 
   it('never exposes another student’s data: the dashboard is computed only for the caller', async () => {
