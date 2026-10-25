@@ -77,7 +77,7 @@ export type HonorStudentEntry = {
   you: boolean
 }
 
-/** One student on the center-wide board, ranked against students from every class. */
+/** One student on the center-wide board, ranked by EXP since 1 January against students from every class. */
 export type HonorCenterEntry = {
   place: number
   name: string
@@ -108,7 +108,7 @@ export type StaffClassBoardDto = {
   participants: number
 }
 
-/** Teachers receive only the classes they manage. Admins receive every class. The center board ranks students from every class. */
+/** Teachers receive only the classes they manage. Admins receive every class. The center board ranks students from every class by this year's EXP. */
 export type StaffHonorDto = {
   enabled: boolean
   weekStart: string

@@ -647,7 +647,7 @@ export class ProgressService {
 
   /**
    * Staff view. A teacher sees student names on the class boards only for classes they manage.
-   * The center board ranks students from every class. An admin sees every class roster.
+   * The center board ranks every class's students by EXP since 1 January. An admin sees every class roster.
    */
   async staffHonor(actor: { id: string; role: string }, now = new Date()): Promise<StaffHonorDto> {
     const weekRows = (await this.db.execute(sql`select to_char(date_trunc('week', ${now.toISOString()}::timestamptz at time zone ${TZ_SQL}), 'YYYY-MM-DD') as day`)) as unknown as Rows<{ day: string }>
@@ -710,15 +710,15 @@ export class ProgressService {
       }))
   }
 
-  /** Students from every class, ordered by this week's EXP. */
+  /** Students from every class, ordered by EXP since 1 January. The list is empty again on 1 January. */
   private centerStudents(snap: HonorSnapshot, viewerId: string | null, yours: Set<string>): HonorCenterEntry[] {
     return snap.members
       .map((row) => {
         const xp = snap.xpByUser.get(row.userId) ?? { name: '', weeklyXp: 0, yearlyXp: 0 }
         return { id: row.userId, name: xp.name, classId: row.classId, className: row.className, weeklyXp: xp.weeklyXp, yearlyXp: xp.yearlyXp }
       })
-      .filter((row) => row.weeklyXp > 0)
-      .sort((a, b) => b.weeklyXp - a.weeklyXp || a.name.localeCompare(b.name, 'vi'))
+      .filter((row) => row.yearlyXp > 0)
+      .sort((a, b) => b.yearlyXp - a.yearlyXp || a.name.localeCompare(b.name, 'vi'))
       .map((row, index) => ({
         place: index + 1,
         name: row.name,

@@ -226,6 +226,45 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
 
     const first = await dash(clients[0])
     expect(first.honor.classBoard.you!.place).toBeLessThan(last.honor.classBoard.you!.place)
+    expect(last.honor.centerBoard.every((row, i, arr) => i === 0 || arr[i - 1].yearlyXp >= row.yearlyXp)).toBe(true)
+  })
+
+  it('ranks the center board by this year and drops last year’s EXP', async () => {
+    const examId = await publishedExam(SMALL as typeof FULL)
+    const early = await newStudent('Đầu Năm')
+    const recent = await newStudent('Tuần Này')
+    const lastYear = await newStudent('Năm Trước')
+    const earlyId = await practice(early, examId, 3, true)
+    const recentId = await practice(recent, examId, 1, true)
+    const oldId = await practice(lastYear, examId, 3, true)
+
+    const { attempts } = await import('../db/schema')
+    const { DB } = await import('../db/database.module')
+    const { eq, sql } = await import('drizzle-orm')
+    const db = app.get<import('../db/database.module').Db>(DB)
+    const bounds = (await db.execute(sql`
+      select
+        (date_trunc('week', now() at time zone 'Asia/Ho_Chi_Minh') at time zone 'Asia/Ho_Chi_Minh') as week_start,
+        (date_trunc('year', now() at time zone 'Asia/Ho_Chi_Minh') at time zone 'Asia/Ho_Chi_Minh') as year_start
+    `)) as unknown as { rows: Array<{ week_start: Date; year_start: Date }> }
+    const weekStart = new Date(bounds.rows[0]!.week_start)
+    const yearStart = new Date(bounds.rows[0]!.year_start)
+    await db.update(attempts).set({ submittedAt: yearStart }).where(eq(attempts.id, earlyId))
+    await db.update(attempts).set({ submittedAt: new Date(yearStart.getTime() - 86_400_000) }).where(eq(attempts.id, oldId))
+
+    const board = await dash(recent)
+    const earlyRow = board.honor.centerBoard.find((row) => row.name === 'Đầu Năm')
+    const recentRow = board.honor.centerBoard.find((row) => row.name === 'Tuần Này')
+    expect(earlyRow).toMatchObject({ yearlyXp: 100, className: 'Lớp K42' })
+    expect(recentRow).toMatchObject({ weeklyXp: 33, yearlyXp: 33 })
+    expect(earlyRow!.place).toBeLessThan(recentRow!.place)
+    expect(board.honor.centerBoard.some((row) => row.name === 'Năm Trước')).toBe(false)
+    expect(board.honor.centerBoard.every((row, i, arr) => i === 0 || arr[i - 1].yearlyXp >= row.yearlyXp)).toBe(true)
+    if (weekStart.getTime() > yearStart.getTime()) {
+      expect(earlyRow!.weeklyXp).toBe(0)
+      expect(board.honor.classBoard.entries.some((row) => row.name === 'Đầu Năm')).toBe(false)
+    }
+    expect(recentId).toBeTruthy()
   })
 
   it('a full 200-question test produces the score history, latest score and distance to goal', async () => {

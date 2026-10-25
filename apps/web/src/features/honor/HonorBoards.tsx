@@ -13,7 +13,7 @@ export function HonorBoards({ honor }: { honor: HonorBoardDto }) {
         <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">EXP hoàn thành bài • mỗi {XP_PER_RANK} EXP lên một hạng</p>
         <h2 className="serif mt-1 text-2xl">Bảng vinh danh tuần</h2>
         <p className="mt-1 text-sm text-ink/60">
-          Tính từ thứ Hai {day}/{m}/{y}. Hạng giữ trong năm {honor.year} và về Đồng III vào ngày 1 tháng 1.
+          Bảng lớp tính từ thứ Hai {day}/{m}/{y}. Bảng trung tâm tính theo năm {honor.year} và về 0 vào ngày 1 tháng 1.
           {honor.className ? ` Lớp của bạn: ${honor.className}.` : ' Bạn chưa được xếp lớp.'}
         </p>
       </header>
@@ -44,8 +44,8 @@ export function HonorBoards({ honor }: { honor: HonorBoardDto }) {
           </ul>
         </Board>
 
-        <Board title="Vinh danh trong trung tâm" hint="Xếp học viên của mọi lớp theo EXP tuần này.">
-          {honor.centerBoard.length === 0 ? <Empty text="Tuần này chưa có học viên nào hoàn thành bài." /> : null}
+        <Board title="Vinh danh trong trung tâm" hint={`Xếp học viên của mọi lớp theo EXP năm ${honor.year}.`}>
+          {honor.centerBoard.length === 0 ? <Empty text="Năm nay chưa có học viên nào hoàn thành bài." /> : null}
           <ul className="space-y-3">
             {honor.centerBoard.map((row) => (
               <CenterRow key={`${row.className}-${row.place}`} row={row} />
@@ -97,7 +97,7 @@ export function StaffHonorBoards({ honor }: { honor: StaffHonorDto }) {
         <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">EXP hoàn thành bài • mỗi {XP_PER_RANK} EXP lên một hạng</p>
         <h2 className="serif mt-1 text-2xl">Bảng xếp hạng tuần</h2>
         <p className="mt-1 text-sm text-ink/60">
-          Tính từ thứ Hai {day}/{m}/{y}. Hạng giữ trong năm {honor.year}.
+          Bảng lớp tính từ thứ Hai {day}/{m}/{y}. Bảng tổng tính theo năm {honor.year} và về 0 vào ngày 1 tháng 1.
         </p>
       </header>
       <div className="grid gap-6 lg:grid-cols-2">
@@ -117,8 +117,8 @@ export function StaffHonorBoards({ honor }: { honor: StaffHonorDto }) {
             </Board>
           ))
         )}
-        <Board title="Bảng xếp hạng tổng" hint="Xếp học viên của mọi lớp theo EXP tuần này.">
-          {honor.centerBoard.length === 0 ? <Empty text="Tuần này chưa có học viên nào hoàn thành bài." /> : null}
+        <Board title="Bảng xếp hạng tổng" hint={`Xếp học viên của mọi lớp theo EXP năm ${honor.year}.`}>
+          {honor.centerBoard.length === 0 ? <Empty text="Năm nay chưa có học viên nào hoàn thành bài." /> : null}
           <ul className="space-y-3">
             {honor.centerBoard.map((row) => (
               <CenterRow key={`${row.className}-${row.place}`} row={row} />
@@ -137,7 +137,7 @@ function CenterRow({ row }: { row: HonorCenterEntry }) {
         {row.place <= 3 ? <PodiumMark place={row.place} /> : <span className="w-8 text-center text-sm font-semibold text-ink/45">{row.place}</span>}
         <div className="min-w-0">
           <p className="truncate font-semibold">{row.name}{row.you ? ' (Bạn)' : ''}</p>
-          <p className="text-xs text-ink/55">{row.className} • {row.weeklyXp} EXP tuần này • {row.rank.label}</p>
+          <p className="text-xs text-ink/55">{row.className} • {row.yearlyXp} EXP trong năm • {row.rank.label}</p>
         </div>
       </div>
       <RankBadge rank={row.rank} size={28} />
