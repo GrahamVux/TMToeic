@@ -128,8 +128,8 @@ export function ReviewPage() {
                 {q.isCorrect === true ? <Badge tone="olive">Đúng</Badge> : q.isCorrect === false ? <Badge tone="danger">Sai</Badge> : <Badge tone="paper">Bỏ trống</Badge>}
               </div>
               {q.type === FILL_QUESTION_TYPE ? (
-                <div className="mt-3 space-y-2 text-sm">
-                  <p className="text-lg leading-8 font-medium">{q.prompt}</p>
+                <div className="exam-copy mt-3 space-y-2">
+                  <p className="font-medium">{q.prompt}</p>
                   <p>
                     Đã điền: <strong>{q.answerText || '—'}</strong>
                   </p>

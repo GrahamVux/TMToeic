@@ -336,7 +336,7 @@ function FillBlank({ prompt, blankIndex, value, onChange }: { prompt: string; bl
   const pieces = prompt.split(/_{3,}/)
   return (
     <div className="mt-3">
-      <p className="text-xl leading-8 font-medium">
+      <p className="exam-copy font-medium">
         {pieces.map((piece, index) => (
           <span key={index}>
             {piece}
@@ -346,7 +346,7 @@ function FillBlank({ prompt, blankIndex, value, onChange }: { prompt: string; bl
                   value={value}
                   onChange={(e) => onChange(e.target.value)}
                   aria-label={`Chỗ trống ${index + 1}`}
-                  className="mx-1 inline-block w-[8em] min-w-28 rounded-lg border border-gold-deep bg-white px-2 py-1 text-center text-lg"
+                  className="exam-blank mx-1 inline-block rounded-lg border border-gold-deep bg-white text-center"
                   autoComplete="off"
                 />
               ) : (
