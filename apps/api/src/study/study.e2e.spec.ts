@@ -72,11 +72,12 @@ describe('Study notebook and flashcards (e2e)', () => {
     expect(unknown.body.entries[0]).toMatchObject({ word: 'quixotic', partOfSpeech: null, meaning: null, source: 'EXAM' })
 
     const phrase = await student.post('/study/notebook').send({ word: 'two words' })
-    expect(phrase.status).toBe(400)
+    expect(phrase.status).toBe(200)
+    expect(phrase.body.entries[0]).toMatchObject({ word: 'two words', source: 'EXAM', meaning: null })
 
     const notebook = await student.get('/study/notebook')
-    expect(notebook.body.total).toBe(3)
-    expect(notebook.body.missingMeaning).toBe(1)
+    expect(notebook.body.total).toBe(4)
+    expect(notebook.body.missingMeaning).toBe(2)
 
     const blank = notebook.body.items.find((item: { word: string }) => item.word === 'quixotic')
     const filled = await student.patch(`/study/notebook/${blank.id}`).send({ partOfSpeech: 'adjective', meaning: 'viển vông' })
@@ -98,7 +99,11 @@ describe('Study notebook and flashcards (e2e)', () => {
     expect((await student.post(`/study/grammar/${lessonId}/progress`).send({ completed: true })).body.completed).toBe(true)
     const overview = await student.get('/study/overview')
     expect(overview.body.grammarCompleted).toBe(1)
-    expect(overview.body.notebookTotal).toBe(3)
+    const manual = await student.post('/study/notebook').send({ word: 'take off', partOfSpeech: 'phrasal verb', meaning: 'cất cánh', manual: true })
+    expect(manual.status).toBe(200)
+    expect(manual.body.entries[0]).toMatchObject({ word: 'take off', source: 'MANUAL', partOfSpeech: 'phrasal verb', meaning: 'cất cánh' })
+
+    expect(overview.body.notebookTotal).toBe(4)
 
     const pdf = Buffer.from('%PDF-1.1\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF')
     expect((await postPdf(student, lessonId, 'bi-mat.pdf', pdf)).status).toBe(403)

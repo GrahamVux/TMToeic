@@ -13,10 +13,12 @@ import { AudioPlayer } from './AudioPlayer'
 import { AutosaveStore, type SaveStatus } from './autosave'
 import { useFocusGuard } from './focus-guard'
 import { formatClock, isListeningPart, partName, useAttemptPlayer, useSubmitAttempt } from './exams.queries'
+import { ReadingMarksProvider } from '@/features/study/ReadingMarks'
 import { SelectableText } from '@/features/study/SelectableText'
 import { PassageView } from './PassageView'
 import { SheetGallery } from './SheetGallery'
 import { examTextStyle, TextZoomBar, ZoomableImage } from './ZoomableImage'
+import { answerSheetScreens, listeningScreen } from './listening-screen'
 
 const MODE_LABEL: Record<string, string> = {
   PRACTICE: 'Luyện tập',
@@ -62,18 +64,31 @@ function Player({ data }: { data: AttemptPlayerDto }) {
   const [finishing, setFinishing] = useState(false)
   const [textZoom, setTextZoom] = useState(1)
 
-  const question = questions[index]
+  const screen = listeningScreen(questions, index)
+  const visible = questions.slice(screen.start, screen.end + 1)
+  const question = visible[0] ?? questions[index]
   const groupById = useMemo(() => new Map(groups.map((g) => [g.id, g])), [groups])
-  const group = question.groupId ? groupById.get(question.groupId) : undefined
+  const group = question?.groupId ? groupById.get(question.groupId) : undefined
   const answered = questions.filter((q) => save.answers[q.id] != null).length
+  const grouped = screen.end > screen.start
 
   // Time spent per question (sent with the answer, used later for analytics).
   useEffect(() => {
-    store.enter(question.id)
-  }, [store, question.id])
+    if (question) store.enter(question.id)
+  }, [store, question])
 
-  function choose(key: string) {
-    store.select(question.id, save.answers[question.id] === key ? null : key)
+  function choose(id: string, key: string) {
+    store.select(id, save.answers[id] === key ? null : key)
+  }
+
+  function goPrev() {
+    if (screen.start === 0) return
+    setIndex(listeningScreen(questions, screen.start - 1).start)
+  }
+
+  function goNext() {
+    if (screen.end >= questions.length - 1) return
+    setIndex(screen.end + 1)
   }
 
   // Warn before leaving with unsaved answers.
@@ -118,9 +133,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
     setSubmitError('Không nộp được bài. Vui lòng thử lại.')
   }
 
-  const listening = isListeningPart(question.partCode)
-  const passageOpen = Boolean(group && (group.passages.length > 0 || group.instructions))
-  const listeningFigure = listening && (data.sheetImages.length > 0 || !!group?.imageUrl || !!question.imageUrl)
+  const sheetScreens = useMemo(() => answerSheetScreens(questions), [questions])
   const partsInOrder = useMemo(() => {
     const seen = new Map<string, number>()
     questions.forEach((q, i) => {
@@ -129,7 +142,15 @@ function Player({ data }: { data: AttemptPlayerDto }) {
     return [...seen.entries()]
   }, [questions])
 
+  if (!question) return null
+
+  const listening = isListeningPart(question.partCode)
+  const passageOpen = Boolean(group && (group.passages.length > 0 || group.instructions))
+  const questionImages = [...new Set(visible.map((item) => item.imageUrl).filter((url): url is string => !!url && url !== group?.imageUrl))]
+  const listeningFigure = listening && (data.sheetImages.length > 0 || !!group?.imageUrl || questionImages.length > 0)
+
   return (
+    <ReadingMarksProvider examId={attempt.examId}>
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold/40 bg-cream px-5 py-4">
         <div>
@@ -205,11 +226,11 @@ function Player({ data }: { data: AttemptPlayerDto }) {
                     <ZoomableImage src={group.imageUrl} alt="Hình của phần nghe" fit="listening" />
                   </div>
                 ) : null}
-                {question.imageUrl ? (
-                  <div className="mb-4">
-                    <ZoomableImage src={question.imageUrl} alt={`Hình minh họa câu ${question.number}`} fit="listening" />
+                {questionImages.map((url) => (
+                  <div key={url} className="mb-4">
+                    <ZoomableImage src={url} alt="Hình của nhóm câu nghe" fit="listening" />
                   </div>
-                ) : null}
+                ))}
               </div>
             ) : (
               <>
@@ -219,49 +240,73 @@ function Player({ data }: { data: AttemptPlayerDto }) {
                     <ZoomableImage src={group.imageUrl} alt="Hình hoặc bảng biểu của đoạn đọc" />
                   </div>
                 ) : null}
-                {question.imageUrl ? (
-                  <div className="mb-4">
-                    <ZoomableImage src={question.imageUrl} alt={`Hình minh họa câu ${question.number}`} />
+                {questionImages.map((url) => (
+                  <div key={url} className="mb-4">
+                    <ZoomableImage src={url} alt="Hình minh họa câu hỏi" />
                   </div>
-                ) : null}
+                ))}
               </>
             )}
             <div className="exam-scale" style={examTextStyle(textZoom)}>
-            <p className="text-sm text-ink/50">{partName(question.partCode)} • Câu {question.number}</p>
-            {question.type === FILL_QUESTION_TYPE ? (
-              <FillBlank
-                prompt={question.prompt}
-                blankIndex={question.blankIndex ?? 0}
-                value={save.answers[question.id] ?? ''}
-                onChange={(value) => store.typeText(question.id, value)}
-              />
-            ) : (
-              <>
-                {question.prompt ? <SelectableText as="h2" className="mt-3 text-xl leading-8 font-medium" text={question.prompt} /> : null}
-                <div className="mt-6 grid gap-3" role="radiogroup" aria-label={`Đáp án câu ${question.number}`}>
-                  {question.options.map((option) => {
-                    const selected = save.answers[question.id] === option.key
-                    return (
-                      <button
-                        key={option.key}
-                        type="button"
-                        role="radio"
-                        aria-checked={selected}
-                        onClick={() => choose(option.key)}
-                        className={cn('rounded-2xl border px-4 py-3 text-left transition', selected ? 'border-gold-deep bg-teal-soft' : 'border-ink/10 hover:bg-paper')}
-                      >
-                        <span className="mr-3 font-bold">{option.key}.</span>
-                        {option.text}
-                      </button>
-                    )
-                  })}
+            <p className="text-sm text-ink/50">
+              {partName(question.partCode)} • {grouped ? `Câu ${visible[0].number}–${visible[visible.length - 1].number}` : `Câu ${question.number}`}
+            </p>
+            {grouped ? <p className="mt-1 text-xs text-ink/45">Cùng một đoạn nghe. Chọn đáp án cho cả nhóm, rồi mới sang đoạn tiếp theo.</p> : null}
+            <div className="space-y-8">
+              {visible.map((item) => (
+                <div key={item.id}>
+                  {item.type === FILL_QUESTION_TYPE ? (
+                    <FillBlank
+                      prompt={item.prompt}
+                      blankIndex={item.blankIndex ?? 0}
+                      value={save.answers[item.id] ?? ''}
+                      onChange={(value) => store.typeText(item.id, value)}
+                    />
+                  ) : (
+                    <>
+                      {grouped ? <p className="mt-3 text-sm font-semibold text-ink/55">Câu {item.number}</p> : null}
+                      {item.prompt ? (
+                        <SelectableText
+                          as="h2"
+                          className="mt-1 text-xl leading-8 font-medium"
+                          text={item.prompt}
+                          markTarget={listening ? undefined : { kind: 'prompt', id: item.id }}
+                        />
+                      ) : null}
+                      <div className="mt-4 grid gap-3" role="radiogroup" aria-label={`Đáp án câu ${item.number}`}>
+                        {item.options.map((option) => {
+                          const selected = save.answers[item.id] === option.key
+                          return (
+                            <button
+                              key={option.key}
+                              type="button"
+                              role="radio"
+                              aria-checked={selected}
+                              onClick={() => {
+                                if (!window.getSelection()?.isCollapsed) return
+                                choose(item.id, option.key)
+                              }}
+                              className={cn('rounded-2xl border px-4 py-3 text-left transition', selected ? 'border-gold-deep bg-teal-soft' : 'border-ink/10 hover:bg-paper')}
+                            >
+                              <span className="mr-3 font-bold">{option.key}.</span>
+                              {listening || !option.text ? (
+                                option.text
+                              ) : (
+                                <SelectableText as="span" text={option.text} markTarget={{ kind: 'option', id: item.id, optionKey: option.key }} />
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </>
+                  )}
                 </div>
-                <p className="mt-3 text-xs text-ink/40">Bấm lại đáp án đã chọn để bỏ chọn.</p>
-              </>
-            )}
+              ))}
+            </div>
+            {visible.some((item) => item.type !== FILL_QUESTION_TYPE) ? <p className="mt-3 text-xs text-ink/40">Bấm lại đáp án đã chọn để bỏ chọn.</p> : null}
             <div className="mt-6 flex justify-between">
-              <Button variant="ghost" disabled={index === 0} onClick={() => setIndex((i) => i - 1)}>Câu trước</Button>
-              <Button variant="navy" disabled={index === questions.length - 1} onClick={() => setIndex((i) => i + 1)}>Câu tiếp</Button>
+              <Button variant="ghost" disabled={screen.start === 0} onClick={goPrev}>{grouped ? 'Nhóm trước' : 'Câu trước'}</Button>
+              <Button variant="navy" disabled={screen.end >= questions.length - 1} onClick={goNext}>{grouped ? 'Nhóm tiếp' : 'Câu tiếp'}</Button>
             </div>
             </div>
             </div>
@@ -270,33 +315,61 @@ function Player({ data }: { data: AttemptPlayerDto }) {
 
         <Card className="h-fit p-4 lg:sticky lg:top-4">
           <p className="text-sm font-semibold">Phiếu trả lời</p>
-          <div className="mt-3 flex flex-wrap gap-1">
-            {partsInOrder.map(([code, firstIndex]) => (
-              <button
-                key={code}
-                type="button"
-                onClick={() => setIndex(firstIndex)}
-                className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', question.partCode === code ? 'bg-gold-deep text-white' : 'bg-paper')}
-              >
-                {code.startsWith('FILL_') ? 'Điền từ' : code.replace('PART_', 'Part ')}
-              </button>
-            ))}
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {partsInOrder.map(([code, firstIndex]) => {
+              const inPart = questions.filter((item) => item.partCode === code)
+              const done = inPart.filter((item) => save.answers[item.id]).length
+              const label = code.startsWith('FILL_') ? 'Điền từ' : code.replace('PART_', 'Part ')
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => setIndex(firstIndex)}
+                  className={cn(
+                    'rounded-xl px-2 py-2 text-left',
+                    question.partCode === code ? 'bg-gold-deep text-white' : 'bg-paper text-ink',
+                  )}
+                >
+                  <span className="block text-xs font-semibold">{label}</span>
+                  <span className={cn('text-[11px]', question.partCode === code ? 'text-white/80' : 'text-ink/50')}>{done}/{inPart.length} đã chọn</span>
+                </button>
+              )
+            })}
           </div>
-          <div className="mt-4 grid grid-cols-5 gap-2">
-            {questions.map((item, i) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setIndex(i)}
-                aria-label={`Câu ${item.number}${save.answers[item.id] ? ' đã chọn' : ''}`}
-                className={cn(
-                  'h-9 rounded-lg text-sm font-semibold',
-                  i === index ? 'bg-gold-deep text-white' : save.answers[item.id] ? 'bg-gold text-ink' : 'bg-paper',
-                )}
-              >
-                {item.number}
-              </button>
-            ))}
+          <p className="mt-4 text-xs font-semibold text-ink/55">{partName(question.partCode)}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {sheetScreens.filter((span) => questions[span.start]?.partCode === question.partCode).map((span) => {
+              const items = questions.slice(span.start, span.end + 1)
+              const multi = span.end > span.start
+              const buttons = items.map((item, offset) => {
+                const i = span.start + offset
+                const onScreen = i >= screen.start && i <= screen.end
+                const answered = Boolean(save.answers[item.id])
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setIndex(span.start)}
+                    aria-label={multi
+                      ? `Nhóm câu ${items[0].number}–${items[items.length - 1].number}, câu ${item.number}${answered ? ', đã chọn' : ', chưa làm'}`
+                      : `Câu ${item.number}${answered ? ', đã chọn' : ', chưa làm'}`}
+                    className={cn(
+                      'h-9 min-w-9 rounded-lg px-1 text-sm font-semibold',
+                      onScreen && answered ? 'bg-gold text-ink ring-2 ring-gold-deep' : onScreen ? 'bg-gold-deep text-white' : answered ? 'bg-gold text-ink' : 'bg-paper',
+                    )}
+                  >
+                    {item.number}
+                  </button>
+                )
+              })
+              if (!multi) return <span key={items[0].id} className="contents">{buttons}</span>
+              const done = items.filter((item) => save.answers[item.id]).length
+              return (
+                <div key={items[0].id} className="flex gap-1 rounded-xl border border-gold/50 p-1" title={`${done}/${items.length} câu trong nhóm đã chọn`}>
+                  {buttons}
+                </div>
+              )
+            })}
           </div>
         </Card>
       </div>
@@ -329,6 +402,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
         </div>
       ) : null}
     </div>
+    </ReadingMarksProvider>
   )
 }
 

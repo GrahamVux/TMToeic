@@ -1,5 +1,6 @@
 import { useImportAuthoredExam } from '@/features/assignments/assignments.queries'
 import { Button } from '@/components/ui/Button'
+import { CornerNotice, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { FilePick } from '@/components/ui/FilePick'
 import { Badge, Card, Input } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
@@ -66,7 +67,7 @@ function AuthoredImport({ skill }: { skill: Skill }) {
   const [preview, setPreview] = useState<ImportAuthoredExamInput | null>(null)
   const [audio, setAudio] = useState<File | null>(null)
   const [jsonError, setJsonError] = useState<string | null>(null)
-  const [ok, setOk] = useState<string | null>(null)
+  const [notice, setNotice] = useState<CornerNoticeState | null>(null)
   const sampleHref = skill === 'LISTENING' ? '/mau-import-listening.json' : '/mau-import-de.json'
   const busy = importExam.isPending || uploadAudio.isPending
 
@@ -88,7 +89,6 @@ function AuthoredImport({ skill }: { skill: Skill }) {
 
   async function submitBuilder() {
     setJsonError(null)
-    setOk(null)
     const filled = rows.map((r) => ({ ...r, prompt: r.prompt.trim() })).filter((r) => r.prompt.length > 0)
     if (title.trim().length < 3) {
       setJsonError('Nhập tên đề.')
@@ -126,7 +126,7 @@ function AuthoredImport({ skill }: { skill: Skill }) {
         setJsonError(audioError)
         return
       }
-      setOk(`Đã thêm “${exam.title}” vào ngân hàng (${exam.parts.map((p) => partName(p.code).split(' — ')[0]).join(', ')})${audio ? ' và đã gắn file nghe.' : '.'}`)
+      setNotice(flashNotice(`Đã thêm “${exam.title}” vào ngân hàng (${exam.parts.map((p) => partName(p.code).split(' — ')[0]).join(', ')})${audio ? ' và đã gắn file nghe.' : '.'}`))
       setTitle('')
       setAudio(null)
       setRows([{ prompt: '', a: '', b: '', c: '', d: '', correct: 'A', explanation: '' }])
@@ -137,7 +137,6 @@ function AuthoredImport({ skill }: { skill: Skill }) {
 
   async function onJsonFile(file: File) {
     setJsonError(null)
-    setOk(null)
     try {
       const parsed = importAuthoredExamSchema.safeParse(JSON.parse(await file.text()))
       if (!parsed.success) {
@@ -161,7 +160,6 @@ function AuthoredImport({ skill }: { skill: Skill }) {
 
   async function savePreview(next: ImportAuthoredExamInput) {
     setJsonError(null)
-    setOk(null)
     try {
       const exam = await importExam.mutateAsync({ ...next, publish: next.publish !== false })
       const audioError = await attachAudio(exam.id)
@@ -170,7 +168,7 @@ function AuthoredImport({ skill }: { skill: Skill }) {
         return
       }
       setPreview(null)
-      setOk(`Đã cập nhật ngân hàng: “${exam.title}”${audio ? ' và đã gắn file nghe.' : '.'}`)
+      setNotice(flashNotice(`Đã thay đổi thành công: “${exam.title}”${audio ? ' và đã gắn file nghe.' : '.'}`))
       setAudio(null)
     } catch (e) {
       setJsonError(e instanceof ApiError ? e.message : 'Không import được đề. Kiểm tra mỗi câu có đúng 1 đáp án.')
@@ -319,11 +317,7 @@ function AuthoredImport({ skill }: { skill: Skill }) {
           {jsonError}
         </p>
       ) : null}
-      {ok ? (
-        <p className="rounded-xl bg-[#e4efd8] p-3 text-sm text-olive lg:col-span-2" role="status">
-          {ok}
-        </p>
-      ) : null}
+      <CornerNotice notice={notice} />
     </div>
   )
 }
@@ -414,22 +408,19 @@ function ListeningAudioControl({ exam }: { exam: ExamSummaryDto }) {
   const listening = exam.parts.filter((p) => p.skill === 'LISTENING')
   const [partCode, setPartCode] = useState('')
   const [message, setMessage] = useState<string | null>(null)
-  const [failed, setFailed] = useState(false)
+  const [notice, setNotice] = useState<CornerNoticeState | null>(null)
   if (listening.length === 0) return null
 
   async function onFile(file: File) {
     setMessage(null)
-    setFailed(false)
     if (file.size > MAX_AUDIO_BYTES) {
-      setFailed(true)
       setMessage('File nghe quá lớn (tối đa 80MB).')
       return
     }
     try {
       await upload.mutateAsync({ examId: exam.id, file, partCode: partCode || undefined })
-      setMessage(partCode ? `Đã gắn file nghe cho ${partName(partCode).split(' — ')[0]}.` : 'Đã gắn file nghe cho cả phần Listening.')
+      setNotice(flashNotice(partCode ? `Đã gắn file nghe cho ${partName(partCode).split(' — ')[0]}.` : 'Đã gắn file nghe cho cả phần Listening.'))
     } catch (e) {
-      setFailed(true)
       setMessage(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Không tải được file nghe.')
     }
   }
@@ -464,10 +455,11 @@ function ListeningAudioControl({ exam }: { exam: ExamSummaryDto }) {
         />
       </div>
       {message ? (
-        <p className={`mt-2 text-sm ${failed ? 'text-coral' : 'text-olive'}`} role={failed ? 'alert' : 'status'}>
+        <p className="mt-2 text-sm text-coral" role="alert">
           {message}
         </p>
       ) : null}
+      <CornerNotice notice={notice} />
     </div>
   )
 }

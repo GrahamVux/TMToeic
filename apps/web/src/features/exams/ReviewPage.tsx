@@ -10,6 +10,7 @@ import { AudioPlayer } from './AudioPlayer'
 import { FILL_QUESTION_TYPE } from '@toeic/shared'
 import { isListeningPart, partName, useAttemptReview } from './exams.queries'
 import { FocusNote } from './FocusNote'
+import { ReadingMarksProvider } from '@/features/study/ReadingMarks'
 import { SelectableText } from '@/features/study/SelectableText'
 import { PassageView } from './PassageView'
 import { SheetGallery } from './SheetGallery'
@@ -39,6 +40,7 @@ export function ReviewPage() {
   const shownGroups = new Set<string>()
 
   return (
+    <ReadingMarksProvider examId={data.result.attempt.examId}>
     <div className="space-y-6">
       {staffView ? (
         <Link to={`/admin/students/${studentId}`} className="text-sm text-gold-deep">
@@ -139,7 +141,13 @@ export function ReviewPage() {
                 </div>
               ) : (
                 <>
-              {q.prompt ? <SelectableText className="mt-2 text-lg leading-8 font-medium" text={q.prompt} /> : null}
+              {q.prompt ? (
+                <SelectableText
+                  className="mt-2 text-lg leading-8 font-medium"
+                  text={q.prompt}
+                  markTarget={listening ? undefined : { kind: 'prompt', id: q.id }}
+                />
+              ) : null}
               <ul className="mt-3 grid gap-2">
                 {q.options.map((o) => {
                   const isCorrect = o.key === q.correctKey
@@ -153,7 +161,7 @@ export function ReviewPage() {
                       )}
                     >
                       <span className="mr-2 font-bold">{o.key}.</span>
-                      {o.text}
+                      {listening || !o.text ? o.text : <SelectableText as="span" text={o.text} markTarget={{ kind: 'option', id: q.id, optionKey: o.key }} />}
                       {isCorrect ? <span className="ml-2 text-xs font-semibold text-olive">Đáp án đúng</span> : null}
                       {isPicked && !isCorrect ? (
                         <span className="ml-2 text-xs font-semibold text-coral">{staffView ? 'Học viên chọn' : 'Bạn chọn'}</span>
@@ -177,5 +185,6 @@ export function ReviewPage() {
         })}
       </div>
     </div>
+    </ReadingMarksProvider>
   )
 }

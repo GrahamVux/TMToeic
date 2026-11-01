@@ -1,5 +1,6 @@
 import { useAuth } from '@/app/AuthContext'
 import { Button } from '@/components/ui/Button'
+import { CornerNotice, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { FilePick } from '@/components/ui/FilePick'
 import { Modal } from '@/components/ui/Modal'
 import { Badge, Card, Input } from '@/components/ui/Primitives'
@@ -400,6 +401,7 @@ function AssignmentCheckModal({ assignmentId, onClose }: { assignmentId: string;
 function SaveToBankButton({ id }: { id: string }) {
   const save = useSaveAssignmentToBank()
   const [note, setNote] = useState<string | null>(null)
+  const [notice, setNotice] = useState<CornerNoticeState | null>(null)
   return (
     <div>
       <Button
@@ -407,12 +409,13 @@ function SaveToBankButton({ id }: { id: string }) {
         disabled={save.isPending}
         onClick={() => {
           setNote(null)
-          void save.mutateAsync(id).then(() => setNote('Đã lưu vào bộ đề.')).catch((e: unknown) => setNote(e instanceof ApiError ? e.message : 'Không lưu được vào bộ đề.'))
+          void save.mutateAsync(id).then(() => setNotice(flashNotice('Đã thay đổi thành công: đã lưu vào bộ đề.'))).catch((e: unknown) => setNote(e instanceof ApiError ? e.message : 'Không lưu được vào bộ đề.'))
         }}
       >
         {save.isPending ? 'Đang lưu…' : 'Lưu vào bộ đề'}
       </Button>
-      {note ? <p className="mt-1 text-xs text-ink/55">{note}</p> : null}
+      {note ? <p className="mt-1 text-xs text-coral">{note}</p> : null}
+      <CornerNotice notice={notice} />
     </div>
   )
 }
@@ -422,29 +425,25 @@ function AssignmentFiles({ assignment, canManage }: { assignment: AssignmentDto;
   const uploadImages = useUploadAssignmentImages()
   const listening = assignment.parts.some((p) => p.skill === 'LISTENING')
   const [note, setNote] = useState<string | null>(null)
-  const [failed, setFailed] = useState(false)
+  const [notice, setNotice] = useState<CornerNoticeState | null>(null)
   const busy = uploadAudio.isPending || uploadImages.isPending
 
   async function onAudio(file: File) {
     setNote(null)
-    setFailed(false)
     try {
       await uploadAudio.mutateAsync({ id: assignment.id, file })
-      setNote('Đã gắn file nghe cho bài tập này.')
+      setNotice(flashNotice('Đã gắn file nghe cho bài tập này.'))
     } catch (e) {
-      setFailed(true)
       setNote(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Không tải được file nghe.')
     }
   }
 
   async function onImages(files: File[]) {
     setNote(null)
-    setFailed(false)
     try {
       await uploadImages.mutateAsync({ id: assignment.id, files })
-      setNote(`Đã thêm ${files.length} ảnh đề.`)
+      setNotice(flashNotice(`Đã thêm ${files.length} ảnh đề.`))
     } catch (e) {
-      setFailed(true)
       setNote(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Không tải được ảnh đề.')
     }
   }
@@ -478,10 +477,11 @@ function AssignmentFiles({ assignment, canManage }: { assignment: AssignmentDto;
         />
       </div> : null}
       {note ? (
-        <p className={`mt-2 text-sm ${failed ? 'text-coral' : 'text-olive'}`} role={failed ? 'alert' : 'status'}>
+        <p className="mt-2 text-sm text-coral" role="alert">
           {note}
         </p>
       ) : null}
+      <CornerNotice notice={notice} />
     </div>
   )
 }

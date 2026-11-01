@@ -11,6 +11,49 @@ export function singleEnglishWord(raw: string): string | null {
   return word
 }
 
+const PHRASE = /^[A-Za-z]+(?:['’-][A-Za-z]+)*(?: [A-Za-z]+(?:['’-][A-Za-z]+)*){0,7}$/
+
+/** A word or a short English phrase a student can keep in their own dictionary. */
+export function notebookPhrase(raw: string): string | null {
+  const phrase = raw.trim().replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '').replace(/\s+/g, ' ')
+  if (phrase.length < 2 || phrase.length > 80 || !PHRASE.test(phrase)) return null
+  return phrase
+}
+
+export const READING_MARK_COLORS = ['yellow', 'blue', 'green'] as const
+export type ReadingMarkColor = (typeof READING_MARK_COLORS)[number]
+
+export type ReadingMarkDto = {
+  id: string
+  examId: string
+  targetKind: 'passage' | 'prompt' | 'option'
+  targetId: string
+  passageLabel: string
+  optionKey: string
+  start: number
+  end: number
+  quote: string
+  color: ReadingMarkColor | null
+  note: string
+}
+
+export const saveReadingMarkSchema = z
+  .object({
+    examId: z.uuid(),
+    targetKind: z.enum(['passage', 'prompt', 'option']),
+    targetId: z.uuid(),
+    passageLabel: z.string().max(40).optional(),
+    optionKey: z.string().max(8).optional(),
+    start: z.number().int().min(0),
+    end: z.number().int().min(1),
+    quote: z.string().min(1).max(120),
+    color: z.enum(READING_MARK_COLORS).nullable().optional(),
+    note: z.string().max(500).optional(),
+  })
+  .refine((value) => value.end > value.start && value.end - value.start <= 120, 'Chọn một từ hoặc cụm từ')
+  .refine((value) => Boolean(value.color) || Boolean(value.note?.trim()), 'Chọn màu hoặc ghi chú')
+export type SaveReadingMarkInput = z.infer<typeof saveReadingMarkSchema>
+
 export type VocabEntryDto = {
   id: string
   word: string
@@ -98,6 +141,10 @@ export const saveNotebookSchema = z
   .object({
     word: z.string().trim().min(1).max(80).optional(),
     vocabEntryId: z.uuid().optional(),
+    partOfSpeech: z.string().trim().max(40).optional(),
+    meaning: z.string().trim().max(500).optional(),
+    /** Student typed this card themselves, with their own word type and meaning. */
+    manual: z.boolean().optional(),
   })
   .refine((value) => Boolean(value.word || value.vocabEntryId), 'Chọn một từ')
 export type SaveNotebookInput = z.infer<typeof saveNotebookSchema>

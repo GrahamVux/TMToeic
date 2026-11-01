@@ -2,10 +2,12 @@ import { Inject, Injectable } from '@nestjs/common'
 import {
   grammarLessonSchema,
   grammarProgressSchema,
+  notebookPhrase,
   reviewCardSchema,
   saveNotebookSchema,
-  singleEnglishWord,
+  saveReadingMarkSchema,
   updateNotebookSchema,
+  type ReadingMarkDto,
   type FlashcardDeckDto,
   type FlashcardDto,
   type GrammarLessonDto,
@@ -22,7 +24,7 @@ import { AuditService } from '../audit/audit.service'
 import { AppException } from '../common/app-exception'
 import { parse } from '../common/zod'
 import { DB, type Db } from '../db/database.module'
-import { cardReviews, grammarLessonFiles, grammarLessons, grammarProgress, notebookEntries, vocabEntries } from '../db/schema'
+import { attempts, cardReviews, grammarLessonFiles, grammarLessons, grammarProgress, notebookEntries, readingMarks, vocabEntries } from '../db/schema'
 import { readVocabSheet, vocabTemplate, VocabSheetError } from './vocab-sheet'
 
 type Actor = { id: string; ip?: string }
@@ -151,8 +153,18 @@ export class StudyService {
       const entries = await this.notebookRows(userId, vocab.word.toLowerCase())
       return { word: vocab.word, alreadySaved: !inserted, entries }
     }
-    const word = singleEnglishWord(input.word ?? '')
-    if (!word) throw AppException.badRequest('Chỉ thêm được một từ tiếng Anh.')
+    const word = notebookPhrase(input.word ?? '')
+    if (!word) throw AppException.badRequest('Chỉ thêm được từ hoặc cụm từ tiếng Anh.')
+    if (input.manual) {
+      const inserted = await this.insertNotebook(userId, word, input.partOfSpeech ?? '', input.meaning ?? '', 'MANUAL', null)
+      const entries = await this.notebookRows(userId, word.toLowerCase())
+      return { word, alreadySaved: !inserted, entries }
+    }
+    if (word.includes(' ')) {
+      const inserted = await this.insertNotebook(userId, word, '', '', 'EXAM', null)
+      const entries = await this.notebookRows(userId, word.toLowerCase())
+      return { word, alreadySaved: !inserted, entries }
+    }
     const matches = await this.db.select().from(vocabEntries).where(eq(vocabEntries.wordKey, word.toLowerCase()))
     if (matches.length === 0) {
       const inserted = await this.insertNotebook(userId, word, '', '', 'EXAM', null)
@@ -184,6 +196,57 @@ export class StudyService {
     const found = (await this.notebookRows(userId)).find((item) => item.id === id)
     if (!found) throw AppException.notFound('Không tìm thấy từ trong sổ tay.')
     return found
+  }
+
+  async listReadingMarks(userId: string, examId: string): Promise<ReadingMarkDto[]> {
+    if (!examId) return []
+    const owns = await this.ownsExam(userId, examId)
+    if (!owns) return []
+    const rows = await this.db
+      .select()
+      .from(readingMarks)
+      .where(and(eq(readingMarks.userId, userId), eq(readingMarks.examId, examId)))
+      .orderBy(asc(readingMarks.startOffset))
+    return rows.map(markDto)
+  }
+
+  async saveReadingMark(userId: string, body: unknown): Promise<ReadingMarkDto> {
+    const input = parse(saveReadingMarkSchema, body)
+    if (!(await this.ownsExam(userId, input.examId))) throw AppException.forbidden('Chỉ lưu được tô màu và ghi chú trên bài của bạn.')
+    const passageLabel = input.passageLabel ?? ''
+    const optionKey = input.optionKey ?? ''
+    const note = input.note?.trim() ?? ''
+    const color = input.color ?? null
+    const [row] = await this.db
+      .insert(readingMarks)
+      .values({
+        userId,
+        examId: input.examId,
+        targetKind: input.targetKind,
+        targetId: input.targetId,
+        passageLabel,
+        optionKey,
+        startOffset: input.start,
+        endOffset: input.end,
+        quote: input.quote,
+        color,
+        note,
+      })
+      .onConflictDoUpdate({
+        target: [readingMarks.userId, readingMarks.examId, readingMarks.targetKind, readingMarks.targetId, readingMarks.passageLabel, readingMarks.optionKey, readingMarks.startOffset, readingMarks.endOffset],
+        set: { quote: input.quote, color, note, updatedAt: new Date() },
+      })
+      .returning()
+    return markDto(row)
+  }
+
+  async deleteReadingMark(userId: string, id: string) {
+    const [row] = await this.db
+      .delete(readingMarks)
+      .where(and(eq(readingMarks.id, id), eq(readingMarks.userId, userId)))
+      .returning({ id: readingMarks.id })
+    if (!row) throw AppException.notFound('Không tìm thấy phần tô màu này.')
+    return { ok: true as const }
   }
 
   async deleteNotebook(userId: string, id: string) {
@@ -387,7 +450,16 @@ export class StudyService {
     await this.db.insert(cardReviews).values({ userId, ...target, ...next })
   }
 
-  private async insertNotebook(userId: string, word: string, partOfSpeech: string, meaning: string, source: 'CATALOG' | 'EXAM', vocabEntryId: string | null) {
+  private async ownsExam(userId: string, examId: string) {
+    const [row] = await this.db
+      .select({ id: attempts.id })
+      .from(attempts)
+      .where(and(eq(attempts.userId, userId), eq(attempts.examId, examId)))
+      .limit(1)
+    return Boolean(row)
+  }
+
+  private async insertNotebook(userId: string, word: string, partOfSpeech: string, meaning: string, source: 'CATALOG' | 'EXAM' | 'MANUAL', vocabEntryId: string | null) {
     const inserted = await this.db
       .insert(notebookEntries)
       .values({ userId, word, wordKey: word.toLowerCase(), partOfSpeech, meaning, source, vocabEntryId })
@@ -478,6 +550,22 @@ export class StudyService {
   private async count(table: typeof vocabEntries | typeof grammarLessons) {
     const [row] = await this.db.select({ n: sql<number>`count(*)::int` }).from(table)
     return row?.n ?? 0
+  }
+}
+
+function markDto(row: typeof readingMarks.$inferSelect): ReadingMarkDto {
+  return {
+    id: row.id,
+    examId: row.examId,
+    targetKind: row.targetKind as ReadingMarkDto['targetKind'],
+    targetId: row.targetId,
+    passageLabel: row.passageLabel,
+    optionKey: row.optionKey,
+    start: row.startOffset,
+    end: row.endOffset,
+    quote: row.quote,
+    color: row.color === 'yellow' || row.color === 'blue' || row.color === 'green' ? row.color : null,
+    note: row.note,
   }
 }
 

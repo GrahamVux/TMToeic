@@ -5,7 +5,9 @@ import type {
   GrammarLessonInput,
   NotebookEntryDto,
   NotebookListDto,
+  ReadingMarkDto,
   SaveNotebookResult,
+  SaveReadingMarkInput,
   StudyOverviewDto,
   UpdateNotebookInput,
   VocabImportResult,
@@ -19,6 +21,7 @@ export const studyKeys = {
   notebook: ['study', 'notebook'] as const,
   deck: (deck: 'catalog' | 'notebook') => ['study', 'flashcards', deck] as const,
   grammar: ['study', 'grammar'] as const,
+  marks: (examId: string) => ['study', 'reading-marks', examId] as const,
   lesson: (id: string) => ['study', 'grammar', id] as const,
 }
 
@@ -41,8 +44,33 @@ export function useNotebook() {
 export function useSaveNotebookWord() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (input: { word?: string; vocabEntryId?: string }) => api<SaveNotebookResult>('/study/notebook', { method: 'POST', body: input }),
+    mutationFn: (input: { word?: string; vocabEntryId?: string; partOfSpeech?: string; meaning?: string; manual?: boolean }) =>
+      api<SaveNotebookResult>('/study/notebook', { method: 'POST', body: input }),
     onSuccess: () => refreshStudy(qc),
+  })
+}
+
+export function useReadingMarks(examId: string | undefined) {
+  return useQuery({
+    queryKey: studyKeys.marks(examId ?? ''),
+    queryFn: () => api<ReadingMarkDto[]>(`/study/reading-marks?examId=${examId}`),
+    enabled: !!examId,
+  })
+}
+
+export function useSaveReadingMark(examId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: SaveReadingMarkInput) => api<ReadingMarkDto>('/study/reading-marks', { method: 'POST', body: input }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: studyKeys.marks(examId) }),
+  })
+}
+
+export function useDeleteReadingMark(examId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api(`/study/reading-marks/${id}`, { method: 'DELETE' }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: studyKeys.marks(examId) }),
   })
 }
 

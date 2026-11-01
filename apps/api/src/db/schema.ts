@@ -532,6 +532,34 @@ export const notebookEntries = pgTable(
   (t) => [uniqueIndex('notebook_entries_user_word_uq').on(t.userId, t.wordKey, t.partOfSpeech), index('notebook_entries_user_idx').on(t.userId, t.createdAt)],
 ).enableRLS()
 
+/** A student's highlight or note on one span of a reading passage, prompt, or option. */
+export const readingMarks = pgTable(
+  'reading_marks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    examId: uuid('exam_id')
+      .notNull()
+      .references(() => exams.id, { onDelete: 'cascade' }),
+    targetKind: text('target_kind').notNull(),
+    targetId: uuid('target_id').notNull(),
+    passageLabel: text('passage_label').notNull().default(''),
+    optionKey: text('option_key').notNull().default(''),
+    startOffset: integer('start_offset').notNull(),
+    endOffset: integer('end_offset').notNull(),
+    quote: text('quote').notNull(),
+    color: text('color'),
+    note: text('note').notNull().default(''),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('reading_marks_span_uq').on(t.userId, t.examId, t.targetKind, t.targetId, t.passageLabel, t.optionKey, t.startOffset, t.endOffset),
+    index('reading_marks_user_exam_idx').on(t.userId, t.examId),
+  ],
+).enableRLS()
+
 /** Spaced-repetition state for one catalog card or one notebook card. */
 export const cardReviews = pgTable(
   'card_reviews',

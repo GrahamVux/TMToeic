@@ -10,6 +10,10 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  optimizeDeps: {
+    // The shared package is rebuilt in place. A cached prebundle would keep the old exports and freeze the app on the loading screen.
+    exclude: ['@toeic/shared'],
+  },
   server: {
     // Windows often resolves localhost to ::1 only, so 127.0.0.1:5173 was refused.
     // Listen on every interface and proxy the API over IPv4, which Nest binds explicitly.

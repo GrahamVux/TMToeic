@@ -46,6 +46,22 @@ export class StudyController {
     return this.study.deleteVocab(actorOf(user, req), id)
   }
 
+  @Get('reading-marks')
+  readingMarks(@CurrentUser() user: AuthUser, @Query('examId') examId: string | undefined) {
+    return this.study.listReadingMarks(user.id, typeof examId === 'string' ? examId : '')
+  }
+
+  @Post('reading-marks')
+  @HttpCode(200)
+  saveReadingMark(@CurrentUser() user: AuthUser, @Body() body: unknown) {
+    return this.study.saveReadingMark(user.id, body)
+  }
+
+  @Delete('reading-marks/:id')
+  deleteReadingMark(@CurrentUser() user: AuthUser, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.study.deleteReadingMark(user.id, id)
+  }
+
   @Get('notebook')
   notebook(@CurrentUser() user: AuthUser) {
     return this.study.listNotebook(user.id)

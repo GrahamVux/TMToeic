@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/Button'
+import { CornerNotice, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { FilePick } from '@/components/ui/FilePick'
 import { Card, Input } from '@/components/ui/Primitives'
 import { useCreateFillAssignment } from '@/features/assignments/assignments.queries'
@@ -29,14 +30,13 @@ export function FillAssignForm({ roster }: { roster: RosterUser[] }) {
   const [picked, setPicked] = useState<string[]>([])
   const [items, setItems] = useState<Item[]>([{ prompt: '', answers: [], explanation: '' }])
   const [formError, setFormError] = useState<string | null>(null)
-  const [done, setDone] = useState<string | null>(null)
+  const [notice, setNotice] = useState<CornerNoticeState | null>(null)
 
   const blankTotal = items.reduce((sum, item) => sum + countBlanks(item.prompt), 0)
   const [jsonName, setJsonName] = useState<string | null>(null)
 
   async function loadJson(file: File) {
     setFormError(null)
-    setDone(null)
     try {
       const parsed = createFillAssignmentSchema.safeParse(JSON.parse(await file.text()))
       if (!parsed.success) {
@@ -57,7 +57,7 @@ export function FillAssignForm({ roster }: { roster: RosterUser[] }) {
         })),
       )
       setJsonName(file.name)
-      setDone('Đã mở file. Kiểm tra câu hỏi, đáp án và lời giải, rồi bấm Giao bài điền từ.')
+      setNotice(flashNotice('Đã mở file. Kiểm tra câu hỏi, đáp án và lời giải, rồi bấm Giao bài điền từ.'))
     } catch {
       setJsonName(null)
       setFormError('File JSON không hợp lệ.')
@@ -70,7 +70,6 @@ export function FillAssignForm({ roster }: { roster: RosterUser[] }) {
 
   async function submit() {
     setFormError(null)
-    setDone(null)
     if (title.trim().length < 3) {
       setFormError('Nhập tiêu đề bài tập.')
       return
@@ -108,7 +107,7 @@ export function FillAssignForm({ roster }: { roster: RosterUser[] }) {
       setTitle('')
       setDescription('')
       setItems([{ prompt: '', answers: [], explanation: '' }])
-      setDone('Đã giao bài điền từ. Có thể lưu vào bộ đề ở danh sách bên dưới.')
+      setNotice(flashNotice('Đã giao bài điền từ thành công. Có thể lưu vào bộ đề ở danh sách bên dưới.'))
     } catch (e) {
       setFormError(e instanceof ApiError ? e.message : 'Không giao được bài điền từ.')
     }
@@ -208,7 +207,7 @@ export function FillAssignForm({ roster }: { roster: RosterUser[] }) {
         </div>
       ) : null}
       {formError ? <p className="mt-3 rounded-xl bg-[#f8dcd8] px-3 py-2 text-sm text-coral" role="alert">{formError}</p> : null}
-      {done ? <p className="mt-3 text-sm text-olive" role="status">{done}</p> : null}
+      <CornerNotice notice={notice} />
       <Button className="mt-4 w-full" disabled={create.isPending} onClick={() => void submit()}>
         {create.isPending ? 'Đang giao…' : 'Giao bài điền từ'}
       </Button>

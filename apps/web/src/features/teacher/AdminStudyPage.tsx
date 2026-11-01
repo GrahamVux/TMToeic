@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/Button'
+import { CornerNotice, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { FilePick } from '@/components/ui/FilePick'
 import { Card } from '@/components/ui/Primitives'
 import { PageLoading } from '@/components/ui/LoadingScreen'
@@ -18,7 +19,7 @@ export function AdminStudyPage() {
   const removeLesson = useDeleteGrammar()
   const [note, setNote] = useState<string | null>(null)
   const [grammarNote, setGrammarNote] = useState<string | null>(null)
-  const [failed, setFailed] = useState(false)
+  const [notice, setNotice] = useState<CornerNoticeState | null>(null)
   const [title, setTitle] = useState('')
   const [summary, setSummary] = useState('')
   const [body, setBody] = useState('')
@@ -29,6 +30,7 @@ export function AdminStudyPage() {
 
   return (
     <div className="space-y-8">
+      <CornerNotice notice={notice} />
       <header>
         <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Học liệu</p>
         <h1 className="serif mt-2 text-3xl sm:text-4xl">Từ vựng và ngữ pháp</h1>
@@ -50,18 +52,17 @@ export function AdminStudyPage() {
             onFiles={(files) => {
               const file = files[0]
               if (!file) return
-              setFailed(false)
+              setNote(null)
               void importVocab.mutateAsync(file).then(
-                (result) => setNote(`Đã thêm ${result.imported} từ, cập nhật ${result.updated} từ, bỏ qua ${result.skipped} dòng.`),
+                (result) => setNotice(flashNotice(`Đã thêm ${result.imported} từ, cập nhật ${result.updated} từ, bỏ qua ${result.skipped} dòng.`)),
                 (error) => {
-                  setFailed(true)
                   setNote(error instanceof ApiError ? error.message : 'Không nhập được file.')
                 },
               )
             }}
           />
         </div>
-        {note ? <p className={`mt-3 text-sm ${failed ? 'text-coral' : 'text-olive'}`}>{note}</p> : null}
+        {note ? <p className="mt-3 text-sm text-coral" role="alert">{note}</p> : null}
         <form
           className="mt-4 flex flex-wrap gap-2"
           onSubmit={(event) => {
@@ -97,13 +98,13 @@ export function AdminStudyPage() {
           className="mt-4 space-y-2"
           onSubmit={(event) => {
             event.preventDefault()
-            setFailed(false)
+            setGrammarNote(null)
             void createLesson.mutateAsync({ title, summary, body }).then(
               () => {
                 setTitle('')
                 setSummary('')
                 setBody('')
-                setGrammarNote('Đã thêm chuyên đề.')
+                setNotice(flashNotice('Đã thêm chuyên đề thành công.'))
               },
               (error) => setGrammarNote(error instanceof ApiError ? error.message : 'Không thêm được chuyên đề.'),
             )
@@ -115,7 +116,7 @@ export function AdminStudyPage() {
           <Button type="submit" disabled={createLesson.isPending}>
             Thêm chuyên đề
           </Button>
-          {grammarNote ? <p className="text-sm text-ink/70">{grammarNote}</p> : null}
+          {grammarNote ? <p className="text-sm text-coral" role="alert">{grammarNote}</p> : null}
         </form>
         <ul className="mt-4 space-y-2">
           {(lessons.data ?? []).map((lesson) => (
@@ -142,6 +143,7 @@ function GrammarPdf({ lesson }: { lesson: GrammarLessonDto }) {
   const upload = useUploadGrammarPdf()
   const clear = useClearGrammarPdf()
   const [note, setNote] = useState<string | null>(null)
+  const [notice, setNotice] = useState<CornerNoticeState | null>(null)
 
   return (
     <div className="mt-3">
@@ -154,8 +156,9 @@ function GrammarPdf({ lesson }: { lesson: GrammarLessonDto }) {
         onFiles={(files) => {
           const file = files[0]
           if (!file) return
+          setNote(null)
           void upload.mutateAsync({ id: lesson.id, file }).then(
-            () => setNote('Đã gắn file PDF.'),
+            () => setNotice(flashNotice('Đã gắn file PDF.')),
             (error) => setNote(error instanceof ApiError ? error.message : 'Không tải được file PDF.'),
           )
         }}
@@ -166,8 +169,9 @@ function GrammarPdf({ lesson }: { lesson: GrammarLessonDto }) {
           className="mt-2 text-sm font-semibold text-coral underline underline-offset-4"
           disabled={clear.isPending}
           onClick={() => {
+            setNote(null)
             void clear.mutateAsync(lesson.id).then(
-              () => setNote('Đã gỡ file PDF.'),
+              () => setNotice(flashNotice('Đã gỡ file PDF.')),
               (error) => setNote(error instanceof ApiError ? error.message : 'Không gỡ được file PDF.'),
             )
           }}
@@ -175,7 +179,8 @@ function GrammarPdf({ lesson }: { lesson: GrammarLessonDto }) {
           Gỡ PDF
         </button>
       ) : null}
-      {note ? <p className="mt-2 text-sm text-ink/70">{note}</p> : null}
+      {note ? <p className="mt-2 text-sm text-coral" role="alert">{note}</p> : null}
+      <CornerNotice notice={notice} />
     </div>
   )
 }
