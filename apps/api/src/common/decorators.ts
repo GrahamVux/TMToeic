@@ -8,6 +8,8 @@ export type AuthUser = {
   sessionId: string
   mustChangePassword: boolean
   permissions: TeacherPermissions
+  /** Set while an admin previews this account: the admin's id. All writes are refused in that state. */
+  viewingAsBy?: string
 }
 
 export type AuthedRequest = Request & { user?: AuthUser }

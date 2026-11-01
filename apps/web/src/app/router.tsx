@@ -1,5 +1,7 @@
 import { AuthProvider, useAuth } from '@/app/AuthContext'
 import { AdminShell, StudentShell } from '@/components/layout/Shell'
+import { ViewAsBanner } from '@/components/layout/ViewAsBanner'
+import { ViewAsPage } from '@/features/teacher/ViewAsPage'
 import { AssignmentsPage } from '@/features/assignments/AssignmentsPage'
 import { ChangePasswordPage } from '@/features/auth/ChangePasswordPage'
 import { LoginPage } from '@/features/auth/LoginPage'
@@ -53,6 +55,7 @@ function RequireAuth({ audience }: { audience: 'student' | 'staff' }) {
   return (
     <Shell>
       <Outlet />
+      <ViewAsBanner />
     </Shell>
   )
 }
@@ -113,6 +116,7 @@ function AppRoutes() {
           <Route path="/admin/assignments" element={<TeacherAssignmentsPage />} />
         </Route>
         <Route element={<StaffGrant need="admin" />}>
+          <Route path="/admin/view-as" element={<ViewAsPage />} />
           <Route path="/admin/study" element={<AdminStudyPage />} />
           <Route path="/admin/bugs" element={<BugReportsPage />} />
           <Route path="/admin/settings" element={<SiteSettingsPage />} />

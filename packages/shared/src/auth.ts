@@ -13,6 +13,8 @@ export const ERROR_CODES = {
   FORBIDDEN: 'FORBIDDEN',
   PASSWORD_CHANGE_REQUIRED: 'PASSWORD_CHANGE_REQUIRED',
   CSRF_REJECTED: 'CSRF_REJECTED',
+  /** An admin previewing another account tried to change data. */
+  VIEW_ONLY: 'VIEW_ONLY',
   NOT_FOUND: 'NOT_FOUND',
   CONFLICT: 'CONFLICT',
   /** Attempt already submitted/expired — answers can no longer change. */
@@ -30,6 +32,14 @@ export type ApiErrorBody = {
 /** Header that every state-changing request must carry (CSRF defence for cookie auth). */
 export const CSRF_HEADER = 'x-toeic-client'
 export const CSRF_HEADER_VALUE = 'web'
+
+/** An admin sends this with the id of the teacher or student whose screens they preview. The preview is read-only. */
+export const VIEW_AS_HEADER = 'x-toeic-view-as'
+
+export const viewAsSchema = z.object({
+  userId: z.string().uuid(),
+})
+export type ViewAsInput = z.infer<typeof viewAsSchema>
 
 export const PASSWORD_MIN_LENGTH = 10
 
@@ -154,6 +164,8 @@ export type UserDto = {
 
 export type SessionDto = {
   user: UserDto
+  /** Set while an admin previews another account. `user` is then the previewed account and this is the admin. */
+  viewingAs?: { admin: UserDto }
 }
 
 export type CredentialsIssuedDto = {

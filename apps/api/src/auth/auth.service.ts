@@ -319,6 +319,48 @@ export class AuthService {
     }
   }
 
+  /** The account an admin previews. Teachers and students only; the preview never reaches another admin. */
+  async viewAsTarget(admin: AuthUser, targetId: string): Promise<{ user: AuthUser; row: UserRow }> {
+    if (admin.role !== 'ADMIN') throw AppException.forbidden()
+    const [row] = await this.db.select().from(users).where(eq(users.id, targetId)).limit(1)
+    if (!row) throw AppException.notFound('Không tìm thấy tài khoản cần xem thử')
+    if (row.role === 'ADMIN') throw AppException.forbidden('Không thể xem thử tài khoản quản trị viên')
+    return {
+      row,
+      user: {
+        id: row.id,
+        role: row.role,
+        sessionId: admin.sessionId,
+        // The previewed account's temporary password must not lock the admin out of its screens.
+        mustChangePassword: false,
+        permissions: teacherGrants(row.role, {
+          createStudents: row.permCreateStudents,
+          manageAssignments: row.permManageAssignments,
+          viewProgress: row.permViewProgress,
+        }),
+        viewingAsBy: admin.id,
+      },
+    }
+  }
+
+  /** The session the web shows while previewing: the previewed account plus the admin who is looking. */
+  async previewSession(admin: UserRow, target: UserRow): Promise<SessionDto> {
+    return { user: { ...toUserDto(target), mustChangePassword: false }, viewingAs: { admin: toUserDto(admin) } }
+  }
+
+  async startViewAs(admin: AuthUser, targetId: string, ctx: ClientContext): Promise<SessionDto> {
+    const { row } = await this.viewAsTarget(admin, targetId)
+    await this.audit.log({
+      action: 'ADMIN_VIEW_AS',
+      actorId: admin.id,
+      entityType: 'user',
+      entityId: row.id,
+      metadata: { role: row.role },
+      ip: ctx.ip,
+    })
+    return this.previewSession(await this.getUserRow(admin.id), row)
+  }
+
   async getUserRow(id: string): Promise<UserRow> {
     const [row] = await this.db.select().from(users).where(eq(users.id, id)).limit(1)
     if (!row) throw AppException.unauthenticated()

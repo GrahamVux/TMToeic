@@ -8,6 +8,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      // Serve the workspace build directly. A copy inside node_modules is not watched, so a rebuild used to leave the browser on the loading screen.
+      '@toeic/shared': fileURLToPath(new URL('../../packages/shared/dist/index.js', import.meta.url)),
     },
   },
   optimizeDeps: {

@@ -436,7 +436,7 @@ describe('Auth, RBAC & account management (e2e on PGlite)', () => {
   })
 
   describe('catalog (generic Skill/Part)', () => {
-    it('seeds 4 skills with only Listening & Reading enabled, 7 parts', async () => {
+    it('seeds 4 skills with only Listening & Reading enabled, plus the fill-in part', async () => {
       const { c } = await login(app, ADMIN.username, 'AdminPass456')
       const res = await c.get('/skills')
       expect(res.status).toBe(200)
@@ -447,7 +447,7 @@ describe('Auth, RBAC & account management (e2e on PGlite)', () => {
       expect(byCode.SPEAKING.enabled).toBe(false)
       expect(byCode.WRITING.enabled).toBe(false)
       expect(byCode.LISTENING.parts.map((p: { code: string }) => p.code)).toEqual(['PART_1', 'PART_2', 'PART_3', 'PART_4'])
-      expect(byCode.READING.parts.map((p: { code: string }) => p.code)).toEqual(['PART_5', 'PART_6', 'PART_7'])
+      expect(byCode.READING.parts.map((p: { code: string }) => p.code)).toEqual(['PART_5', 'PART_6', 'PART_7', 'FILL_1'])
     })
   })
 })

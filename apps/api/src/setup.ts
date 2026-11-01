@@ -1,6 +1,6 @@
 import type { INestApplication } from '@nestjs/common'
 import type { NestExpressApplication } from '@nestjs/platform-express'
-import { CSRF_HEADER } from '@toeic/shared'
+import { CSRF_HEADER, VIEW_AS_HEADER } from '@toeic/shared'
 import cookieParser from 'cookie-parser'
 import express, { type NextFunction, type Request, type Response } from 'express'
 import helmet from 'helmet'
@@ -31,7 +31,7 @@ export function configureApp(app: INestApplication) {
   app.enableCors({
     origin: config.corsOrigins,
     credentials: true,
-    allowedHeaders: ['Content-Type', CSRF_HEADER],
+    allowedHeaders: ['Content-Type', CSRF_HEADER, VIEW_AS_HEADER],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   })
   app.enableShutdownHooks()

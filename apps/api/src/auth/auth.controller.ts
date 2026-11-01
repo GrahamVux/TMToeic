@@ -1,8 +1,8 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Req, Res } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
-import { changePasswordSchema, loginSchema, type SessionDto } from '@toeic/shared'
+import { changePasswordSchema, loginSchema, viewAsSchema, type SessionDto } from '@toeic/shared'
 import type { Request, Response } from 'express'
-import { AllowPasswordChangePending, clientIp, CurrentUser, Public, type AuthUser } from '../common/decorators'
+import { AllowPasswordChangePending, clientIp, CurrentUser, Public, Roles, type AuthUser } from '../common/decorators'
 import { parse } from '../common/zod'
 import { toUserDto } from '../users/user.mapper'
 import { AuthCookies } from './auth.cookies'
@@ -68,7 +68,17 @@ export class AuthController {
   @AllowPasswordChangePending()
   @Get('me')
   async me(@CurrentUser() user: AuthUser): Promise<SessionDto> {
-    return { user: toUserDto(await this.auth.getUserRow(user.id)) }
+    const row = await this.auth.getUserRow(user.id)
+    if (user.viewingAsBy) return this.auth.previewSession(await this.auth.getUserRow(user.viewingAsBy), row)
+    return { user: toUserDto(row) }
+  }
+
+  /** Admin only. Checks the account, records the preview in the audit log and returns what the web should show. */
+  @Roles('ADMIN')
+  @Post('view-as')
+  @HttpCode(200)
+  viewAs(@CurrentUser() user: AuthUser, @Body() body: unknown, @Req() req: Request): Promise<SessionDto> {
+    return this.auth.startViewAs(user, parse(viewAsSchema, body).userId, ctxOf(req))
   }
 
   @Get('sessions')

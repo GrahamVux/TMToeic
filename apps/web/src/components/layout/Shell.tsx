@@ -6,7 +6,7 @@ import { UserMenu } from '@/components/layout/UserMenu'
 import { useSite } from '@/features/site/SiteSettingsProvider'
 import { BugReportWidget } from '@/features/bugs/BugReportWidget'
 import { useBugReportSummary } from '@/features/bugs/bugs.queries'
-import { BarChart3, BookOpen, Bug, ChevronDown, ClipboardList, Library, LogOut, Menu, MoreHorizontal, Settings, Trophy, Users, X } from 'lucide-react'
+import { BarChart3, BookOpen, Bug, ChevronDown, ClipboardList, Eye, Library, LogOut, Menu, MoreHorizontal, Settings, Trophy, Users, X } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 
@@ -216,6 +216,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           ...teacherNav,
           { to: '/admin/study', label: 'Học liệu', short: 'Học liệu', icon: Library, end: false },
           { to: '/admin/bugs', label: openCount ? `Báo lỗi (${openCount})` : 'Báo lỗi', short: 'Lỗi', icon: Bug, end: false },
+          { to: '/admin/view-as', label: 'Giả lập góc nhìn', short: 'Giả lập', icon: Eye, end: false },
           { to: '/admin/settings', label: 'Cài đặt', short: 'Cài đặt', icon: Settings, end: false },
         ]
       : teacherNav
@@ -224,7 +225,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const mobilePrimary = mobilePrimaryPaths.flatMap((to) => nav.filter((item) => item.to === to))
   const mobileMore = nav.filter((item) => !mobilePrimaryPaths.includes(item.to))
   const moreActive = mobileMore.some((item) => (item.end ? location.pathname === item.to : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)))
-  const desktopMorePaths = ['/admin/study', '/admin/bugs', '/admin/settings']
+  const desktopMorePaths = ['/admin/study', '/admin/bugs', '/admin/view-as', '/admin/settings']
   const desktopMain = nav.filter((item) => !desktopMorePaths.includes(item.to))
   const desktopMore = nav.filter((item) => desktopMorePaths.includes(item.to))
   const desktopMoreActive = desktopMore.some((item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`))

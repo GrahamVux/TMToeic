@@ -1,4 +1,5 @@
 import { CSRF_HEADER, CSRF_HEADER_VALUE, ERROR_CODES, type ApiErrorBody, type ErrorCode } from '@toeic/shared'
+import { viewAsHeaders } from './view-as'
 
 /**
  * Always same-origin `/api/v1` in the browser (Vite proxy in dev, Cloudflare Pages Function in prod).
@@ -51,6 +52,7 @@ async function send(path: string, { method = 'GET', body }: Options): Promise<Re
       headers: {
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...(method !== 'GET' ? { [CSRF_HEADER]: CSRF_HEADER_VALUE } : {}),
+        ...viewAsHeaders(),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     })
@@ -103,7 +105,7 @@ export async function apiUpload<T = void>(path: string, file: Blob, contentType:
       return await fetch(`${BASE}${path}`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': contentType, [CSRF_HEADER]: CSRF_HEADER_VALUE },
+        headers: { 'Content-Type': contentType, [CSRF_HEADER]: CSRF_HEADER_VALUE, ...viewAsHeaders() },
         body: file,
       })
     } catch {
@@ -131,7 +133,7 @@ export async function apiDownload(path: string, file: Blob, contentType: string)
       return await fetch(`${BASE}${path}`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': contentType, [CSRF_HEADER]: CSRF_HEADER_VALUE },
+        headers: { 'Content-Type': contentType, [CSRF_HEADER]: CSRF_HEADER_VALUE, ...viewAsHeaders() },
         body: file,
       })
     } catch {
@@ -159,7 +161,7 @@ export async function apiGetFile(path: string): Promise<{ blob: Blob; filename: 
       return await fetch(`${BASE}${path}`, {
         method: 'GET',
         credentials: 'include',
-        headers: { [CSRF_HEADER]: CSRF_HEADER_VALUE },
+        headers: { [CSRF_HEADER]: CSRF_HEADER_VALUE, ...viewAsHeaders() },
       })
     } catch {
       throw new ApiError(0, 'NETWORK', 'Không kết nối được máy chủ. Vui lòng kiểm tra mạng và thử lại.')
