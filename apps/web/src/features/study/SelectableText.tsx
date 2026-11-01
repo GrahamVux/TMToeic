@@ -189,7 +189,7 @@ export function SelectableText({
   const currentColor = picked?.existing?.color ?? null
   return (
     <>
-      <Tag ref={ref as Ref<HTMLParagraphElement>} className={className} onMouseUp={onSelect} onTouchEnd={onSelect}>
+      <Tag ref={ref as Ref<HTMLParagraphElement>} className={cn('select-text', className)} onMouseUp={onSelect} onTouchEnd={onSelect}>
         {segments.map((segment, index) =>
           segment.mark ? (
             <mark

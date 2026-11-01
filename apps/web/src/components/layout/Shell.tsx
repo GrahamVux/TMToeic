@@ -6,7 +6,7 @@ import { UserMenu } from '@/components/layout/UserMenu'
 import { useSite } from '@/features/site/SiteSettingsProvider'
 import { BugReportWidget } from '@/features/bugs/BugReportWidget'
 import { useBugReportSummary } from '@/features/bugs/bugs.queries'
-import { BarChart3, BookOpen, Bug, ClipboardList, Library, LogOut, Menu, MoreHorizontal, Settings, Trophy, Users, X } from 'lucide-react'
+import { BarChart3, BookOpen, Bug, ChevronDown, ClipboardList, Library, LogOut, Menu, MoreHorizontal, Settings, Trophy, Users, X } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 
@@ -185,7 +185,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
 }
 
 const adminNav = [
-  { to: '/admin', label: 'Quản lý học viên', short: 'Học viên', icon: Users, end: true },
+  { to: '/admin', label: 'Học viên', short: 'Học viên', icon: Users, end: true },
   { to: '/admin/exams', label: 'Kho đề', short: 'Kho đề', icon: BookOpen, end: false },
   { to: '/admin/assignments', label: 'Bài tập', short: 'Bài tập', icon: ClipboardList, end: false },
   { to: '/admin/reports', label: 'Báo cáo', short: 'Báo cáo', icon: BarChart3, end: false },
@@ -198,6 +198,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const location = useLocation()
   const [open, setOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
+  const [deskMoreOpen, setDeskMoreOpen] = useState(false)
   const roleLabel = user?.role === 'ADMIN' ? 'Quản trị viên' : 'Giáo viên'
   const bugs = useBugReportSummary(user?.role === 'ADMIN')
   const openCount = bugs.data?.openCount ?? 0
@@ -223,6 +224,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const mobilePrimary = mobilePrimaryPaths.flatMap((to) => nav.filter((item) => item.to === to))
   const mobileMore = nav.filter((item) => !mobilePrimaryPaths.includes(item.to))
   const moreActive = mobileMore.some((item) => (item.end ? location.pathname === item.to : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)))
+  const desktopMorePaths = ['/admin/study', '/admin/bugs', '/admin/settings']
+  const desktopMain = nav.filter((item) => !desktopMorePaths.includes(item.to))
+  const desktopMore = nav.filter((item) => desktopMorePaths.includes(item.to))
+  const desktopMoreActive = desktopMore.some((item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`))
   const mobileCols = mobilePrimary.length + (mobileMore.length > 0 ? 1 : 0)
   const mobileGrid =
     mobileCols >= 5 ? 'grid-cols-5' : mobileCols === 4 ? 'grid-cols-4' : mobileCols === 3 ? 'grid-cols-3' : mobileCols === 2 ? 'grid-cols-2' : 'grid-cols-1'
@@ -230,6 +235,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     setOpen(false)
     setMoreOpen(false)
+    setDeskMoreOpen(false)
   }, [location.pathname])
 
   async function signOut() {
@@ -246,18 +252,18 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <BrandMark />
           </Link>
           <div className="hidden h-6 w-px shrink-0 bg-gold/40 lg:block" />
-          <p className="hidden whitespace-nowrap text-[11px] font-semibold tracking-[0.18em] text-gold-deep uppercase xl:block">
+          <p className="hidden whitespace-nowrap text-[11px] font-semibold tracking-[0.18em] text-gold-deep uppercase 2xl:block">
             Cổng quản lý đào tạo
           </p>
           <nav className="ml-2 hidden min-w-0 items-center gap-0.5 lg:flex">
-            {nav.map((item) => (
+            {desktopMain.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
                   cn(
-                    'whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors',
+                    'whitespace-nowrap rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors',
                     isActive ? 'bg-gold-deep text-white' : 'text-ink/65 hover:bg-teal-soft hover:text-ink',
                   )
                 }
@@ -265,6 +271,46 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 {item.label}
               </NavLink>
             ))}
+            {desktopMore.length > 0 ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  aria-expanded={deskMoreOpen}
+                  className={cn(
+                    'flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors',
+                    desktopMoreActive || deskMoreOpen ? 'bg-gold-deep text-white' : 'text-ink/65 hover:bg-teal-soft hover:text-ink',
+                  )}
+                  onClick={() => setDeskMoreOpen(!deskMoreOpen)}
+                >
+                  Khác
+                  {openCount > 0 ? <span className="size-2 rounded-full bg-red-500" aria-label={`${openCount} báo lỗi chưa xử lý`} /> : null}
+                  <ChevronDown className={cn('size-3.5 transition-transform', deskMoreOpen && 'rotate-180')} />
+                </button>
+                {deskMoreOpen ? (
+                  <>
+                    <button type="button" className="fixed inset-0 z-30 cursor-default" aria-label="Đóng menu Khác" onClick={() => setDeskMoreOpen(false)} />
+                    <div className="absolute top-full left-0 z-40 mt-2 w-48 rounded-2xl border border-gold/30 bg-white p-1.5 shadow-[0_12px_32px_rgba(30,51,60,0.16)]">
+                      {desktopMore.map((item) => (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          end={item.end}
+                          className={({ isActive }) =>
+                            cn(
+                              'flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-medium',
+                              isActive ? 'bg-gold-deep text-white' : 'text-ink/75 hover:bg-paper',
+                            )
+                          }
+                        >
+                          <item.icon className="size-4" />
+                          {item.label}
+                        </NavLink>
+                      ))}
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
           </nav>
           <div className="ml-auto flex shrink-0 items-center gap-2">
             <div className="hidden leading-none text-right md:block">

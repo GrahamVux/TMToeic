@@ -34,6 +34,25 @@ body {
   font-family: var(--font-sans);
 }
 
+/* The blinking text caret belongs in fields only. Clicking empty space or a control never shows one. */
+body {
+  caret-color: transparent;
+}
+input,
+textarea,
+select,
+[contenteditable='true'] {
+  caret-color: auto;
+  user-select: text;
+}
+button,
+nav,
+label,
+[role='button'],
+[role='radio'] {
+  user-select: none;
+}
+
 .site-wash {
   background:
     radial-gradient(circle at top right, color-mix(in srgb, var(--color-gold) 70%, transparent), transparent 42%),
