@@ -9,9 +9,6 @@ export function PassageView({ group, showImage = true }: { group: GroupDto; show
     <div className="space-y-3">
       {showImage && group.imageUrl ? <ZoomableImage src={group.imageUrl} alt="Hình/bảng biểu của nhóm câu hỏi" /> : null}
       {group.instructions ? <p className="text-xs font-semibold text-gold-deep">{group.instructions}</p> : null}
-      {!isListeningPart(group.partCode) && group.passages.length > 0 ? (
-        <p className="text-xs text-ink/45">Bôi một từ hoặc cụm từ để tô màu, ghi chú, sao chép hoặc lưu vào từ điển của bạn.</p>
-      ) : null}
       {group.passages.map((p) => (
         <article key={p.label} className="rounded-2xl border border-ink/10 bg-white p-4">
           <p className="text-[11px] font-semibold tracking-wide text-ink/45 uppercase">

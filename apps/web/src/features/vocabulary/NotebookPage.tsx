@@ -60,7 +60,7 @@ export function NotebookPage() {
           <section className="space-y-4">
             <h2 className="serif text-2xl">Các từ take note</h2>
             <p className="text-sm text-ink/55">Từ lấy từ bài đọc hoặc bạn tự thêm. Điền loại từ và nghĩa để tự học.</p>
-            <NoteGrid items={visible.filter((item) => item.source !== 'CATALOG')} empty="Chưa có từ take note. Bôi một cụm từ trong bài đọc, hoặc thêm ở form phía trên." />
+            <NoteGrid items={visible.filter((item) => item.source !== 'CATALOG')} empty="Chưa có từ take note. Bạn có thể thêm ở form phía trên." />
           </section>
           <section className="space-y-4">
             <h2 className="serif text-2xl">Từ lấy từ kho</h2>

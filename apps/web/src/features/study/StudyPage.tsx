@@ -68,7 +68,7 @@ function VocabHome({ catalogDue, catalogNew, notebookDue }: { catalogDue: number
         <Card className="p-5">
           <Badge tone="teal">Sổ tay</Badge>
           <h2 className="serif mt-3 text-2xl">Từ của bạn</h2>
-          <p className="mt-2 text-sm text-ink/60">{notebookDue} thẻ cần ôn. Bôi một từ khi làm đề để thêm vào đây.</p>
+          <p className="mt-2 text-sm text-ink/60">{notebookDue} thẻ cần ôn.</p>
           <Link to="/study/flashcards?deck=notebook" className="mt-4 inline-block">
             <Button variant="navy">Ôn sổ tay</Button>
           </Link>

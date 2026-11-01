@@ -90,7 +90,7 @@ export function DashboardPage() {
           <Badge tone="teal">Từ vựng</Badge>
           <h2 className="serif mt-3 text-2xl">Flashcard và sổ tay</h2>
           <p className="mt-2 text-sm text-ink/60">
-            {study.data ? `${study.data.notebookTotal} từ trong sổ tay • ${study.data.catalogNew} từ kho chưa học.` : 'Bôi một từ khi làm bài để lưu vào sổ tay.'}
+            {study.data ? `${study.data.notebookTotal} từ trong sổ tay • ${study.data.catalogNew} từ kho chưa học.` : 'Flashcard và sổ tay từ vựng của bạn.'}
           </p>
           <Link to="/study/notebook" className="mt-4 inline-block">
             <Button variant="ghost">Mở sổ tay</Button>
