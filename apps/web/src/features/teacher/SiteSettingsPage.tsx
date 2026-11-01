@@ -6,10 +6,28 @@ import { applySiteTheme, useSiteSettings, useUpdateSiteSettings } from '@/featur
 import { useSite } from '@/features/site/SiteSettingsProvider'
 import { cn } from '@/lib/cn'
 import type { UpdateSiteSettingsInput } from '@toeic/shared'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const field = 'mt-1 h-10 w-full rounded-xl border border-gold/40 bg-white px-3 text-sm outline-none focus:border-gold-deep focus:ring-2 focus:ring-gold-deep/20'
 const area = 'mt-1 min-h-24 w-full rounded-xl border border-gold/40 bg-white px-3 py-2 text-sm outline-none focus:border-gold-deep focus:ring-2 focus:ring-gold-deep/20'
+
+type Section = 'honor' | 'brand' | 'login' | 'contact' | 'theme'
+
+const SECTION_KEYS: Record<Section, (keyof UpdateSiteSettingsInput)[]> = {
+  honor: ['honorBoardEnabled'],
+  brand: ['brandName', 'slogan', 'logoUrl', 'faviconUrl'],
+  login: ['loginHeadline', 'loginIntro'],
+  contact: ['phone', 'hours', 'address', 'footerAbout', 'supportHeading', 'supportDetail', 'channelHeading', 'channelDetail', 'legalNote', 'copyright'],
+  theme: ['theme'],
+}
+
+const SAVED: Record<Section, string> = {
+  honor: 'Đã lưu bảng vinh danh.',
+  brand: 'Đã lưu thương hiệu.',
+  login: 'Đã lưu trang đăng nhập.',
+  contact: 'Đã lưu liên hệ và footer.',
+  theme: 'Đã lưu màu theme.',
+}
 
 function readImage(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -27,10 +45,13 @@ export function SiteSettingsPage() {
   const save = useUpdateSiteSettings()
   const [form, setForm] = useState<UpdateSiteSettingsInput>({})
   const [notice, setNotice] = useState<CornerNoticeState | null>(null)
-  const [err, setErr] = useState<string | null>(null)
+  const [saving, setSaving] = useState<Section | null>(null)
+  const [err, setErr] = useState<{ section: Section; text: string } | null>(null)
+  const loaded = useRef(false)
 
   useEffect(() => {
-    if (!remote.data) return
+    if (!remote.data || loaded.current) return
+    loaded.current = true
     setForm({
       brandName: remote.data.brandName,
       slogan: remote.data.slogan,
@@ -71,18 +92,26 @@ export function SiteSettingsPage() {
       const url = await readImage(file)
       set(kind, url)
     } catch {
-      setErr('Không đọc được ảnh. Dùng PNG, JPEG, WEBP hoặc ICO, dưới 1.5MB.')
+      setErr({ section: 'brand', text: 'Không đọc được ảnh. Dùng PNG, JPEG, WEBP hoặc ICO, dưới 1.5MB.' })
     }
   }
 
-  async function submit() {
+  async function saveSection(section: Section) {
+    const patch: UpdateSiteSettingsInput = {}
+    for (const key of SECTION_KEYS[section]) {
+      const value = form[key]
+      if (value !== undefined) (patch as Record<string, unknown>)[key] = value
+    }
     setErr(null)
+    setSaving(section)
     try {
-      const next = await save.mutateAsync(form)
+      const next = await save.mutateAsync(patch)
       applySiteTheme(next)
-      setNotice(flashNotice('Đã lưu. Logo, footer và màu theme đã cập nhật trên web.'))
+      setNotice(flashNotice(SAVED[section]))
     } catch {
-      setErr('Không lưu được. Kiểm tra ảnh (định dạng/kích thước) và các ô bắt buộc.')
+      setErr({ section, text: 'Không lưu được. Kiểm tra ảnh (định dạng/kích thước) và các ô bắt buộc.' })
+    } finally {
+      setSaving(null)
     }
   }
 
@@ -109,6 +138,7 @@ export function SiteSettingsPage() {
           Hiện bảng vinh danh năm trên trang học viên
         </label>
         <p className="mt-2 text-xs text-ink/55">Tắt thì cả hai bảng (trong lớp và trong trung tâm) biến mất, kể cả hạng EXP.</p>
+        <SectionSave section="honor" saving={saving} error={err} onSave={saveSection} />
       </Card>
 
       <Card className="p-6">
@@ -152,6 +182,7 @@ export function SiteSettingsPage() {
             ) : null}
           </div>
         </div>
+        <SectionSave section="brand" saving={saving} error={err} onSave={saveSection} />
       </Card>
 
       <Card className="p-6">
@@ -164,6 +195,7 @@ export function SiteSettingsPage() {
           Đoạn giới thiệu
           <textarea className={area} value={form.loginIntro ?? ''} onChange={(e) => set('loginIntro', e.target.value)} />
         </label>
+        <SectionSave section="login" saving={saving} error={err} onSave={saveSection} />
       </Card>
 
       <Card className="p-6">
@@ -214,6 +246,7 @@ export function SiteSettingsPage() {
           Dòng bản quyền
           <Input className={field} value={form.copyright ?? ''} onChange={(e) => set('copyright', e.target.value)} />
         </label>
+        <SectionSave section="contact" saving={saving} error={err} onSave={saveSection} />
       </Card>
 
       <Card className="p-6">
@@ -229,16 +262,33 @@ export function SiteSettingsPage() {
           <span className="rounded-full bg-gold-deep px-3 py-1 text-xs font-semibold text-white">Nút chính</span>
           <span className="rounded-full bg-teal-soft px-3 py-1 text-xs font-semibold text-gold-deep">Nhấn nhạt</span>
         </div>
+        <SectionSave section="theme" saving={saving} error={err} onSave={saveSection} />
       </Card>
+    </div>
+  )
+}
 
-      {err ? (
-        <p className="rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral" role="alert">
-          {err}
+function SectionSave({
+  section,
+  saving,
+  error,
+  onSave,
+}: {
+  section: Section
+  saving: Section | null
+  error: { section: Section; text: string } | null
+  onSave: (section: Section) => void
+}) {
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-3">
+      <Button type="button" disabled={saving !== null} onClick={() => onSave(section)}>
+        {saving === section ? 'Đang lưu…' : 'Lưu'}
+      </Button>
+      {error?.section === section ? (
+        <p className="text-sm text-coral" role="alert">
+          {error.text}
         </p>
       ) : null}
-      <Button disabled={save.isPending} onClick={() => void submit()}>
-        {save.isPending ? 'Đang lưu…' : 'Lưu cài đặt'}
-      </Button>
     </div>
   )
 }
