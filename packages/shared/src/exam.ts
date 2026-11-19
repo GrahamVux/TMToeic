@@ -10,6 +10,13 @@ export type AttemptStatus = (typeof ATTEMPT_STATUSES)[number]
 export const ASSET_PROVIDERS = ['CLOUDFLARE_R2', 'GOOGLE_DRIVE'] as const
 export type AssetProvider = (typeof ASSET_PROVIDERS)[number]
 
+/**
+ * An uploaded file is recorded in the database first (PENDING), then its bytes are pushed to object storage.
+ * Only a STORED file can be attached or served. FAILED keeps the reason the push did not finish.
+ */
+export const ASSET_STATUSES = ['PENDING', 'STORED', 'FAILED'] as const
+export type AssetStatus = (typeof ASSET_STATUSES)[number]
+
 /** Modes a student can start today. RANDOM needs the question bank (later). */
 export const STARTABLE_MODES = ['PRACTICE', 'TIMED', 'FULL_TEST', 'PART_DRILL'] as const satisfies readonly ExamMode[]
 export const OPTION_KEYS = ['A', 'B', 'C', 'D'] as const

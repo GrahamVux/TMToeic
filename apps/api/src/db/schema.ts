@@ -16,7 +16,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { ASSET_PROVIDERS, ASSIGNMENT_LIFECYCLES, ATTEMPT_STATUSES, EXAM_MODES, EXAM_STATUSES, ROLES, SKILLS, USER_STATUSES } from '@toeic/shared'
+import { ASSET_PROVIDERS, ASSIGNMENT_LIFECYCLES, ATTEMPT_STATUSES, EXAM_MODES, EXAM_STATUSES, ROLES, SKILLS, USER_STATUSES, type AssetStatus } from '@toeic/shared'
 
 export const roleEnum = pgEnum('role', ROLES)
 export const userStatusEnum = pgEnum('user_status', USER_STATUSES)
@@ -192,6 +192,12 @@ export const assets = pgTable('assets', {
   checksum: text('checksum'),
   originalFilename: text('original_filename'),
   metadata: jsonb('metadata').$type<Record<string, unknown>>(),
+  /** PENDING until the bytes reach object storage. Rows registered for objects already in the bucket are STORED. */
+  status: text('status').$type<AssetStatus>().notNull().default('STORED'),
+  /** Why the push to object storage failed. Null unless status is FAILED. */
+  error: text('error'),
+  uploadedBy: uuid('uploaded_by').references(() => users.id, { onDelete: 'set null' }),
+  storedAt: timestamp('stored_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex('assets_object_uq').on(t.provider, t.bucket, t.objectKey)]).enableRLS()
 
@@ -212,6 +218,8 @@ export const exams = pgTable(
     scoringConfig: jsonb('scoring_config').$type<{ listening: number[]; reading: number[] } | null>(),
     /** Full-length Listening recording (Parts 1–4 in one file). Part-level audio below overrides it for split recordings. */
     audioAssetId: uuid('audio_asset_id').references(() => assets.id, { onDelete: 'set null' }),
+    /** The uploaded JSON this exam was built from, kept in object storage. Null for exams typed in by hand. */
+    sourceAssetId: uuid('source_asset_id').references(() => assets.id, { onDelete: 'set null' }),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     publishedAt: timestamp('published_at', { withTimezone: true }),
     ...timestamps,

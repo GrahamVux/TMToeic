@@ -6,6 +6,7 @@ import { AppException } from '../common/app-exception'
 import type { AuthUser } from '../common/decorators'
 import { DB, type Db } from '../db/database.module'
 import { assets, examParts, exams, parts, skills } from '../db/schema'
+import { AssetStoreService } from '../storage/asset-store.service'
 import { StorageService } from '../storage/storage.service'
 
 /** Signed URLs outlive the longest exam (2h) plus slack; the player refreshes them if a long untimed session outlasts this. */
@@ -50,6 +51,7 @@ export class ExamAudioService {
   constructor(
     @Inject(DB) private readonly db: Db,
     private readonly storage: StorageService,
+    private readonly assetStore: AssetStoreService,
     private readonly audit: AuditService,
   ) {}
 
@@ -76,7 +78,7 @@ export class ExamAudioService {
     const plan = planAudioTracks({ examAssetId: exam?.audioAssetId ?? null, examParts: eps, scopeCodes })
     if (plan.length === 0) return []
 
-    const rows = await this.db.select().from(assets).where(inArray(assets.id, plan.map((p) => p.assetId)))
+    const rows = await this.db.select().from(assets).where(and(inArray(assets.id, plan.map((p) => p.assetId)), eq(assets.status, 'STORED')))
     const byId = new Map(rows.map((r) => [r.id, r]))
     const expiresAt = new Date(Date.now() + AUDIO_URL_TTL_SECONDS * 1000).toISOString()
 
@@ -98,7 +100,7 @@ export class ExamAudioService {
   private async oneTrack(assetId: string, partCodes: string[]): Promise<AudioTrackDto[]> {
     if (partCodes.length === 0) return []
     const [asset] = await this.db.select().from(assets).where(eq(assets.id, assetId)).limit(1)
-    if (!asset?.mimeType?.startsWith('audio/')) return []
+    if (asset?.status !== 'STORED' || !asset.mimeType?.startsWith('audio/')) return []
     const expiresAt = new Date(Date.now() + AUDIO_URL_TTL_SECONDS * 1000).toISOString()
     return [
       {
@@ -116,7 +118,7 @@ export class ExamAudioService {
     const ids = [...new Set(assetIds)]
     const out = new Map<string, string>()
     if (!this.storage.enabled || ids.length === 0) return out
-    const rows = await this.db.select().from(assets).where(inArray(assets.id, ids))
+    const rows = await this.db.select().from(assets).where(and(inArray(assets.id, ids), eq(assets.status, 'STORED')))
     for (const a of rows) out.set(a.id, await this.storage.signedGetUrl(a.objectKey, AUDIO_URL_TTL_SECONDS, a.bucket))
     return out
   }
@@ -127,8 +129,8 @@ export class ExamAudioService {
     if (!exam) throw AppException.notFound('Không tìm thấy đề thi')
 
     if (input.assetId) {
-      const [asset] = await this.db.select({ mimeType: assets.mimeType }).from(assets).where(eq(assets.id, input.assetId)).limit(1)
-      if (!asset) throw AppException.badRequest('Không tìm thấy file audio')
+      const [asset] = await this.db.select({ mimeType: assets.mimeType, status: assets.status }).from(assets).where(eq(assets.id, input.assetId)).limit(1)
+      if (!asset || asset.status !== 'STORED') throw AppException.badRequest('Không tìm thấy file audio')
       if (!asset.mimeType?.startsWith('audio/')) throw AppException.badRequest('File được chọn không phải audio')
     }
 
@@ -159,7 +161,7 @@ export class ExamAudioService {
   }
 
   /**
-   * Staff uploads a recording. Bytes go to object storage, an asset row is created, then the same attach rules as setAudio apply.
+   * Staff uploads a recording. The file is recorded, then pushed to object storage, then the same attach rules as setAudio apply.
    * Omit `partCode` for the full Listening recording of the exam.
    */
   async uploadFile(actor: Actor, examId: string, raw: unknown, contentType: string, filename: string, partCode?: string) {
@@ -189,26 +191,13 @@ export class ExamAudioService {
 
     const ext = mime === 'audio/mpeg' ? 'mp3' : mime === 'audio/mp4' ? 'm4a' : mime === 'audio/wav' ? 'wav' : 'webm'
     const objectKey = `authored/${examId}/audio/${partCode ?? 'full'}-${Date.now()}.${ext}`
-    const original = filename.replace(/[/\\]/g, '').slice(0, 120) || `audio.${ext}`
+    let assetId: string
     try {
-      await this.storage.putObject(objectKey, body, mime)
+      assetId = await this.assetStore.store({ objectKey, body, mimeType: mime, originalFilename: filename || `audio.${ext}`, uploadedBy: actor.id })
     } catch {
       throw AppException.badRequest('Không lưu được file nghe. Kiểm tra cấu hình kho file.')
     }
-
-    const [asset] = await this.db
-      .insert(assets)
-      .values({
-        provider: 'CLOUDFLARE_R2',
-        bucket: this.storage.bucket,
-        objectKey,
-        mimeType: mime,
-        sizeBytes: body.length,
-        originalFilename: original,
-      })
-      .returning({ id: assets.id })
-    if (!asset) throw AppException.badRequest('Không lưu được file nghe.')
-    return this.setAudio(actor, examId, { assetId: asset.id, ...(partCode ? { partCode } : {}) })
+    return this.setAudio(actor, examId, { assetId, ...(partCode ? { partCode } : {}) })
   }
 }
 

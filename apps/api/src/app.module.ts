@@ -17,7 +17,7 @@ import { ProgressModule } from './progress/progress.module'
 import { SiteModule } from './site/site.module'
 import { StudyModule } from './study/study.module'
 import { BugReportsModule } from './bugs/bug-reports.module'
-import { StorageModule } from './storage/storage.service'
+import { StorageModule } from './storage/storage.module'
 import { HealthController } from './health/health.controller'
 import { UsersModule } from './users/users.module'
 

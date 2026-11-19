@@ -22,6 +22,8 @@ import { createDb } from '../db/database.module'
 import { users } from '../db/schema'
 import { ExamsService } from '../exams/exams.service'
 import type { Draft } from '../importer/draft'
+import { AssetStoreService } from '../storage/asset-store.service'
+import { StorageService } from '../storage/storage.service'
 
 const IMAGE_MIME = 'image/jpeg'
 const API_BASE = process.env.TOEIC_API_URL ?? 'http://127.0.0.1:3001/api/v1'
@@ -180,7 +182,7 @@ async function main() {
   try {
     const db = handle.db
     const audit = new AuditService(db)
-    const examsService = new ExamsService(db, config, audit)
+    const examsService = new ExamsService(db, config, audit, new AssetStoreService(db, new StorageService(config)))
     const [admin] = await db.select({ id: users.id, role: users.role }).from(users).where(eq(users.role, 'ADMIN')).limit(1)
     if (!admin) throw new Error('No ADMIN user exists to own the imported exam')
     const summary = await examsService.importListeningDraft({ id: admin.id, role: admin.role }, payload)

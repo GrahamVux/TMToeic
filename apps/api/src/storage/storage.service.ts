@@ -1,6 +1,6 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import { Global, Inject, Injectable, Module } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
 import { APP_CONFIG, type AppConfig } from '../config/app-config'
 
 /** Signed, short-lived read URLs for private objects in Cloudflare R2. URLs are computed locally (no network call). */
@@ -39,7 +39,3 @@ export class StorageService {
     await this.client.send(new PutObjectCommand({ Bucket: this.defaultBucket, Key: objectKey, Body: body, ContentType: contentType }))
   }
 }
-
-@Global()
-@Module({ providers: [StorageService], exports: [StorageService] })
-export class StorageModule {}

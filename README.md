@@ -84,5 +84,6 @@ npm run lint
 - File nằm trong bucket R2 **riêng tư**; DB chỉ lưu đường dẫn (bảng ssets). API ký URL đọc có hạn 3 giờ (AUDIO_URL_TTL_SECONDS) cho đúng chủ bài làm, không bao giờ trả về bucket/đường dẫn gốc.
 - Audio gắn theo đề (exams.audio_asset_id, file nghe đầy đủ Part 1–4) hoặc theo Part (exam_parts.audio_asset_id, file tách; một file Part 1+2 gắn vào cả hai Part). Audio của Part luôn được ưu tiên.
 - File nghe đầy đủ chỉ dùng khi bài làm gồm **tất cả** Part Listening; luyện riêng một Part cần audio riêng của Part đó.
+- Mọi file tải lên (audio, ảnh, JSON đề) đi chung một đường `AssetStoreService`: ghi dòng `assets` trạng thái `PENDING` → đẩy file sang R2 → `STORED` (hoặc `FAILED` kèm lý do). Chỉ file `STORED` mới được gắn vào đề và phát cho học viên. JSON gốc của đề lưu tại `exams/{examId}/source/` và liên kết qua `exams.source_asset_id`.
 - Thi thử (FULL_TEST): không tua, không đổi tốc độ. Các chế độ khác và màn chữa đề: đầy đủ điều khiển.
 - Nạp file: `npm run assets:upload -w @toeic/api -- "<file.zip>"` (đọc thẳng từ zip, chạy lại được) rồi `npm run assets:sync -w @toeic/api -- content/<collection>.manifest.json`. Cần R2_* trong pps/api/.env.

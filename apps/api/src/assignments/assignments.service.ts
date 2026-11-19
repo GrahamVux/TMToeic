@@ -20,7 +20,6 @@ import { AppException } from '../common/app-exception'
 import type { AuthUser } from '../common/decorators'
 import { DB, type Db } from '../db/database.module'
 import {
-  assets,
   assignmentImages,
   assignmentStudents,
   assignments,
@@ -40,7 +39,7 @@ import {
   type AssignmentRow,
 } from '../db/schema'
 import { AttemptsService } from '../exams/attempts.service'
-import { StorageService } from '../storage/storage.service'
+import { AssetStoreService } from '../storage/asset-store.service'
 import { buildAssignmentReport, type ReportQuestion, type ReportStudent } from './result-sheet'
 
 type Actor = Pick<AuthUser, 'id' | 'role'> & { ip?: string }
@@ -50,7 +49,7 @@ export class AssignmentsService {
   constructor(
     @Inject(DB) private readonly db: Db,
     private readonly audit: AuditService,
-    private readonly storage: StorageService,
+    private readonly assetStore: AssetStoreService,
     private readonly attemptsService: AttemptsService,
   ) {}
 
@@ -181,7 +180,9 @@ export class AssignmentsService {
       metadata: { fillBlank: true, blanks: blanks.length, studentCount: studentIds.length },
       ip: actor.ip,
     })
-    return (await this.toDtos([await this.requireRow(id)]))[0]
+    const row = await this.requireRow(id)
+    await this.assetStore.archiveExamSource(row.examId, { title: input.title, description: input.description, durationSeconds: input.durationSeconds, items: input.items }, actor.id)
+    return (await this.toDtos([row]))[0]
   }
 
   /** Publish the cloze paper into the exam bank so it can be practiced and assigned again. */
@@ -300,7 +301,7 @@ export class AssignmentsService {
 
   /** Listening file for this homework. Students hear it for every Listening part in the assignment. */
   async uploadAudio(actor: Actor, id: string, raw: unknown, contentType: string, filename: string) {
-    if (!this.storage.enabled) throw AppException.badRequest('Chưa cấu hình kho file. Không lưu được audio.')
+    if (!this.assetStore.enabled) throw AppException.badRequest('Chưa cấu hình kho file. Không lưu được audio.')
     const row = await this.requireRow(id)
     const selected = (await this.examPartsOf(row.examId)).filter((p) => row.partCodes.includes(p.code))
     if (!selected.some((p) => p.skill === 'LISTENING')) throw AppException.badRequest('Bài tập này không có part Listening.')
@@ -312,7 +313,7 @@ export class AssignmentsService {
 
     const ext = mime === 'audio/mpeg' ? 'mp3' : mime === 'audio/mp4' ? 'm4a' : mime === 'audio/wav' ? 'wav' : 'webm'
     const objectKey = `assignments/${id}/audio/${Date.now()}.${ext}`
-    const assetId = await this.storeObject(objectKey, body, mime, filename)
+    const assetId = await this.storeObject(actor, objectKey, body, mime, filename)
     await this.db.update(assignments).set({ audioAssetId: assetId, updatedAt: new Date() }).where(eq(assignments.id, id))
     await this.audit.log({ action: 'ASSIGNMENT_AUDIO_SET', actorId: actor.id, entityType: 'assignment', entityId: id, metadata: { assetId }, ip: actor.ip })
     return { ok: true as const }
@@ -320,7 +321,7 @@ export class AssignmentsService {
 
   /** One scanned exam page. Students see these while doing the homework. */
   async uploadImage(actor: Actor, id: string, raw: unknown, contentType: string, filename: string) {
-    if (!this.storage.enabled) throw AppException.badRequest('Chưa cấu hình kho file. Không lưu được ảnh.')
+    if (!this.assetStore.enabled) throw AppException.badRequest('Chưa cấu hình kho file. Không lưu được ảnh.')
     await this.requireRow(id)
     const body = Buffer.isBuffer(raw) ? raw : null
     if (!body || body.length === 0) throw AppException.badRequest('Thiếu ảnh đề.')
@@ -335,7 +336,7 @@ export class AssignmentsService {
 
     const ext = mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg'
     const objectKey = `assignments/${id}/images/${Date.now()}.${ext}`
-    const assetId = await this.storeObject(objectKey, body, mime, filename)
+    const assetId = await this.storeObject(actor, objectKey, body, mime, filename)
     await this.db.insert(assignmentImages).values({ assignmentId: id, assetId, displayOrder: n })
     await this.audit.log({ action: 'ASSIGNMENT_IMAGE_ADDED', actorId: actor.id, entityType: 'assignment', entityId: id, metadata: { assetId }, ip: actor.ip })
     return { ok: true as const, imageCount: n + 1 }
@@ -389,26 +390,12 @@ export class AssignmentsService {
     return rows.map((row) => row.id)
   }
 
-  private async storeObject(objectKey: string, body: Buffer, mime: string, filename: string): Promise<string> {
+  private async storeObject(actor: Actor, objectKey: string, body: Buffer, mime: string, filename: string): Promise<string> {
     try {
-      await this.storage.putObject(objectKey, body, mime)
+      return await this.assetStore.store({ objectKey, body, mimeType: mime, originalFilename: filename, uploadedBy: actor.id })
     } catch {
       throw AppException.badRequest('Không lưu được file. Kiểm tra cấu hình kho file.')
     }
-    const original = filename.replace(/[/\\]/g, '').slice(0, 120) || 'file'
-    const [asset] = await this.db
-      .insert(assets)
-      .values({
-        provider: 'CLOUDFLARE_R2',
-        bucket: this.storage.bucket,
-        objectKey,
-        mimeType: mime,
-        sizeBytes: body.length,
-        originalFilename: original,
-      })
-      .returning({ id: assets.id })
-    if (!asset) throw AppException.badRequest('Không lưu được file.')
-    return asset.id
   }
 
   private async examPartsOf(examId: string): Promise<ExamPartDto[]> {

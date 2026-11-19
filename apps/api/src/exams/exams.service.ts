@@ -18,6 +18,7 @@ import { AppException } from '../common/app-exception'
 import type { AuthUser } from '../common/decorators'
 import { DB, type Db } from '../db/database.module'
 import { assets, attempts, examParts, exams, parts, passages, questionGroups, questionOptions, questions, skills, users, type ExamRow } from '../db/schema'
+import { AssetStoreService } from '../storage/asset-store.service'
 
 type Actor = Pick<AuthUser, 'id' | 'role'> & { ip?: string }
 
@@ -34,6 +35,7 @@ export class ExamsService {
     @Inject(DB) private readonly db: Db,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     private readonly audit: AuditService,
+    private readonly assetStore: AssetStoreService,
   ) {}
 
   // ---------------------------------------------------------------- create / read
@@ -197,7 +199,7 @@ export class ExamsService {
     }
     const imageIds = [...new Set([...input.groups.map((g) => g.imageAssetId), ...input.questions.map((q) => q.imageAssetId)].filter((x): x is string => !!x))]
     if (imageIds.length) {
-      const found = await this.db.select({ id: assets.id, mimeType: assets.mimeType }).from(assets).where(inArray(assets.id, imageIds))
+      const found = await this.db.select({ id: assets.id, mimeType: assets.mimeType }).from(assets).where(and(inArray(assets.id, imageIds), eq(assets.status, 'STORED')))
       const byId = new Map(found.map((a) => [a.id, a]))
       for (const imageId of imageIds) {
         const a = byId.get(imageId)
@@ -358,6 +360,7 @@ export class ExamsService {
     if (existing) throw AppException.conflict('Mã đề đã tồn tại trong ngân hàng. Hãy dùng mã khác.')
     const created = await this.create(actor, examInput)
     await this.replaceContent(actor, created.id, { groups, questions })
+    await this.assetStore.archiveExamSource(created.id, input, actor.id)
     if (publish) return this.publish(actor, created.id)
     return this.getSummary(created.id)
   }
