@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query, Req } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query, Req } from '@nestjs/common'
 import { createExamSchema, importAuthoredExamSchema, importListeningDraftSchema, listExamsQuerySchema, replaceExamContentSchema, setExamAudioSchema, startAttemptSchema } from '@toeic/shared'
 import type { Request } from 'express'
 import { assertTeacherGrant } from '../auth/permissions'
@@ -109,6 +109,15 @@ export class ExamsController {
   archive(@CurrentUser() user: AuthUser, @Param('id', new ParseUUIDPipe()) id: string, @Req() req: Request) {
     assertTeacherGrant(user, 'manageAssignments')
     return this.exams.archive(actorOf(user, req), id)
+  }
+
+  /** Permanently removes the exam, homework built from it, and student attempts. */
+  @Roles('TEACHER', 'ADMIN')
+  @Delete(':id')
+  @HttpCode(204)
+  remove(@CurrentUser() user: AuthUser, @Param('id', new ParseUUIDPipe()) id: string, @Req() req: Request) {
+    assertTeacherGrant(user, 'manageAssignments')
+    return this.exams.remove(actorOf(user, req), id)
   }
 
   @Roles('STUDENT')

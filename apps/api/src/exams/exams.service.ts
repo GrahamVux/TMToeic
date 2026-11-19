@@ -1,6 +1,7 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common'
 import {
   ERROR_CODES,
+  EXAM_STATUS_LABEL,
   type CreateExamInput,
   type ExamPartDto,
   type ExamStatus,
@@ -17,7 +18,7 @@ import { APP_CONFIG, type AppConfig } from '../config/app-config'
 import { AppException } from '../common/app-exception'
 import type { AuthUser } from '../common/decorators'
 import { DB, type Db } from '../db/database.module'
-import { assets, attempts, examParts, exams, parts, passages, questionGroups, questionOptions, questions, skills, users, type ExamRow } from '../db/schema'
+import { assignmentImages, assignments, assets, attempts, examParts, exams, parts, passages, questionGroups, questionOptions, questions, skills, users, type ExamRow } from '../db/schema'
 import { AssetStoreService } from '../storage/asset-store.service'
 
 type Actor = Pick<AuthUser, 'id' | 'role'> & { ip?: string }
@@ -360,7 +361,16 @@ export class ExamsService {
     if (existing) throw AppException.conflict('Mã đề đã tồn tại trong ngân hàng. Hãy dùng mã khác.')
     const created = await this.create(actor, examInput)
     await this.replaceContent(actor, created.id, { groups, questions })
-    await this.assetStore.archiveExamSource(created.id, input, actor.id)
+    if (this.assetStore.enabled || this.config.isProd) {
+      try {
+        await this.assetStore.saveExamSource(created.id, input, actor.id)
+      } catch {
+        await this.remove(actor, created.id).catch(() => undefined)
+        throw AppException.badRequest(
+          'Không đẩy được file đề lên Cloudflare. Đề không được giữ trong Supabase. Kiểm tra R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY và R2_BUCKET (tên bucket) trên API rồi nộp lại.',
+        )
+      }
+    }
     if (publish) return this.publish(actor, created.id)
     return this.getSummary(created.id)
   }
@@ -402,7 +412,7 @@ export class ExamsService {
   async publish(actor: Actor, id: string): Promise<ExamSummaryDto> {
     const exam = await this.requireExam(id)
     if (exam.status !== 'DRAFT' && exam.status !== 'ARCHIVED' && exam.status !== 'PENDING_REVIEW') {
-      throw AppException.conflict(`Không thể xuất bản đề ở trạng thái ${exam.status}`)
+      throw AppException.conflict(`Không thể xuất bản đề ở trạng thái ${EXAM_STATUS_LABEL[exam.status]}`)
     }
     const problems = await this.validateForPublish(id)
     if (problems.length) {
@@ -424,6 +434,82 @@ export class ExamsService {
     await this.db.update(exams).set({ status: 'ARCHIVED', updatedAt: new Date() }).where(eq(exams.id, id))
     await this.audit.log({ action: 'EXAM_ARCHIVED', actorId: actor.id, entityType: 'exam', entityId: id, ip: actor.ip })
     return this.getSummary(id)
+  }
+
+  /**
+   * Remove the exam and everything that exists only because of it: questions, homework
+   * built from it, and student attempts. Files in object storage are removed afterwards.
+   */
+  async remove(actor: Actor, id: string): Promise<void> {
+    const exam = await this.requireExam(id)
+    const assetIds = await this.examAssetIds(exam)
+    await this.db.transaction(async (tx) => {
+      await tx.delete(attempts).where(eq(attempts.examId, id))
+      await tx.delete(assignments).where(eq(assignments.examId, id))
+      await tx.delete(exams).where(eq(exams.id, id))
+    })
+    await this.assetStore.discard(assetIds)
+    await this.audit.log({
+      action: 'EXAM_DELETED',
+      actorId: actor.id,
+      entityType: 'exam',
+      entityId: id,
+      metadata: { code: exam.code, title: exam.title },
+      ip: actor.ip,
+    })
+  }
+
+  /** Asset ids attached to this exam, its questions, or homework built from it. */
+  private async examAssetIds(exam: ExamRow): Promise<string[]> {
+    const ids = new Set<string>()
+    const add = (value: string | null | undefined) => {
+      if (value) ids.add(value)
+    }
+    add(exam.audioAssetId)
+    add(exam.sourceAssetId)
+
+    const partRows = await this.db.select({ id: examParts.id, audio: examParts.audioAssetId }).from(examParts).where(eq(examParts.examId, exam.id))
+    for (const row of partRows) add(row.audio)
+    const partIds = partRows.map((row) => row.id)
+
+    if (partIds.length) {
+      const groups = await this.db
+        .select({ id: questionGroups.id, audio: questionGroups.audioAssetId, image: questionGroups.imageAssetId })
+        .from(questionGroups)
+        .where(inArray(questionGroups.examPartId, partIds))
+      for (const row of groups) {
+        add(row.audio)
+        add(row.image)
+      }
+      const groupIds = groups.map((row) => row.id)
+      if (groupIds.length) {
+        const passageRows = await this.db.select({ image: passages.imageAssetId }).from(passages).where(inArray(passages.groupId, groupIds))
+        for (const row of passageRows) add(row.image)
+      }
+      const questionRows = await this.db
+        .select({ id: questions.id, image: questions.imageAssetId, audio: questions.audioAssetId, video: questions.videoAssetId })
+        .from(questions)
+        .where(inArray(questions.examPartId, partIds))
+      for (const row of questionRows) {
+        add(row.image)
+        add(row.audio)
+        add(row.video)
+      }
+      const questionIds = questionRows.map((row) => row.id)
+      if (questionIds.length) {
+        const optionRows = await this.db.select({ image: questionOptions.imageAssetId }).from(questionOptions).where(inArray(questionOptions.questionId, questionIds))
+        for (const row of optionRows) add(row.image)
+      }
+    }
+
+    const homework = await this.db.select({ id: assignments.id, audio: assignments.audioAssetId }).from(assignments).where(eq(assignments.examId, exam.id))
+    for (const row of homework) add(row.audio)
+    const homeworkIds = homework.map((row) => row.id)
+    if (homeworkIds.length) {
+      const images = await this.db.select({ assetId: assignmentImages.assetId }).from(assignmentImages).where(inArray(assignmentImages.assignmentId, homeworkIds))
+      for (const row of images) add(row.assetId)
+    }
+    return [...ids]
   }
 
   // ---------------------------------------------------------------- helpers

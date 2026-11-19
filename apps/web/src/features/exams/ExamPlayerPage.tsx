@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/Button'
+import { CornerNotice, flashError, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { Modal } from '@/components/ui/Modal'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Badge, Card } from '@/components/ui/Primitives'
@@ -59,7 +60,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
     return firstOpen === -1 ? 0 : firstOpen
   })
   const [confirm, setConfirm] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<CornerNoticeState | null>(null)
   const [scoring, setScoring] = useState(false)
   const [finishing, setFinishing] = useState(false)
   const [textZoom, setTextZoom] = useState(1)
@@ -102,14 +103,15 @@ function Player({ data }: { data: AttemptPlayerDto }) {
   async function finish(reason: 'manual' | 'time') {
     if (finishing) return
     setFinishing(true)
-    setSubmitError(null)
+    setNotice(null)
     if (reason === 'time') setScoring(true)
     // Give the autosave queue a chance to drain so the last picks are counted. After the deadline the server refuses late writes anyway.
     if (reason === 'manual') {
       const ok = await store.flush()
       if (!ok) {
         setFinishing(false)
-        setSubmitError('Chưa lưu được một số câu trả lời (mất kết nối?). Hãy kiểm tra mạng rồi nộp lại — đáp án của bạn vẫn còn trên màn hình.')
+        setConfirm(false)
+        setNotice(flashError('Chưa lưu được một số câu trả lời (mất kết nối?). Hãy kiểm tra mạng rồi nộp lại — đáp án của bạn vẫn còn trên màn hình.'))
         return
       }
     } else {
@@ -119,7 +121,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
     for (let i = 0; i < tries; i++) {
       try {
         await submit.mutateAsync(attempt.id)
-        navigate(`/attempts/${attempt.id}/result`, { replace: true })
+        navigate(`/attempts/${attempt.id}/result`, { replace: true, state: reason === 'manual' ? { submitted: true } : null })
         return
       } catch {
         if (i < tries - 1) await new Promise((resolve) => setTimeout(resolve, 700))
@@ -130,7 +132,8 @@ function Player({ data }: { data: AttemptPlayerDto }) {
       return
     }
     setFinishing(false)
-    setSubmitError('Không nộp được bài. Vui lòng thử lại.')
+    setConfirm(false)
+    setNotice(flashError('Không nộp được bài. Vui lòng thử lại.'))
   }
 
   const sheetScreens = useMemo(() => answerSheetScreens(questions), [questions])
@@ -152,6 +155,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
   return (
     <ReadingMarksProvider examId={attempt.examId}>
     <div className="space-y-4">
+      <CornerNotice notice={notice} />
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold/40 bg-cream px-5 py-4">
         <div>
           <p className="text-xs text-gold-deep">{MODE_LABEL[attempt.mode] ?? attempt.mode} • {attempt.totalQuestions} câu</p>
@@ -381,11 +385,6 @@ function Player({ data }: { data: AttemptPlayerDto }) {
             <p className="mt-2 text-sm text-ink/65">
               Bạn đã trả lời {answered}/{questions.length} câu. Câu chưa làm sẽ tính là bỏ trống. Sau khi nộp sẽ không sửa được đáp án.
             </p>
-            {submitError ? (
-              <p className="mt-3 flex gap-2 rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral" role="alert">
-                <AlertTriangle className="mt-0.5 size-4 shrink-0" /> {submitError}
-              </p>
-            ) : null}
             <div className="mt-5 flex justify-end gap-3">
               <Button variant="ghost" disabled={finishing} onClick={() => setConfirm(false)}>Tiếp tục làm</Button>
               <Button variant="danger" disabled={finishing} onClick={() => void finish('manual')}>

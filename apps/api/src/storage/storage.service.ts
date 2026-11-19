@@ -1,4 +1,4 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { Inject, Injectable } from '@nestjs/common'
 import { APP_CONFIG, type AppConfig } from '../config/app-config'
@@ -37,5 +37,12 @@ export class StorageService {
   async putObject(objectKey: string, body: Buffer, contentType: string): Promise<void> {
     if (!this.client || !this.defaultBucket) throw new Error('Object storage is not configured')
     await this.client.send(new PutObjectCommand({ Bucket: this.defaultBucket, Key: objectKey, Body: body, ContentType: contentType }))
+  }
+
+  /** Removes one object. A missing object is already the outcome we want. */
+  async deleteObject(objectKey: string, bucket?: string | null): Promise<void> {
+    const target = bucket ?? this.defaultBucket
+    if (!this.client || !target) return
+    await this.client.send(new DeleteObjectCommand({ Bucket: target, Key: objectKey }))
   }
 }

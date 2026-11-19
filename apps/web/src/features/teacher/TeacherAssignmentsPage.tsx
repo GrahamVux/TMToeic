@@ -7,7 +7,7 @@ import { Badge, Card, Input } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { partName, useExams } from '@/features/exams/exams.queries'
 import { useStudents } from '@/features/teacher/users.queries'
-import type { AssignmentDetailDto, AssignmentDto, ExamSummaryDto, StudentAssignmentStatus } from '@toeic/shared'
+import { ASSIGNMENT_LIFECYCLE_LABEL, type AssignmentDetailDto, type AssignmentDto, type ExamSummaryDto, type StudentAssignmentStatus } from '@toeic/shared'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ApiError, apiGetFile } from '@/lib/api'
@@ -275,7 +275,7 @@ export function TeacherAssignmentsPage() {
             <Card key={a.id} className="p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <Badge tone={a.status === 'PUBLISHED' ? 'olive' : a.status === 'CLOSED' ? 'paper' : 'warn'}>{a.status}</Badge>
+                  <Badge tone={a.status === 'PUBLISHED' ? 'olive' : a.status === 'CLOSED' ? 'paper' : 'warn'}>{ASSIGNMENT_LIFECYCLE_LABEL[a.status]}</Badge>
                   {a.wholeExam ? <Badge tone="gold">Cả bộ đề</Badge> : null}
                   {a.fillBlank ? <Badge tone="gold">Điền từ</Badge> : null}
                   {a.fillBlank && a.inBank ? <Badge tone="olive">Đã vào bộ đề</Badge> : null}

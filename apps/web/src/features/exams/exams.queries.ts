@@ -79,6 +79,17 @@ export function useArchiveExam() {
   })
 }
 
+export function useDeleteExam() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/exams/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: examKeys.exams })
+      void qc.invalidateQueries({ queryKey: ['assignments'] })
+    },
+  })
+}
+
 const MAX_AUDIO_BYTES = 80 * 1024 * 1024
 
 export function audioContentType(file: File): string {

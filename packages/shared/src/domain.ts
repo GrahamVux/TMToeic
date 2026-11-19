@@ -19,6 +19,12 @@ export type UserStatus = (typeof USER_STATUSES)[number]
 export const ASSIGNMENT_LIFECYCLES = ['DRAFT', 'PUBLISHED', 'CLOSED'] as const
 export type AssignmentLifecycle = (typeof ASSIGNMENT_LIFECYCLES)[number]
 
+export const ASSIGNMENT_LIFECYCLE_LABEL: Record<AssignmentLifecycle, string> = {
+  DRAFT: 'Bản nháp',
+  PUBLISHED: 'Đã giao',
+  CLOSED: 'Đã đóng',
+}
+
 /** Student-facing progress on one assignment (derived from attempt + due date). */
 export const STUDENT_ASSIGNMENT_STATUSES = ['ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'OVERDUE'] as const
 export type StudentAssignmentStatus = (typeof STUDENT_ASSIGNMENT_STATUSES)[number]

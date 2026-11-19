@@ -20,6 +20,7 @@ describe('Uploads are recorded in the database, then pushed to object storage (e
     enabled: true,
     bucket: 'toeic-content',
     signedGetUrl: (key: string) => Promise.resolve(`https://r2.test/${key}?sig=fake`),
+    deleteObject: () => Promise.resolve(),
     putObject: async (key: string, body: Buffer) => {
       const [row] = await db.select({ status: assets.status }).from(assets).where(eq(assets.objectKey, key)).limit(1)
       seenAtPush.set(key, row?.status)
@@ -146,15 +147,19 @@ describe('Uploads are recorded in the database, then pushed to object storage (e
     expect(JSON.parse(pushed.get(asset.objectKey)!.toString('utf8'))).toMatchObject({ title: 'Điền từ kho file', items: [{ prompt: 'The train was ___ late.' }] })
   })
 
-  it('still saves the exam when the JSON copy cannot be pushed or storage is off', async () => {
+  it('does not keep the exam when the JSON file cannot be pushed', async () => {
     failPush = true
-    const failed = await admin.post('/exams/import-authored').send(listening())
-    expect(failed.status).toBe(201)
-    expect(failed.body.status).toBe('PUBLISHED')
-    expect(await sourceOf(failed.body.id)).toBeNull()
-    expect(await latestAsset()).toMatchObject({ status: 'FAILED', mimeType: 'application/json' })
-
+    const input = listening()
+    const failedBefore = (await db.select({ id: assets.id }).from(assets).where(eq(assets.status, 'FAILED'))).length
+    const failed = await admin.post('/exams/import-authored').send(input)
+    expect(failed.status).toBe(400)
+    expect(failed.body.error.message).toMatch(/Cloudflare/)
+    expect(await db.select({ id: exams.id }).from(exams).where(eq(exams.code, input.code))).toHaveLength(0)
+    expect((await db.select({ id: assets.id }).from(assets).where(eq(assets.status, 'FAILED'))).length).toBe(failedBefore)
     failPush = false
+  })
+
+  it('still saves a local exam when object storage is turned off outside production', async () => {
     storage.enabled = false
     const before = (await db.select({ id: assets.id }).from(assets)).length
     const off = await admin.post('/exams/import-authored').send(listening())

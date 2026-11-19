@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { createHash } from 'node:crypto'
 import { DB, type Db } from '../db/database.module'
 import { assets, exams } from '../db/schema'
@@ -69,14 +69,39 @@ export class AssetStoreService {
   }
 
   /**
-   * Keep the JSON an exam was built from. The exam itself is already saved as rows, so a missing bucket
-   * or a failed push leaves the exam usable and only skips the copy.
+   * Drop file records that belonged to a removed exam, and their objects in the bucket.
+   * A file still used somewhere else is left in place.
    */
-  async archiveExamSource(examId: string, source: unknown, uploadedBy: string): Promise<string | null> {
-    if (!this.storage.enabled) return null
+  async discard(ids: string[]): Promise<void> {
+    const unique = [...new Set(ids)]
+    if (!unique.length) return
+    const rows = await this.db.select().from(assets).where(inArray(assets.id, unique))
+    for (const row of rows) {
+      if (row.provider === 'CLOUDFLARE_R2') {
+        try {
+          await this.storage.deleteObject(row.objectKey, row.bucket)
+        } catch (err) {
+          this.logger.error(`Could not remove ${row.objectKey}: ${err instanceof Error ? err.message : String(err)}`)
+        }
+      }
+      try {
+        await this.db.delete(assets).where(eq(assets.id, row.id))
+      } catch (err) {
+        this.logger.warn(`Kept asset ${row.id} because it is still in use: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
+  }
+
+  /**
+   * Put the exam file in object storage and return the asset id. The database row stores the path, not the bytes.
+   * Throws when the bucket is missing or the push does not finish.
+   */
+  async saveExamSource(examId: string, source: unknown, uploadedBy: string): Promise<string> {
+    if (!this.storage.enabled) throw new Error('Object storage is not configured')
+    const objectKey = `exams/${examId}/source/${Date.now()}.json`
     try {
       const assetId = await this.store({
-        objectKey: `exams/${examId}/source/${Date.now()}.json`,
+        objectKey,
         body: Buffer.from(JSON.stringify(source), 'utf8'),
         mimeType: 'application/json',
         originalFilename: `${examId}.json`,
@@ -85,7 +110,22 @@ export class AssetStoreService {
       await this.db.update(exams).set({ sourceAssetId: assetId }).where(eq(exams.id, examId))
       return assetId
     } catch (err) {
-      if (!(err instanceof AssetPushError)) this.logger.error(`Could not record the source of exam ${examId}: ${err instanceof Error ? err.message : String(err)}`)
+      if (err instanceof AssetPushError) await this.discard([err.assetId]).catch(() => undefined)
+      throw err
+    }
+  }
+
+  /**
+   * Same copy as saveExamSource, but a missing bucket or a failed push only skips the file.
+   * Used for homework typed in the form, which is already saved as questions.
+   */
+  async archiveExamSource(examId: string, source: unknown, uploadedBy: string): Promise<string | null> {
+    try {
+      return await this.saveExamSource(examId, source, uploadedBy)
+    } catch (err) {
+      if (!(err instanceof AssetPushError) && !(err instanceof Error && err.message === 'Object storage is not configured')) {
+        this.logger.error(`Could not record the source of exam ${examId}: ${err instanceof Error ? err.message : String(err)}`)
+      }
       return null
     }
   }

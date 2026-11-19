@@ -57,6 +57,7 @@ describe('Listening audio (e2e on PGlite, fake R2 signer)', () => {
     enabled: true,
     bucket: 'toeic-content',
     signedGetUrl: (key: string, ttl: number) => Promise.resolve(`https://r2.test/${key}?X-Amz-Expires=${ttl}&X-Amz-Signature=fake`),
+    deleteObject: () => Promise.resolve(),
     putObject: (key: string) => {
       uploaded.push(key)
       return Promise.resolve()

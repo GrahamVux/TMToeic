@@ -11,7 +11,7 @@ export const ADMIN = { username: 'admin', password: 'Bootstrap123' }
 
 export async function createTestApp(
   overrides: Record<string, string> = {},
-  extra: { storage?: Pick<StorageService, 'enabled' | 'bucket' | 'signedGetUrl' | 'putObject'>; config?: Partial<AppConfig> } = {},
+  extra: { storage?: Pick<StorageService, 'enabled' | 'bucket' | 'signedGetUrl' | 'putObject' | 'deleteObject'>; config?: Partial<AppConfig> } = {},
 ): Promise<INestApplication> {
   process.env.LOGIN_RATE_LIMIT = '100000' // per-IP throttle is covered separately from account lockout
   const config = {

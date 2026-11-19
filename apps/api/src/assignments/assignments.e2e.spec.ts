@@ -315,6 +315,7 @@ describe('Assignment audio and sheet images', () => {
     bucket: 'toeic-content',
     signedGetUrl: (key: string) => Promise.resolve(`https://r2.test/${key}?sig=fake`),
     putObject: () => Promise.resolve(),
+    deleteObject: () => Promise.resolve(),
   }
 
   beforeAll(async () => {

@@ -1,12 +1,13 @@
 import { useImportAuthoredExam } from '@/features/assignments/assignments.queries'
 import { Button } from '@/components/ui/Button'
-import { CornerNotice, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
+import { CornerNotice, flashError, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { FilePick } from '@/components/ui/FilePick'
+import { Modal } from '@/components/ui/Modal'
 import { Badge, Card, Input } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
-import { partName, useArchiveExam, useExams, usePublishExam, useUploadExamAudio } from '@/features/exams/exams.queries'
+import { partName, useArchiveExam, useDeleteExam, useExams, usePublishExam, useUploadExamAudio } from '@/features/exams/exams.queries'
 import { ApiError } from '@/lib/api'
-import { ERROR_CODES, importAuthoredExamSchema, OPTION_KEYS, PART_SEED, type ExamStatus, type ExamSummaryDto, type ImportAuthoredExamInput, type Skill } from '@toeic/shared'
+import { ERROR_CODES, EXAM_STATUS_LABEL, importAuthoredExamSchema, OPTION_KEYS, PART_SEED, type ExamStatus, type ExamSummaryDto, type ImportAuthoredExamInput, type Skill } from '@toeic/shared'
 import { ImportReview } from './ImportReview'
 import { FileUp } from 'lucide-react'
 import { useState } from 'react'
@@ -66,8 +67,11 @@ function AuthoredImport({ skill }: { skill: Skill }) {
   const [rows, setRows] = useState([{ prompt: '', a: '', b: '', c: '', d: '', correct: 'A', explanation: '' }])
   const [preview, setPreview] = useState<ImportAuthoredExamInput | null>(null)
   const [audio, setAudio] = useState<File | null>(null)
-  const [jsonError, setJsonError] = useState<string | null>(null)
   const [notice, setNotice] = useState<CornerNoticeState | null>(null)
+
+  function reportError(message: string) {
+    setNotice(flashError(message))
+  }
   const sampleHref = skill === 'LISTENING' ? '/mau-import-listening.json' : '/mau-import-de.json'
   const busy = importExam.isPending || uploadAudio.isPending
 
@@ -88,14 +92,14 @@ function AuthoredImport({ skill }: { skill: Skill }) {
   }
 
   async function submitBuilder() {
-    setJsonError(null)
+    setNotice(null)
     const filled = rows.map((r) => ({ ...r, prompt: r.prompt.trim() })).filter((r) => r.prompt.length > 0)
     if (title.trim().length < 3) {
-      setJsonError('Nhập tên đề.')
+      reportError('Nhập tên đề.')
       return
     }
     if (filled.length === 0) {
-      setJsonError('Thêm ít nhất một câu hỏi.')
+      reportError('Thêm ít nhất một câu hỏi.')
       return
     }
     const payload: ImportAuthoredExamInput = {
@@ -123,7 +127,7 @@ function AuthoredImport({ skill }: { skill: Skill }) {
       const exam = await importExam.mutateAsync(payload)
       const audioError = await attachAudio(exam.id)
       if (audioError) {
-        setJsonError(audioError)
+        reportError(audioError)
         return
       }
       setNotice(flashNotice(`Đã thêm “${exam.title}” vào ngân hàng (${exam.parts.map((p) => partName(p.code).split(' — ')[0]).join(', ')})${audio ? ' và đã gắn file nghe.' : '.'}`))
@@ -131,21 +135,21 @@ function AuthoredImport({ skill }: { skill: Skill }) {
       setAudio(null)
       setRows([{ prompt: '', a: '', b: '', c: '', d: '', correct: 'A', explanation: '' }])
     } catch (e) {
-      setJsonError(e instanceof ApiError ? e.message : 'Không import được đề. Kiểm tra mỗi câu có 4 lựa chọn và đúng 1 đáp án.')
+      reportError(e instanceof ApiError ? e.message : 'Không import được đề. Kiểm tra mỗi câu có 4 lựa chọn và đúng 1 đáp án.')
     }
   }
 
   async function onJsonFile(file: File) {
-    setJsonError(null)
+    setNotice(null)
     try {
       const parsed = importAuthoredExamSchema.safeParse(JSON.parse(await file.text()))
       if (!parsed.success) {
-        setJsonError(parsed.error.issues.map((issue) => issue.message).join(' '))
+        reportError(parsed.error.issues.map((issue) => issue.message).join(' '))
         return
       }
       const foreign = foreignPartCodes(parsed.data, skill)
       if (foreign.length > 0) {
-        setJsonError(
+        reportError(
           skill === 'LISTENING'
             ? 'File này có part Reading. Hãy mở tab Import đề Reading.'
             : 'File này có part Listening. Hãy mở tab Import đề Listening.',
@@ -154,38 +158,40 @@ function AuthoredImport({ skill }: { skill: Skill }) {
       }
       setPreview(parsed.data)
     } catch (e) {
-      setJsonError(e instanceof ApiError ? e.message : 'File JSON không hợp lệ hoặc mã đề đã tồn tại.')
+      reportError(e instanceof ApiError ? e.message : 'File JSON không hợp lệ hoặc mã đề đã tồn tại.')
     }
   }
 
   async function savePreview(next: ImportAuthoredExamInput) {
-    setJsonError(null)
+    setNotice(null)
     try {
       const exam = await importExam.mutateAsync({ ...next, publish: next.publish !== false })
       const audioError = await attachAudio(exam.id)
       if (audioError) {
-        setJsonError(audioError)
+        reportError(audioError)
         return
       }
       setPreview(null)
       setNotice(flashNotice(`Đã thay đổi thành công: “${exam.title}”${audio ? ' và đã gắn file nghe.' : '.'}`))
       setAudio(null)
     } catch (e) {
-      setJsonError(e instanceof ApiError ? e.message : 'Không import được đề. Kiểm tra mỗi câu có đúng 1 đáp án.')
+      reportError(e instanceof ApiError ? e.message : 'Không import được đề. Kiểm tra mỗi câu có đúng 1 đáp án.')
     }
   }
 
   if (preview) {
     return (
-      <ImportReview
-        draft={preview}
-        busy={busy}
-        error={jsonError}
-        audioName={skill === 'LISTENING' ? audio?.name ?? null : undefined}
-        onAudio={skill === 'LISTENING' ? (file) => setAudio(file) : undefined}
-        onCancel={() => { setPreview(null); setJsonError(null) }}
-        onSave={(next) => void savePreview(next)}
-      />
+      <>
+        <CornerNotice notice={notice} />
+        <ImportReview
+          draft={preview}
+          busy={busy}
+          audioName={skill === 'LISTENING' ? audio?.name ?? null : undefined}
+          onAudio={skill === 'LISTENING' ? (file) => setAudio(file) : undefined}
+          onCancel={() => setPreview(null)}
+          onSave={(next) => void savePreview(next)}
+        />
+      </>
     )
   }
 
@@ -312,11 +318,6 @@ function AuthoredImport({ skill }: { skill: Skill }) {
         </Card>
       ) : null}
 
-      {jsonError ? (
-        <p className="rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral lg:col-span-2" role="alert">
-          {jsonError}
-        </p>
-      ) : null}
       <CornerNotice notice={notice} />
     </div>
   )
@@ -335,6 +336,9 @@ function ExamList() {
   const exams = useExams()
   const publish = usePublishExam()
   const archive = useArchiveExam()
+  const remove = useDeleteExam()
+  const [pendingDelete, setPendingDelete] = useState<ExamSummaryDto | null>(null)
+  const [notice, setNotice] = useState<CornerNoticeState | null>(null)
   const error = publish.error ?? archive.error
   const problems = error instanceof ApiError ? ((error.details as { problems?: string[] } | undefined)?.problems ?? []) : []
 
@@ -362,7 +366,7 @@ function ExamList() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge tone={STATUS_TONE[exam.status]}>{exam.status}</Badge>
+                  <Badge tone={STATUS_TONE[exam.status]}>{EXAM_STATUS_LABEL[exam.status]}</Badge>
                   {exam.parts.some((p) => p.skill === 'LISTENING') && exam.hasAudio ? <Badge tone="teal">Có file nghe</Badge> : null}
                 </div>
                 <h3 className="mt-2 font-semibold">{exam.title}</h3>
@@ -385,7 +389,7 @@ function ExamList() {
                 ) : null}
                 {exam.status === 'DRAFT' || exam.status === 'PENDING_REVIEW' || exam.status === 'REJECTED' || exam.status === 'ARCHIVED' ? (
                   <Button disabled={publish.isPending} onClick={() => publish.mutate(exam.id)}>
-                    Publish
+                    Xuất bản
                   </Button>
                 ) : null}
                 {exam.status === 'PUBLISHED' ? (
@@ -393,12 +397,47 @@ function ExamList() {
                     Lưu trữ
                   </Button>
                 ) : null}
+                <Button variant="danger" disabled={remove.isPending} onClick={() => setPendingDelete(exam)}>
+                  Xóa hẳn
+                </Button>
               </div>
             </div>
             <ListeningAudioControl exam={exam} />
           </Card>
         ))}
       </div>
+      <CornerNotice notice={notice} />
+      {pendingDelete ? (
+        <Modal title="Xóa hẳn đề này?" onClose={() => (remove.isPending ? undefined : setPendingDelete(null))}>
+          <p className="text-sm text-ink/70">
+            Đề <span className="font-semibold">{pendingDelete.title}</span> sẽ biến khỏi hệ thống, cùng bài đã giao từ đề này và kết quả làm bài của học sinh. Không khôi phục được.
+          </p>
+          <div className="mt-5 flex justify-end gap-2">
+            <Button variant="paper" disabled={remove.isPending} onClick={() => setPendingDelete(null)}>
+              Hủy
+            </Button>
+            <Button
+              variant="danger"
+              disabled={remove.isPending}
+              onClick={() => {
+                const target = pendingDelete
+                void remove.mutateAsync(target.id).then(
+                  () => {
+                    setPendingDelete(null)
+                    setNotice(flashNotice(`Đã xóa đề “${target.title}”.`))
+                  },
+                  (e: unknown) => {
+                    setPendingDelete(null)
+                    setNotice(flashError(e instanceof ApiError ? e.message : 'Không xóa được đề.'))
+                  },
+                )
+              }}
+            >
+              {remove.isPending ? 'Đang xóa…' : 'Xóa hẳn'}
+            </Button>
+          </div>
+        </Modal>
+      ) : null}
     </section>
   )
 }
@@ -407,21 +446,20 @@ function ListeningAudioControl({ exam }: { exam: ExamSummaryDto }) {
   const upload = useUploadExamAudio()
   const listening = exam.parts.filter((p) => p.skill === 'LISTENING')
   const [partCode, setPartCode] = useState('')
-  const [message, setMessage] = useState<string | null>(null)
   const [notice, setNotice] = useState<CornerNoticeState | null>(null)
   if (listening.length === 0) return null
 
   async function onFile(file: File) {
-    setMessage(null)
+    setNotice(null)
     if (file.size > MAX_AUDIO_BYTES) {
-      setMessage('File nghe quá lớn (tối đa 80MB).')
+      setNotice(flashError('File nghe quá lớn (tối đa 80MB).'))
       return
     }
     try {
       await upload.mutateAsync({ examId: exam.id, file, partCode: partCode || undefined })
       setNotice(flashNotice(partCode ? `Đã gắn file nghe cho ${partName(partCode).split(' — ')[0]}.` : 'Đã gắn file nghe cho cả phần Listening.'))
     } catch (e) {
-      setMessage(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Không tải được file nghe.')
+      setNotice(flashError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Không tải được file nghe.'))
     }
   }
 
@@ -454,11 +492,6 @@ function ListeningAudioControl({ exam }: { exam: ExamSummaryDto }) {
           }}
         />
       </div>
-      {message ? (
-        <p className="mt-2 text-sm text-coral" role="alert">
-          {message}
-        </p>
-      ) : null}
       <CornerNotice notice={notice} />
     </div>
   )

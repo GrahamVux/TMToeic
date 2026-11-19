@@ -1,15 +1,21 @@
 import { Button } from '@/components/ui/Button'
+import { CornerNotice, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Badge, Card, ProgressBar } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { ApiError } from '@/lib/api'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 import { formatClock, partName, useAttemptResult } from './exams.queries'
 import { FocusNote } from './FocusNote'
 
 export function ResultPage() {
   const { attemptId, studentId } = useParams()
+  const location = useLocation()
   const staffView = Boolean(studentId)
+  const [notice] = useState<CornerNoticeState | null>(() =>
+    !staffView && (location.state as { submitted?: boolean } | null)?.submitted ? flashNotice('Đã nộp bài thành công.') : null,
+  )
   const { data: r, isPending, error } = useAttemptResult(attemptId)
 
   if (isPending) return <PageLoading message="Đang tải kết quả…" />
@@ -24,6 +30,7 @@ export function ResultPage() {
   const reviewTo = staffView ? `/admin/students/${studentId}/attempts/${r.attempt.id}/review` : `/attempts/${r.attempt.id}/review`
   return (
     <div className="space-y-6">
+      <CornerNotice notice={notice} />
       {staffView ? (
         <Link to={`/admin/students/${studentId}`} className="text-sm text-gold-deep">
           ← Quay lại hồ sơ học viên

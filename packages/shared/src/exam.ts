@@ -4,6 +4,15 @@ import { PART_CODE_PATTERN, type ExamMode, type Skill } from './domain'
 export const EXAM_STATUSES = ['DRAFT', 'PROCESSING', 'PENDING_REVIEW', 'PUBLISHED', 'ARCHIVED', 'REJECTED'] as const
 export type ExamStatus = (typeof EXAM_STATUSES)[number]
 
+export const EXAM_STATUS_LABEL: Record<ExamStatus, string> = {
+  DRAFT: 'Bản nháp',
+  PROCESSING: 'Đang xử lý',
+  PENDING_REVIEW: 'Chờ duyệt',
+  PUBLISHED: 'Đã xuất bản',
+  ARCHIVED: 'Đã lưu trữ',
+  REJECTED: 'Từ chối',
+}
+
 export const ATTEMPT_STATUSES = ['IN_PROGRESS', 'SUBMITTED', 'EXPIRED', 'ABANDONED'] as const
 export type AttemptStatus = (typeof ATTEMPT_STATUSES)[number]
 

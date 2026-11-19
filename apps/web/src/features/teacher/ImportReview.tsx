@@ -97,7 +97,6 @@ function ReviewDock({
 export function ImportReview({
   draft,
   busy,
-  error,
   audioName,
   onAudio,
   onCancel,
@@ -105,7 +104,6 @@ export function ImportReview({
 }: {
   draft: Draft
   busy: boolean
-  error: string | null
   audioName?: string | null
   onAudio?: (file: File | null) => void
   onCancel: () => void
@@ -343,8 +341,6 @@ export function ImportReview({
           ))}
         </ul>
       ) : null}
-      {error ? <p className="rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral" role="alert">{error}</p> : null}
-
       <div className="flex flex-wrap justify-end gap-2">
         <Button type="button" variant="ghost" onClick={onCancel}>Hủy</Button>
         <Button type="button" disabled={busy || problems.length > 0} onClick={() => onSave(form)}>

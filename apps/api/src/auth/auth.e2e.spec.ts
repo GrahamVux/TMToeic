@@ -20,7 +20,7 @@ describe('Auth, RBAC & account management (e2e on PGlite)', () => {
   it('GET /health is public and checks the DB', async () => {
     const res = await request(app.getHttpServer()).get('/api/v1/health')
     expect(res.status).toBe(200)
-    expect(res.body).toEqual({ status: 'ok' })
+    expect(res.body).toEqual({ status: 'ok', storage: false })
   })
 
   it('rejects unauthenticated access to protected routes', async () => {

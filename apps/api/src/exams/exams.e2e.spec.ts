@@ -166,6 +166,23 @@ describe('Exam engine (e2e on PGlite)', () => {
       expect((await admin.post(`/exams/${examId}/publish`)).status).toBe(200)
     })
 
+    it('deletes an exam, its attempts and its homework for good', async () => {
+      const id = await publishedExam(SMALL_LAYOUT)
+      const start = await student.post(`/exams/${id}/attempts`).send({ mode: 'PRACTICE' })
+      expect(start.status).toBe(200)
+      const attemptId = start.body.id as string
+
+      expect((await student.delete(`/exams/${id}`)).status).toBe(403)
+      expect((await admin.delete(`/exams/${id}`)).status).toBe(204)
+      expect((await admin.get(`/exams/${id}`)).status).toBe(404)
+      expect((await student.get(`/attempts/${attemptId}`)).status).toBe(404)
+      expect((await admin.delete(`/exams/${id}`)).status).toBe(404)
+
+      const { auditLogs } = await import('../db/schema')
+      const rows = await db.select().from(auditLogs).where(eq(auditLogs.action, 'EXAM_DELETED'))
+      expect(rows.some((row) => row.entityId === id)).toBe(true)
+    })
+
     it('audits authoring actions', async () => {
       const { auditLogs } = await import('../db/schema')
       const rows = await db.select().from(auditLogs)
