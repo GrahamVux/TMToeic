@@ -1,3 +1,4 @@
+import { AdminRecoveryDialog } from '@/features/auth/AdminRecoveryDialog'
 import { BrandMark } from '@/components/layout/Shell'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
@@ -26,6 +27,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [fieldError, setFieldError] = useState<string | null>(null)
   const [denied, setDenied] = useState(false)
+  const [recover, setRecover] = useState(false)
   const [busy, setBusy] = useState(false)
 
   async function submit(e: FormEvent) {
@@ -104,8 +106,22 @@ export function LoginPage() {
           <Button className="mt-6 w-full" type="submit" disabled={busy}>
             {busy ? 'Đang đăng nhập…' : 'Đăng nhập'}
           </Button>
+          <button
+            type="button"
+            onClick={() => setRecover(true)}
+            className="mt-4 w-full text-center text-sm text-ink/55 underline-offset-2 hover:underline"
+          >
+            Quên mật khẩu quản trị?
+          </button>
         </form>
       </div>
+
+      {recover ? (
+        <AdminRecoveryDialog
+          onClose={() => setRecover(false)}
+          onDone={(user) => navigate(user.mustChangePassword ? '/change-password' : homePathForRole(user.role), { replace: true })}
+        />
+      ) : null}
 
       {denied ? (
         <Modal title="Đăng nhập không thành công" onClose={() => setDenied(false)}>

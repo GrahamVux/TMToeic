@@ -1,4 +1,4 @@
-import type { ChangePasswordInput, LoginInput, SessionDto, UserDto } from '@toeic/shared'
+import type { ChangePasswordInput, LoginInput, RecoverAdminPasswordInput, SessionDto, UserDto } from '@toeic/shared'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api, onSessionLost } from '@/lib/api'
 import { getViewAsId, setViewAsId } from '@/lib/view-as'
@@ -13,6 +13,8 @@ type AuthState = {
   /** Set while an admin previews another account: the admin who is actually signed in. */
   viewing: { admin: UserDto } | null
   login: (input: LoginInput) => Promise<UserDto>
+  /** Set a new admin password with the recovery code, then sign that admin in. */
+  recoverAdmin: (input: RecoverAdminPasswordInput) => Promise<UserDto>
   logout: () => Promise<void>
   changePassword: (input: ChangePasswordInput) => Promise<UserDto>
   /** Replace the cached user after the server returned a fresh copy (e.g. goal changed). */
@@ -86,6 +88,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return s.user
   }, [queryClient, apply])
 
+  const recoverAdmin = useCallback(async (input: RecoverAdminPasswordInput) => {
+    queryClient.clear()
+    setViewAsId(null)
+    const s = await api<SessionDto>('/auth/recover-admin', { method: 'POST', body: input })
+    apply(s)
+    setStatus('authenticated')
+    return s.user
+  }, [queryClient, apply])
+
   const logout = useCallback(async () => {
     setViewAsId(null)
     try {
@@ -127,8 +138,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [queryClient])
 
   const value = useMemo<AuthState>(
-    () => ({ status, user, viewing, login, logout, changePassword, updateUser, startViewAs, stopViewAs }),
-    [status, user, viewing, login, logout, changePassword, updateUser, startViewAs, stopViewAs],
+    () => ({ status, user, viewing, login, recoverAdmin, logout, changePassword, updateUser, startViewAs, stopViewAs }),
+    [status, user, viewing, login, recoverAdmin, logout, changePassword, updateUser, startViewAs, stopViewAs],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

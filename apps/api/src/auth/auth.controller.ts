@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Req, Res } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
-import { changePasswordSchema, loginSchema, viewAsSchema, type SessionDto } from '@toeic/shared'
+import { changePasswordSchema, loginSchema, recoverAdminPasswordSchema, viewAsSchema, type SessionDto } from '@toeic/shared'
 import type { Request, Response } from 'express'
 import { AllowPasswordChangePending, clientIp, CurrentUser, Public, Roles, type AuthUser } from '../common/decorators'
 import { parse } from '../common/zod'
@@ -48,6 +48,17 @@ export class AuthController {
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
     await this.auth.logout(this.cookies.refreshToken(req), ctxOf(req))
     this.cookies.clear(res)
+  }
+
+  @Public()
+  @Throttle({ default: { limit: () => Number(process.env.LOGIN_RATE_LIMIT ?? 10), ttl: 60_000 } })
+  @Post('recover-admin')
+  @HttpCode(200)
+  async recoverAdmin(@Body() body: unknown, @Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<SessionDto> {
+    const input = parse(recoverAdminPasswordSchema, body)
+    const { session, tokens } = await this.auth.recoverAdmin(input.identifier, input.recoveryCode, input.newPassword, ctxOf(req))
+    this.cookies.set(res, tokens)
+    return session
   }
 
   @AllowPasswordChangePending()

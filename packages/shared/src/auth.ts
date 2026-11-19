@@ -97,6 +97,14 @@ export const changePasswordSchema = z
   })
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>
 
+/** Admin forgot the password: the recovery code is checked server-side, then the new password replaces it. */
+export const recoverAdminPasswordSchema = z.object({
+  identifier: z.string().trim().min(1, 'Vui lòng nhập tên đăng nhập').max(64),
+  recoveryCode: z.string().trim().min(1, 'Vui lòng nhập mã khôi phục').max(128),
+  newPassword: passwordSchema,
+})
+export type RecoverAdminPasswordInput = z.infer<typeof recoverAdminPasswordSchema>
+
 export const createStudentSchema = z.object({
   fullName: z.string().trim().min(2, 'Họ tên quá ngắn').max(120),
   email: z.string().trim().email('Email không hợp lệ').max(254).optional(),

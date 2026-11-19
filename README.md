@@ -21,6 +21,7 @@ npm run dev          # build shared → chạy API (:3001) + web (:5173, proxy /
 
 - Không cần cài Postgres: khi `DATABASE_URL` trống, API dùng **PGlite** (Postgres thật chạy in-process, lưu ở `apps/api/.data/pglite`). Migration tự chạy khi khởi động.
 - Lần đầu API tạo tài khoản admin: `admin` / `ChangeMe123` (chỉ ở môi trường dev; bắt buộc đổi mật khẩu khi đăng nhập lần đầu). Đặt `BOOTSTRAP_ADMIN_USERNAME` / `BOOTSTRAP_ADMIN_PASSWORD` để đổi.
+- Admin quên mật khẩu: trên màn đăng nhập chọn "Quên mật khẩu quản trị?" và nhập `ADMIN_RECOVERY_CODE` (đặt trong `apps/api/.env`, và trên Render khi chạy thật). Mã sai nhiều lần sẽ khóa tài khoản như đăng nhập sai. Học viên và giáo viên không dùng được mã này.
 - Cấu hình: copy `apps/api/.env.example` → `apps/api/.env` (API tự nạp `.env` trong thư mục `apps/api`; biến môi trường thật luôn được ưu tiên).
 
 ## Tài khoản & phân quyền

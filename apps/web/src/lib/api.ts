@@ -73,7 +73,7 @@ function refreshSession(): Promise<boolean> {
   return refreshing
 }
 
-const NO_REFRESH = new Set(['/auth/login', '/auth/refresh', '/auth/logout'])
+const NO_REFRESH = new Set(['/auth/login', '/auth/refresh', '/auth/logout', '/auth/recover-admin'])
 
 async function toError(res: Response): Promise<ApiError> {
   const body = (await res.json().catch(() => null)) as ApiErrorBody | null

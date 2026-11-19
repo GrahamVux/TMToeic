@@ -26,6 +26,8 @@ const envSchema = z
 
     BOOTSTRAP_ADMIN_USERNAME: z.string().default('admin'),
     BOOTSTRAP_ADMIN_PASSWORD: z.string().optional(),
+    /** Lets an admin set a new password without the current one. Empty disables the feature. */
+    ADMIN_RECOVERY_CODE: z.string().optional(),
     STUDENT_CODE_PREFIX: z.string().regex(/^[A-Z]{1,6}$/).default('TM'),
     /** Seed a small published demo exam. Defaults to on in development only. */
     SEED_DEMO_EXAM: bool.optional(),
@@ -53,6 +55,10 @@ const envSchema = z
     if (r2 !== 0 && r2 !== 4) {
       ctx.addIssue({ code: 'custom', path: ['R2_BUCKET'], message: 'R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY and R2_BUCKET must be set together' })
     }
+    const recovery = env.ADMIN_RECOVERY_CODE?.trim()
+    if (recovery && (recovery.length < 8 || recovery.length > 128)) {
+      ctx.addIssue({ code: 'custom', path: ['ADMIN_RECOVERY_CODE'], message: 'Must be 8–128 characters when set' })
+    }
     if (env.COOKIE_SAMESITE === 'none' && env.COOKIE_SECURE === false) {
       ctx.addIssue({ code: 'custom', path: ['COOKIE_SECURE'], message: 'SameSite=None requires COOKIE_SECURE=true' })
     }
@@ -75,6 +81,8 @@ export type AppConfig = {
   cookieSameSite: 'lax' | 'strict' | 'none'
   bootstrapAdminUsername: string
   bootstrapAdminPassword?: string
+  /** Absent when password recovery is turned off. */
+  adminRecoveryCode?: string
   studentCodePrefix: string
   seedDemoExam: boolean
   r2?: R2Config
@@ -117,6 +125,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     cookieSameSite: e.COOKIE_SAMESITE,
     bootstrapAdminUsername: e.BOOTSTRAP_ADMIN_USERNAME.toLowerCase(),
     bootstrapAdminPassword: e.BOOTSTRAP_ADMIN_PASSWORD || (isProd ? undefined : 'ChangeMe123'),
+    adminRecoveryCode: e.ADMIN_RECOVERY_CODE?.trim() || undefined,
     studentCodePrefix: e.STUDENT_CODE_PREFIX,
     seedDemoExam: e.SEED_DEMO_EXAM ?? e.NODE_ENV === 'development',
     r2:

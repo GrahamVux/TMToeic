@@ -1,9 +1,10 @@
 import type { INestApplication } from '@nestjs/common'
 import { CSRF_HEADER, CSRF_HEADER_VALUE, ERROR_CODES } from '@toeic/shared'
+import { eq } from 'drizzle-orm'
 import ExcelJS from 'exceljs'
 import request from 'supertest'
 import { DB, type Db } from '../db/database.module'
-import { auditLogs } from '../db/schema'
+import { auditLogs, users } from '../db/schema'
 import { ADMIN, client, createTestApp, login } from '../test/test-app'
 
 describe('Auth, RBAC & account management (e2e on PGlite)', () => {
@@ -89,6 +90,16 @@ describe('Auth, RBAC & account management (e2e on PGlite)', () => {
       expect(b.res.status).toBe(401)
       expect(a.res.body.error.code).toBe(ERROR_CODES.INVALID_CREDENTIALS)
       expect(a.res.body.error).toEqual(b.res.body.error)
+    })
+
+    it('refuses admin recovery when no recovery code is configured', async () => {
+      const res = await client(app).post('/auth/recover-admin').send({
+        identifier: ADMIN.username,
+        recoveryCode: 'anything-1',
+        newPassword: 'AdminPass999',
+      })
+      expect(res.status).toBe(400)
+      expect(res.body.error.message).toMatch(/Chưa cấu hình mã khôi phục/)
     })
   })
 
@@ -449,5 +460,80 @@ describe('Auth, RBAC & account management (e2e on PGlite)', () => {
       expect(byCode.LISTENING.parts.map((p: { code: string }) => p.code)).toEqual(['PART_1', 'PART_2', 'PART_3', 'PART_4'])
       expect(byCode.READING.parts.map((p: { code: string }) => p.code)).toEqual(['PART_5', 'PART_6', 'PART_7', 'FILL_1'])
     })
+  })
+})
+
+describe('Admin password recovery code (e2e on PGlite)', () => {
+  const CODE = 'KhoiPhuc-Admin-19'
+  let app: INestApplication
+  let db: Db
+
+  beforeAll(async () => {
+    app = await createTestApp({}, { config: { adminRecoveryCode: CODE } })
+    db = app.get<Db>(DB)
+  })
+  afterAll(() => app.close())
+
+  it('rejects a wrong code, an unknown account and a student with the same answer, and counts the miss against the admin', async () => {
+    const wrong = await client(app).post('/auth/recover-admin').send({
+      identifier: ADMIN.username,
+      recoveryCode: 'sai-ma-1234',
+      newPassword: 'AdminPass999',
+    })
+    const unknown = await client(app).post('/auth/recover-admin').send({
+      identifier: 'khong-co',
+      recoveryCode: CODE,
+      newPassword: 'AdminPass999',
+    })
+    expect(wrong.status).toBe(401)
+    expect(unknown.status).toBe(401)
+    expect(wrong.body.error).toEqual(unknown.body.error)
+    expect(JSON.stringify(wrong.body)).not.toContain(CODE)
+
+    const [admin] = await db.select({ fails: users.failedLoginCount }).from(users).where(eq(users.username, ADMIN.username))
+    expect(admin.fails).toBe(1)
+
+    const { c } = await login(app, ADMIN.username, ADMIN.password)
+    await c.post('/auth/change-password').send({ currentPassword: ADMIN.password, newPassword: 'AdminPass123' })
+    const pupil = await c.post('/users/students').send({ fullName: 'Học Viên Mã' })
+    expect(pupil.status).toBe(201)
+    const studentTry = await client(app).post('/auth/recover-admin').send({
+      identifier: pupil.body.user.studentCode,
+      recoveryCode: CODE,
+      newPassword: 'StudentPass99',
+    })
+    expect(studentTry.status).toBe(401)
+    expect(studentTry.body.error).toEqual(wrong.body.error)
+    expect((await login(app, pupil.body.user.studentCode as string, pupil.body.temporaryPassword as string)).res.status).toBe(200)
+  })
+
+  it('sets a new admin password, signs out the old session and records the recovery', async () => {
+    const old = await login(app, ADMIN.username, 'AdminPass123')
+    const fresh = client(app)
+    const same = await fresh.post('/auth/recover-admin').send({
+      identifier: ' Admin ',
+      recoveryCode: `  ${CODE}  `,
+      newPassword: 'AdminPass123',
+    })
+    expect(same.status).toBe(400)
+
+    const res = await fresh.post('/auth/recover-admin').send({
+      identifier: ' Admin ',
+      recoveryCode: `  ${CODE}  `,
+      newPassword: 'Recovered123',
+    })
+    expect(res.status).toBe(200)
+    expect(res.body.user.role).toBe('ADMIN')
+    expect(res.body.user.mustChangePassword).toBe(false)
+    expect(JSON.stringify(res.body)).not.toContain(CODE)
+    expect((await old.c.get('/auth/me')).status).toBe(401)
+    expect((await fresh.get('/users')).status).toBe(200)
+    expect((await login(app, ADMIN.username, 'AdminPass123')).res.status).toBe(401)
+    expect((await login(app, ADMIN.username, 'Recovered123')).res.status).toBe(200)
+
+    const [row] = await db.select({ fails: users.failedLoginCount }).from(users).where(eq(users.username, ADMIN.username))
+    expect(row.fails).toBe(0)
+    const logged = await db.select({ action: auditLogs.action }).from(auditLogs).where(eq(auditLogs.action, 'AUTH_ADMIN_RECOVERED'))
+    expect(logged.length).toBeGreaterThan(0)
   })
 })

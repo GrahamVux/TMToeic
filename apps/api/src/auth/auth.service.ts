@@ -20,6 +20,11 @@ type AccessPayload = { sub: string; sid: string }
 
 const sha256 = (v: string) => createHash('sha256').update(v).digest('hex')
 
+/** Compare two secrets without leaking which one was longer. */
+function codesMatch(given: string, expected: string) {
+  return safeEqual(sha256(given), sha256(expected))
+}
+
 function safeEqual(a: string, b: string) {
   const ba = Buffer.from(a)
   const bb = Buffer.from(b)
@@ -83,7 +88,7 @@ export class AuthService {
     return { session: { user: toUserDto(updated) }, tokens: { accessToken: await this.signAccess(user.id, session.id), refreshToken } }
   }
 
-  private async registerFailure(user: UserRow, ctx: ClientContext) {
+  private async registerFailure(user: UserRow, ctx: ClientContext, reason = 'BAD_PASSWORD') {
     const count = user.failedLoginCount + 1
     const lock = count >= this.config.loginLockoutThreshold
     await this.db
@@ -96,7 +101,7 @@ export class AuthService {
     await this.audit.log({
       action: lock ? 'AUTH_ACCOUNT_LOCKED' : 'AUTH_LOGIN_FAILED',
       actorId: user.id,
-      metadata: { reason: 'BAD_PASSWORD', attempts: count },
+      metadata: { reason, attempts: count },
       ip: ctx.ip,
     })
   }
@@ -274,6 +279,74 @@ export class AuthService {
       session: { user: toUserDto(updated) },
       tokens: { accessToken: await this.signAccess(row.id, user.sessionId), refreshToken: `${user.sessionId}.${secret}` },
     }
+  }
+
+  /**
+   * Admin forgot the password. The recovery code stands in for the current password.
+   * A wrong code, an unknown account and a non-admin account all get the same answer.
+   */
+  async recoverAdmin(identifier: string, recoveryCode: string, newPassword: string, ctx: ClientContext): Promise<AuthResult> {
+    const expected = this.config.adminRecoveryCode
+    if (!expected) throw AppException.badRequest('Chưa cấu hình mã khôi phục quản trị.')
+
+    const id = identifier.trim()
+    const [user] = await this.db
+      .select()
+      .from(users)
+      .where(or(eq(users.username, id.toLowerCase()), eq(users.studentCode, id.toUpperCase())))
+      .limit(1)
+    const codeOk = codesMatch(recoveryCode.trim(), expected)
+    const admin = user?.role === 'ADMIN' ? user : undefined
+
+    if (!admin) {
+      await this.audit.log({
+        action: 'AUTH_ADMIN_RECOVERY_FAILED',
+        actorId: user?.id,
+        metadata: { reason: user ? 'NOT_ADMIN' : 'UNKNOWN_USER' },
+        ip: ctx.ip,
+      })
+      throw this.badRecoveryCode()
+    }
+
+    if (admin.lockedUntil && admin.lockedUntil > new Date()) {
+      await this.audit.log({ action: 'AUTH_LOGIN_BLOCKED', actorId: admin.id, metadata: { reason: 'LOCKED' }, ip: ctx.ip })
+      throw new AppException(
+        ERROR_CODES.TOO_MANY_REQUESTS,
+        `Tài khoản tạm khóa do nhập sai nhiều lần. Vui lòng thử lại sau ${this.config.loginLockoutMinutes} phút hoặc liên hệ giáo viên.`,
+        HttpStatus.TOO_MANY_REQUESTS,
+      )
+    }
+
+    if (!codeOk) {
+      await this.registerFailure(admin, ctx, 'BAD_RECOVERY_CODE')
+      throw this.badRecoveryCode()
+    }
+
+    if (admin.status !== 'ACTIVE') {
+      await this.audit.log({ action: 'AUTH_LOGIN_BLOCKED', actorId: admin.id, metadata: { reason: 'DISABLED' }, ip: ctx.ip })
+      throw AppException.forbidden('Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ giáo viên.', ERROR_CODES.ACCOUNT_DISABLED)
+    }
+
+    if (await this.passwords.verify(admin.passwordHash, newPassword)) {
+      throw AppException.badRequest('Mật khẩu mới phải khác mật khẩu hiện tại', { fields: { newPassword: 'Mật khẩu mới phải khác mật khẩu hiện tại' } })
+    }
+
+    const passwordHash = await this.passwords.hash(newPassword)
+    const now = new Date()
+    const [updated] = await this.db
+      .update(users)
+      .set({ passwordHash, mustChangePassword: false, failedLoginCount: 0, lockedUntil: null, lastLoginAt: now, updatedAt: now })
+      .where(eq(users.id, admin.id))
+      .returning()
+
+    await this.revokeAllSessions(admin.id, 'PASSWORD_RECOVERED')
+    const { session, refreshToken } = await this.createSession(admin.id, ctx)
+    await this.audit.log({ action: 'AUTH_ADMIN_RECOVERED', actorId: admin.id, entityType: 'user', entityId: admin.id, ip: ctx.ip })
+    return { session: { user: toUserDto(updated) }, tokens: { accessToken: await this.signAccess(admin.id, session.id), refreshToken } }
+  }
+
+  private badRecoveryCode() {
+    return new AppException(ERROR_CODES.INVALID_CREDENTIALS, 'Mã khôi phục không đúng.', HttpStatus.UNAUTHORIZED)
   }
 
   // ---------------------------------------------------------------- request authentication
