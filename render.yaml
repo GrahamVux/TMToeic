@@ -6,7 +6,7 @@ services:
     runtime: node
     plan: free
     branch: main
-    buildCommand: npm install && npm run build -w @toeic/shared && npm run build -w @toeic/api
+    buildCommand: npm install --include=dev && npm run build -w @toeic/shared && npm run build -w @toeic/api
     startCommand: npm run start -w @toeic/api
     healthCheckPath: /api/v1/health
     envVars:
@@ -48,7 +48,7 @@ services:
     runtime: node
     plan: free
     branch: dev-version
-    buildCommand: npm install && npm run build -w @toeic/shared && npm run build -w @toeic/api
+    buildCommand: npm install --include=dev && npm run build -w @toeic/shared && npm run build -w @toeic/api
     startCommand: npm run start -w @toeic/api
     healthCheckPath: /api/v1/health
     envVars:
