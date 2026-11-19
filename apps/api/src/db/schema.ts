@@ -642,6 +642,17 @@ export const grammarProgress = pgTable(
   (t) => [uniqueIndex('grammar_progress_user_lesson_uq').on(t.userId, t.lessonId)],
 ).enableRLS()
 
+/** A student's own targets for one day of study. 0 turns that target off. */
+export const dailyGoals = pgTable('daily_goals', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  readingTarget: integer('reading_target').notNull().default(0),
+  listeningTarget: integer('listening_target').notNull().default(0),
+  vocabTarget: integer('vocab_target').notNull().default(0),
+  ...timestamps,
+}).enableRLS()
+
 export type ExamRow = typeof exams.$inferSelect
 export type AttemptRow = typeof attempts.$inferSelect
 export type AssignmentRow = typeof assignments.$inferSelect

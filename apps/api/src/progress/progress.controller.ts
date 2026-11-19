@@ -1,15 +1,19 @@
-import { Body, Controller, Get, Patch, Req } from '@nestjs/common'
-import { setGoalSchema, updateProfileSchema } from '@toeic/shared'
+import { Body, Controller, Get, Patch, Put, Req } from '@nestjs/common'
+import { setDailyGoalsSchema, setGoalSchema, updateProfileSchema } from '@toeic/shared'
 import type { Request } from 'express'
 import { clientIp, CurrentUser, Roles, type AuthUser } from '../common/decorators'
 import { parse } from '../common/zod'
+import { DailyGoalsService } from './daily-goals.service'
 import { ProgressService } from './progress.service'
 
 /** Endpoints about the signed-in student themselves. */
 @Roles('STUDENT')
 @Controller('me')
 export class ProgressController {
-  constructor(private readonly progress: ProgressService) {}
+  constructor(
+    private readonly progress: ProgressService,
+    private readonly daily: DailyGoalsService,
+  ) {}
 
   @Get('dashboard')
   dashboard(@CurrentUser() user: AuthUser) {
@@ -19,6 +23,16 @@ export class ProgressController {
   @Get('progress')
   progressOverview(@CurrentUser() user: AuthUser) {
     return this.progress.studentProgress(user.id)
+  }
+
+  @Get('daily-goals')
+  dailyGoals(@CurrentUser() user: AuthUser) {
+    return this.daily.get(user.id)
+  }
+
+  @Put('daily-goals')
+  setDailyGoals(@CurrentUser() user: AuthUser, @Body() body: unknown, @Req() req: Request) {
+    return this.daily.set(user.id, parse(setDailyGoalsSchema, body), clientIp(req))
   }
 
   @Patch('goal')

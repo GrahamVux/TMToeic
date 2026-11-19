@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui/Primitives'
 import { Button } from '@/components/ui/Button'
-import { XP_PER_RANK, type HonorBoardDto, type HonorCenterEntry, type HonorStudentEntry, type StaffHonorDto } from '@toeic/shared'
+import { XP_PER_CORRECT, XP_PER_RANK, type HonorBoardDto, type HonorCenterEntry, type HonorStudentEntry, type StaffHonorDto } from '@toeic/shared'
 import type { ReactNode } from 'react'
 import { PodiumMark, RankBadge } from './RankBadge'
 
@@ -10,7 +10,7 @@ export function HonorBoards({ honor }: { honor: HonorBoardDto }) {
   return (
     <section className="space-y-4">
       <header>
-        <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">EXP hoàn thành bài • mỗi {XP_PER_RANK} EXP lên một hạng</p>
+        <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">Mỗi câu đúng +{XP_PER_CORRECT} EXP • mỗi {XP_PER_RANK} EXP lên một hạng</p>
         <h2 className="serif mt-1 text-2xl">Bảng vinh danh năm</h2>
         <p className="mt-1 text-sm text-ink/60">
           Cả bảng lớp và bảng trung tâm tính theo năm {honor.year}, về 0 vào ngày 1 tháng 1.
@@ -125,7 +125,7 @@ export function StaffHonorBoards({
   return (
     <section className="space-y-4">
       <header>
-        <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">EXP hoàn thành bài • mỗi {XP_PER_RANK} EXP lên một hạng</p>
+        <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">Mỗi câu đúng +{XP_PER_CORRECT} EXP • mỗi {XP_PER_RANK} EXP lên một hạng</p>
         <h2 className="serif mt-1 text-2xl">Bảng xếp hạng năm</h2>
         <p className="mt-1 text-sm text-ink/60">
           Mọi bảng tính theo năm {honor.year} và về 0 vào ngày 1 tháng 1.

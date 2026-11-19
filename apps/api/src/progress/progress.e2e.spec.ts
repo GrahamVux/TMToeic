@@ -198,7 +198,7 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     expect(d.latestScore).toBeNull() // partial practice has no 990-scale score
     expect(d.skills.find((k) => k.skill === 'READING')).toMatchObject({ attempts: 1, answered: 2, correct: 2, accuracy: 100 })
     expect(d.skills.find((k) => k.skill === 'LISTENING')).toMatchObject({ attempts: 0, accuracy: null })
-    expect(d.honor.classBoard.you).toMatchObject({ name: 'Chăm Chỉ', weeklyXp: 67, you: true })
+    expect(d.honor.classBoard.you).toMatchObject({ name: 'Chăm Chỉ', weeklyXp: 10, you: true }) // 2 correct × 5 EXP
     expect(d.honor.me.rank.label).toBe('Đồng III')
     expect(d.honor.centerBoard.some((row) => row.name === 'Chăm Chỉ' && row.className === 'Lớp K42' && row.you)).toBe(true)
   })
@@ -256,15 +256,15 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     const board = await dash(recent)
     const earlyRow = board.honor.centerBoard.find((row) => row.name === 'Đầu Năm')
     const recentRow = board.honor.centerBoard.find((row) => row.name === 'Tuần Này')
-    expect(earlyRow).toMatchObject({ yearlyXp: 100, className: 'Lớp K42' })
-    expect(recentRow).toMatchObject({ weeklyXp: 33, yearlyXp: 33 })
+    expect(earlyRow).toMatchObject({ yearlyXp: 15, className: 'Lớp K42' })
+    expect(recentRow).toMatchObject({ weeklyXp: 5, yearlyXp: 5 })
     expect(earlyRow!.place).toBeLessThan(recentRow!.place)
     expect(board.honor.centerBoard.some((row) => row.name === 'Năm Trước')).toBe(false)
     expect(board.honor.centerBoard.every((row, i, arr) => i === 0 || arr[i - 1].yearlyXp >= row.yearlyXp)).toBe(true)
     if (weekStart.getTime() > yearStart.getTime()) {
       expect(earlyRow!.weeklyXp).toBe(0)
       const earlyBoard = await dash(early)
-      expect(earlyBoard.honor.classBoard.you).toMatchObject({ name: 'Đầu Năm', yearlyXp: 100, weeklyXp: 0 })
+      expect(earlyBoard.honor.classBoard.you).toMatchObject({ name: 'Đầu Năm', yearlyXp: 15, weeklyXp: 0 })
     }
     expect(recentId).toBeTruthy()
   })
@@ -599,8 +599,8 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     await practice(pupil, examId, 3, true)
 
     const before = await dash(pupil)
-    expect(before.honor.classBoard.you).toMatchObject({ name: 'Reset Riêng', yearlyXp: 100 })
-    expect(before.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 100, className: room.body.name })
+    expect(before.honor.classBoard.you).toMatchObject({ name: 'Reset Riêng', yearlyXp: 15 })
+    expect(before.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 15, className: room.body.name })
 
     expect((await pupil.post(`/classes/${room.body.id}/honor-reset`)).status).toBe(403)
     const username = `teacher.reset.${seq}`
@@ -617,13 +617,13 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     const cleared = await dash(pupil)
     expect(cleared.honor.classBoard.resetAt).toBe(reset.body.resetAt)
     expect(cleared.honor.classBoard.you).toBeNull()
-    expect(cleared.honor.me.yearlyXp).toBe(100)
-    expect(cleared.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 100 })
+    expect(cleared.honor.me.yearlyXp).toBe(15)
+    expect(cleared.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 15 })
 
     await practice(pupil, examId, 1, true)
     const again = await dash(pupil)
-    expect(again.honor.classBoard.you).toMatchObject({ yearlyXp: 33 })
-    expect(again.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 133 })
+    expect(again.honor.classBoard.you).toMatchObject({ yearlyXp: 5 })
+    expect(again.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 20 })
 
     const staffBoard = (await admin.get('/reports/honor')).body as import('@toeic/shared').StaffHonorDto
     const listed = staffBoard.classes.find((row) => row.classId === room.body.id)

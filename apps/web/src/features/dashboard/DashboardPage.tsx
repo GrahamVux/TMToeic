@@ -10,6 +10,7 @@ import type { ReactNode } from 'react'
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Link } from 'react-router-dom'
 import { useStudyOverview } from '@/features/study/study.queries'
+import { DailyGoalsCard } from './DailyGoalsCard'
 import { useDashboard } from './dashboard.queries'
 
 const dayMonth = (iso: string) => {
@@ -36,6 +37,7 @@ export function DashboardPage() {
   return (
     <div className="space-y-8">
       <Hero d={data} name={user?.fullName ?? ''} />
+      <DailyGoalsCard />
 
       <section>
         <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">Nhiệm vụ học vụ & bài về nhà</p>

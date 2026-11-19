@@ -65,6 +65,39 @@ export const setGoalSchema = z.object({
 })
 export type SetGoalInput = z.infer<typeof setGoalSchema>
 
+export const DAILY_GOAL_KINDS = ['reading', 'listening', 'vocab'] as const
+export type DailyGoalKind = (typeof DAILY_GOAL_KINDS)[number]
+
+/** Upper bound a student may set per day, and the value the form starts from. */
+export const DAILY_GOAL_LIMITS: Record<DailyGoalKind, { max: number; suggested: number }> = {
+  reading: { max: 20, suggested: 1 },
+  listening: { max: 20, suggested: 1 },
+  vocab: { max: 200, suggested: 10 },
+}
+
+const dailyTarget = (kind: DailyGoalKind) => z.number().int().min(0).max(DAILY_GOAL_LIMITS[kind].max)
+
+/** 0 turns that goal off. */
+export const setDailyGoalsSchema = z.object({
+  reading: dailyTarget('reading'),
+  listening: dailyTarget('listening'),
+  vocab: dailyTarget('vocab'),
+})
+export type DailyGoalCounts = z.infer<typeof setDailyGoalsSchema>
+
+export type DailyGoalsDto = {
+  /** Today in the class timezone, YYYY-MM-DD. */
+  day: string
+  /** False until the student saves targets for the first time. */
+  configured: boolean
+  targets: DailyGoalCounts
+  /**
+   * Done today. Reading and listening count finished sittings with at least one answer in that skill,
+   * so a full test counts once for each. Vocabulary counts flashcards reviewed.
+   */
+  done: DailyGoalCounts
+}
+
 export type ScorePointDto = { attemptId: string; at: string; totalScore: number; listeningScore: number | null; readingScore: number | null }
 
 export type SkillStatDto = {

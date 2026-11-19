@@ -2,13 +2,13 @@ import { z } from 'zod'
 
 /** EXP from one finished piece of work, and the rank ladder that EXP climbs. */
 
+export const XP_PER_CORRECT = 5
 export const XP_PER_RANK = 100
 export const HONOR_BOARD_SIZE = 5
 
-/** Percent correct, 0–100. A perfect completion is exactly one rank. */
-export function xpForCompletion(correct: number, total: number): number {
-  if (total <= 0 || correct <= 0) return 0
-  return Math.round((Math.min(correct, total) / total) * 100)
+/** EXP for one finished piece of work: a fixed amount for each correct answer. */
+export function xpForCorrect(correct: number): number {
+  return Math.max(0, Math.floor(correct)) * XP_PER_CORRECT
 }
 
 type RankDef = { tier: string; division: string | null; color: string; ink: string }

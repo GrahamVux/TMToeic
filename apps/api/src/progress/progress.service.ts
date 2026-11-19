@@ -17,6 +17,7 @@ import {
   type SetGoalInput,
   type SkillStatDto,
   HONOR_BOARD_SIZE,
+  XP_PER_CORRECT,
   rankFromXp,
   type HonorBoardDto,
   type HonorCenterEntry,
@@ -37,8 +38,9 @@ import { attempts, assignments, classMembers, classes, classTeachers, exams, sit
 import { toUserDto } from '../users/user.mapper'
 
 /** Class is in Vietnam: "today" and "this week" follow local time, not the server's. */
-const TZ = 'Asia/Ho_Chi_Minh'
+export const TZ = 'Asia/Ho_Chi_Minh'
 const TZ_SQL = sql.raw(`'${TZ}'`)
+const XP_PER_CORRECT_SQL = sql.raw(String(XP_PER_CORRECT))
 const HISTORY_SIZE = 12
 
 type Rows<T> = { rows: T[] }
@@ -612,7 +614,7 @@ export class ProgressService {
   /**
    * Yearly EXP boards. Both the class board and the center board count EXP since 1 January.
    * An admin reset moves one class board's start to that moment; the center board stays on the calendar year.
-   * EXP is the best percent-correct of each finished piece of work in the window.
+   * Each correct answer is worth XP_PER_CORRECT. A piece of work counts its best finished sitting in the window.
    * Rank uses the EXP shown on that board; 100 EXP is one rank.
    */
   private async honorBoard(userId: string, now: Date, weekStart: string): Promise<HonorBoardDto> {
@@ -755,9 +757,7 @@ export class ProgressService {
         scored as (
           select a.user_id, a.submitted_at,
                  coalesce(a.assignment_id::text, a.id::text) as piece,
-                 case when a.total_questions > 0
-                   then round(coalesce(a.correct_count, 0) * 100.0 / a.total_questions)::int
-                   else 0 end as xp
+                 coalesce(a.correct_count, 0) * ${XP_PER_CORRECT_SQL} as xp
           from attempts a, bounds b
           where a.status in ('SUBMITTED', 'EXPIRED')
             and a.submitted_at is not null
