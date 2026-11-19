@@ -73,6 +73,8 @@ export const classes = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
+    /** When set, the class takes no new students and drops off the staff boards. Accounts stay. */
+    closedAt: timestamp('closed_at', { withTimezone: true }),
     /** When set, that class's own board counts EXP only after this moment. The center board stays on the calendar year. */
     honorResetAt: timestamp('honor_reset_at', { withTimezone: true }),
     ...timestamps,

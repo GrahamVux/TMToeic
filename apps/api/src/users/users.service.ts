@@ -13,7 +13,7 @@ import {
   type UserDto,
   type UserStatus,
 } from '@toeic/shared'
-import { and, asc, desc, eq, ilike, inArray, or, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from 'drizzle-orm'
 import { AuditService } from '../audit/audit.service'
 import { AuthService } from '../auth/auth.service'
 import { PasswordService } from '../auth/password.service'
@@ -329,20 +329,27 @@ export class UsersService implements OnModuleInit {
   }
 
   /** Admin may omit the class (oldest room, so existing imports keep working). A teacher must manage the chosen class. */
+  private async assertClassOpen(classId: string) {
+    const [room] = await this.db.select({ closedAt: classes.closedAt }).from(classes).where(eq(classes.id, classId)).limit(1)
+    if (room?.closedAt) throw AppException.conflict('Lớp đã đóng, không thêm học viên.')
+  }
+
   private async resolveClassId(actor: Actor, requested?: string): Promise<string | null> {
     if (actor.role === 'TEACHER') {
       const mine = await this.managedClassIds(actor.id)
       const chosen = requested ?? (mine.length === 1 ? mine[0] : undefined)
       if (!chosen) throw AppException.badRequest('Hãy chọn lớp để thêm học viên.')
       if (!mine.includes(chosen)) throw AppException.forbidden('Bạn không quản lý lớp này.')
+      await this.assertClassOpen(chosen)
       return chosen
     }
     if (requested) {
       const [room] = await this.db.select({ id: classes.id }).from(classes).where(eq(classes.id, requested)).limit(1)
       if (!room) throw AppException.notFound('Không tìm thấy lớp')
+      await this.assertClassOpen(requested)
       return requested
     }
-    const [fallback] = await this.db.select({ id: classes.id }).from(classes).orderBy(asc(classes.createdAt)).limit(1)
+    const [fallback] = await this.db.select({ id: classes.id }).from(classes).where(isNull(classes.closedAt)).orderBy(asc(classes.createdAt)).limit(1)
     return fallback?.id ?? null
   }
 

@@ -124,6 +124,30 @@ export function useSetClassTeachers() {
   })
 }
 
+export function useSetClassClosed() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ classId, closed }: { classId: string; closed: boolean }) =>
+      api<ClassSummaryDto>(`/classes/${classId}/close`, { method: 'POST', body: { closed } }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['classes'] })
+      void qc.invalidateQueries({ queryKey: ['reports', 'honor'] })
+    },
+  })
+}
+
+export function useDeleteClass() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (classId: string) => api<{ ok: boolean }>(`/classes/${classId}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['classes'] })
+      void qc.invalidateQueries({ queryKey: ['reports', 'honor'] })
+      void qc.invalidateQueries({ queryKey: ['users'] })
+    },
+  })
+}
+
 export function useAssignClass() {
   const invalidate = useInvalidateUsers()
   const qc = useQueryClient()

@@ -30,7 +30,7 @@ import {
   remainingToGoal,
   goalFromStored,
 } from '@toeic/shared'
-import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
 import { AuditService } from '../audit/audit.service'
 import { AppException } from '../common/app-exception'
 import { DB, type Db } from '../db/database.module'
@@ -668,12 +668,12 @@ export class ProgressService {
           )
     const roomRows =
       managed === null
-        ? await this.db.select({ id: classes.id, name: classes.name }).from(classes)
+        ? await this.db.select({ id: classes.id, name: classes.name }).from(classes).where(isNull(classes.closedAt))
         : await this.db
             .select({ id: classes.id, name: classes.name })
             .from(classes)
             .innerJoin(classTeachers, eq(classTeachers.classId, classes.id))
-            .where(eq(classTeachers.userId, actor.id))
+            .where(and(eq(classTeachers.userId, actor.id), isNull(classes.closedAt)))
     if (!snap.enabled) {
       return { enabled: false, weekStart: snap.weekStart, year: snap.year, classes: [], centerBoard: [] }
     }

@@ -632,6 +632,40 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     expect((await admin.post('/classes/00000000-0000-4000-8000-000000000099/honor-reset')).status).toBe(404)
   })
 
+  it('closes a class to new students and deletes the class without deleting accounts', async () => {
+    const created = await admin.post('/users/students').send({ fullName: 'Học Viên Giữ Lại' })
+    expect(created.status).toBe(201)
+    const extra = await admin.post('/users/students').send({ fullName: 'Học Viên Muộn' })
+    expect(extra.status).toBe(201)
+    const room = await admin.post('/classes').send({ name: `Lớp Đóng ${seq}` })
+    expect(room.status).toBe(201)
+    expect(room.body.closedAt).toBeNull()
+    expect((await put(admin, '/classes/members', { userId: created.body.user.id, classId: room.body.id })).status).toBe(200)
+
+    const pupil = (await login(app, created.body.user.studentCode as string, created.body.temporaryPassword as string)).c
+    expect((await pupil.post(`/classes/${room.body.id}/close`).send({ closed: true })).status).toBe(403)
+
+    const closed = await admin.post(`/classes/${room.body.id}/close`).send({ closed: true })
+    expect(closed.status).toBe(201)
+    expect(typeof closed.body.closedAt).toBe('string')
+    expect((await put(admin, '/classes/members', { userId: extra.body.user.id, classId: room.body.id })).status).toBe(409)
+
+    const hidden = (await admin.get('/reports/honor')).body as import('@toeic/shared').StaffHonorDto
+    expect(hidden.classes.some((row) => row.classId === room.body.id)).toBe(false)
+
+    const reopened = await admin.post(`/classes/${room.body.id}/close`).send({ closed: false })
+    expect(reopened.status).toBe(201)
+    expect(reopened.body.closedAt).toBeNull()
+
+    const gone = await admin.agent.delete(`/api/v1/classes/${room.body.id}`).set('x-toeic-client', 'web')
+    expect(gone.status).toBe(200)
+    const still = await admin.get(`/users/${created.body.user.id}`)
+    expect(still.status).toBe(200)
+    expect(still.body.id).toBe(created.body.user.id)
+    const rooms = await admin.get('/classes')
+    expect((rooms.body as Array<{ id: string }>).some((row) => row.id === room.body.id)).toBe(false)
+  })
+
   it('never exposes another student’s data: the dashboard is computed only for the caller', async () => {
     const a = await newStudent('Riêng Tư A', 700)
     const b = await newStudent('Riêng Tư B', 950)

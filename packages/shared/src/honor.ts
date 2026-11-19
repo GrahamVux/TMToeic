@@ -140,6 +140,11 @@ export const setClassTeachersSchema = z.object({
 })
 export type SetClassTeachersInput = z.infer<typeof setClassTeachersSchema>
 
+export const setClassClosedSchema = z.object({
+  closed: z.boolean(),
+})
+export type SetClassClosedInput = z.infer<typeof setClassClosedSchema>
+
 export type ClassTeacherDto = {
   id: string
   fullName: string
@@ -149,5 +154,7 @@ export type ClassSummaryDto = {
   id: string
   name: string
   memberCount: number
+  /** Set when an admin closed the class. Null while the class still accepts students. */
+  closedAt: string | null
   teachers: ClassTeacherDto[]
 }

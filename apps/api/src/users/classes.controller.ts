@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Put } from '@nestjs/common'
-import { assignClassSchema, createClassBodySchema, renameClassSchema, setClassTeachersSchema } from '@toeic/shared'
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Put } from '@nestjs/common'
+import { assignClassSchema, createClassBodySchema, renameClassSchema, setClassClosedSchema, setClassTeachersSchema } from '@toeic/shared'
 import { CurrentUser, Roles, type AuthUser } from '../common/decorators'
 import { parse } from '../common/zod'
 import { ClassesService } from './classes.service'
@@ -30,6 +30,19 @@ export class ClassesController {
   @Put('members')
   async assign(@Body() body: unknown) {
     await this.classes.assign(parse(assignClassSchema, body))
+    return { ok: true }
+  }
+
+  @Roles('ADMIN')
+  @Post(':id/close')
+  close(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: unknown) {
+    return this.classes.setClosed(id, parse(setClassClosedSchema, body))
+  }
+
+  @Roles('ADMIN')
+  @Delete(':id')
+  async remove(@Param('id', new ParseUUIDPipe()) id: string) {
+    await this.classes.remove(id)
     return { ok: true }
   }
 
