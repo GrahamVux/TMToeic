@@ -1,0 +1,84 @@
+# Two APIs from this repo. Fill every sync:false value in the Render dashboard.
+# toeic-api-prod tracks main. toeic-api-dev tracks dev-version.
+services:
+  - type: web
+    name: toeic-api-prod
+    runtime: node
+    branch: main
+    buildCommand: npm install && npm run build -w @toeic/shared && npm run build -w @toeic/api
+    startCommand: npm run start -w @toeic/api
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"
+      - key: AUTO_MIGRATE
+        value: "true"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: lax
+      - key: BOOTSTRAP_ADMIN_USERNAME
+        value: admin
+      - key: STUDENT_CODE_PREFIX
+        value: TM
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_RECOVERY_CODE
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+
+  - type: web
+    name: toeic-api-dev
+    runtime: node
+    branch: dev-version
+    buildCommand: npm install && npm run build -w @toeic/shared && npm run build -w @toeic/api
+    startCommand: npm run start -w @toeic/api
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"
+      - key: AUTO_MIGRATE
+        value: "true"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: lax
+      - key: BOOTSTRAP_ADMIN_USERNAME
+        value: admin
+      - key: STUDENT_CODE_PREFIX
+        value: TM
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_RECOVERY_CODE
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET
+        sync: false

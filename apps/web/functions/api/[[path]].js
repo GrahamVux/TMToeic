@@ -1,4 +1,7 @@
-/** Same-origin proxy so login cookies are first-party (iOS Safari blocks third-party cookies). */
+/**
+ * Same-origin proxy so login cookies are first-party (iOS Safari blocks third-party cookies).
+ * A new Pages project must set API_ORIGIN to its own Render API. The fallback keeps the current site working.
+ */
 const FALLBACK_API = 'https://toeic-api-2jb7.onrender.com'
 
 export async function onRequest(context) {

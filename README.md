@@ -21,7 +21,21 @@ npm run dev          # build shared → chạy API (:3001) + web (:5173, proxy /
 
 - Không cần cài Postgres: khi `DATABASE_URL` trống, API dùng **PGlite** (Postgres thật chạy in-process, lưu ở `apps/api/.data/pglite`). Migration tự chạy khi khởi động.
 - Lần đầu API tạo tài khoản admin: `admin` / `ChangeMe123` (chỉ ở môi trường dev; bắt buộc đổi mật khẩu khi đăng nhập lần đầu). Đặt `BOOTSTRAP_ADMIN_USERNAME` / `BOOTSTRAP_ADMIN_PASSWORD` để đổi.
-- Admin quên mật khẩu: trên màn đăng nhập chọn "Quên mật khẩu quản trị?" và nhập `ADMIN_RECOVERY_CODE` (đặt trong `apps/api/.env`, và trên Render khi chạy thật). Mã sai nhiều lần sẽ khóa tài khoản như đăng nhập sai. Học viên và giáo viên không dùng được mã này.
+- Admin quên mật khẩu: trên màn đăng nhập chọn "Quên mật khẩu quản trị?" và nhập `ADMIN_RECOVERY_CODE` của đúng môi trường (local trong `apps/api/.env`, production trên Render `toeic-api-prod`, dev trên Render `toeic-api-dev`). Mã sai nhiều lần sẽ khóa tài khoản như đăng nhập sai. Học viên và giáo viên không dùng được mã này.
+
+## Deploy
+
+Hai môi trường tách database, tách API, tách kho file. Site cũ (`toeic-api-2jb7`) giữ nguyên cho đến khi bản mới đăng nhập được.
+
+| | Production | Dev |
+| --- | --- | --- |
+| Nhánh | `main` | `dev-version` |
+| Web | Cloudflare Pages | Vercel (`vercel.json`, Production Branch = `dev-version`) |
+| API | Render `toeic-api-prod` (`render.yaml`) | Render `toeic-api-dev` |
+| Database | Supabase project mới | Supabase project mới khác |
+| File | bucket R2 riêng | bucket R2 riêng |
+
+Web gọi `/api` cùng tên miền. Pages dùng `functions/api/[[path]].js` (đặt `API_ORIGIN` = URL Render production). Vercel dùng `api/[...path].js` (đặt `API_ORIGIN` = URL Render dev). API tự chạy migration khi khởi động (`AUTO_MIGRATE`). `DATABASE_URL` lấy chuỗi **Session pooler**, cổng **5432**.
 - Cấu hình: copy `apps/api/.env.example` → `apps/api/.env` (API tự nạp `.env` trong thư mục `apps/api`; biến môi trường thật luôn được ưu tiên).
 
 ## Tài khoản & phân quyền
