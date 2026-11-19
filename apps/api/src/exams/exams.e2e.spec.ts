@@ -166,6 +166,23 @@ describe('Exam engine (e2e on PGlite)', () => {
       expect((await admin.post(`/exams/${examId}/publish`)).status).toBe(200)
     })
 
+    it('drops the exam when imported question numbers collide, so the code can be used again', async () => {
+      const code = `BAD-${Date.now()}`
+      const option = (key: string) => ({ key, text: key, correct: key === 'A' })
+      const res = await admin.post('/exams/import-authored').send({
+        code,
+        title: 'Broken numbers',
+        durationSeconds: 600,
+        parts: [{ partCode: 'PART_5', questionStart: 101, questionEnd: 102 }],
+        groups: [],
+        questions: [101, 101].map((number) => ({ partCode: 'PART_5', number, prompt: `Question ${number}`, options: ['A', 'B', 'C', 'D'].map(option) })),
+      })
+      expect(res.status).toBe(400)
+      expect(res.body.error.details.problems.join(' ')).toMatch(/Câu 101 bị trùng/)
+      const { exams } = await import('../db/schema')
+      expect(await db.select({ id: exams.id }).from(exams).where(eq(exams.code, code))).toHaveLength(0)
+    })
+
     it('deletes an exam, its attempts and its homework for good', async () => {
       const id = await publishedExam(SMALL_LAYOUT)
       const start = await student.post(`/exams/${id}/attempts`).send({ mode: 'PRACTICE' })

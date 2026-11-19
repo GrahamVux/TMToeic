@@ -72,7 +72,8 @@ function AuthoredImport({ skill }: { skill: Skill }) {
   function reportError(message: string) {
     setNotice(flashError(message))
   }
-  const sampleHref = skill === 'LISTENING' ? '/mau-import-listening.json' : '/mau-import-de.json'
+  const sampleHref = skill === 'LISTENING' ? '/mau-import-listening.json' : '/mau-import-reading.json'
+  const sampleName = skill === 'LISTENING' ? 'mau-de-listening.json' : 'mau-de-reading.json'
   const busy = importExam.isPending || uploadAudio.isPending
 
   function addRow() {
@@ -205,8 +206,8 @@ function AuthoredImport({ skill }: { skill: Skill }) {
             ? 'File gồm Part 1–4. Chọn file để xem lại câu hỏi, đáp án và lời giải trước khi lưu. File nghe chọn riêng bên dưới.'
             : 'File gồm Part 5–7. Mỗi đề chỉ thuộc một kỹ năng. Chọn file để xem lại câu hỏi, đáp án và lời giải trước khi lưu.'}
         </p>
-        <a className="mt-2 inline-block text-sm font-semibold text-gold-deep underline" href={sampleHref} download>
-          Tải file mẫu
+        <a className="mt-2 inline-block text-sm font-semibold text-gold-deep underline" href={sampleHref} download={sampleName}>
+          {skill === 'LISTENING' ? 'Tải file mẫu Listening' : 'Tải file mẫu Reading'}
         </a>
         <div className="mt-4">
           <FilePick

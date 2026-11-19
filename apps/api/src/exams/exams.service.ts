@@ -360,7 +360,12 @@ export class ExamsService {
     const [existing] = await this.db.select({ id: exams.id }).from(exams).where(eq(exams.code, examInput.code)).limit(1)
     if (existing) throw AppException.conflict('Mã đề đã tồn tại trong ngân hàng. Hãy dùng mã khác.')
     const created = await this.create(actor, examInput)
-    await this.replaceContent(actor, created.id, { groups, questions })
+    try {
+      await this.replaceContent(actor, created.id, { groups, questions })
+    } catch (err) {
+      await this.remove(actor, created.id).catch(() => undefined)
+      throw err
+    }
     if (this.assetStore.enabled || this.config.isProd) {
       try {
         await this.assetStore.saveExamSource(created.id, input, actor.id)
