@@ -14,6 +14,7 @@ export async function createTestApp(
   extra: { storage?: Pick<StorageService, 'enabled' | 'bucket' | 'signedGetUrl' | 'putObject' | 'deleteObject'>; config?: Partial<AppConfig> } = {},
 ): Promise<INestApplication> {
   process.env.LOGIN_RATE_LIMIT = '100000' // per-IP throttle is covered separately from account lockout
+  process.env.API_RATE_LIMIT = '300'
   const config = {
     ...loadConfig({
       NODE_ENV: 'test',

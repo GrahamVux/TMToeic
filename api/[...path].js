@@ -11,8 +11,11 @@ export default async function handler(request) {
   const incoming = new URL(request.url)
   const target = `${apiOrigin}${incoming.pathname}${incoming.search}`
   const headers = new Headers(request.headers)
+  const clientIp = headers.get('cf-connecting-ip') || headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+  for (const name of ['cf-connecting-ip', 'cf-ray', 'cf-ipcountry', 'cf-visitor', 'cf-ew-via', 'cf-worker', 'cdn-loop', 'x-real-ip']) headers.delete(name)
   headers.set('host', new URL(apiOrigin).host)
   headers.delete('content-length')
+  if (clientIp) headers.set('x-forwarded-for', clientIp)
 
   const method = request.method
   const hasBody = method !== 'GET' && method !== 'HEAD'

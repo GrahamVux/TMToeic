@@ -27,7 +27,9 @@ import { UsersModule } from './users/users.module'
     DatabaseModule,
     AuditModule,
     StorageModule,
-    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 300 }]),
+    // Read at request time so tests can pin a small limit. 1200/min covers a full page plus autosave
+    // without the Cloudflare site answering 429 on ordinary navigation.
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: () => Number(process.env.API_RATE_LIMIT ?? 1200) }]),
     AuthModule,
     UsersModule,
     ExamsModule,

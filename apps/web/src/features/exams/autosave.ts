@@ -174,11 +174,12 @@ export class AutosaveStore {
         this.onClosed()
         return
       }
-      const transient = err instanceof ApiError ? err.status === 0 || err.status >= 500 || err.status === 429 : true
+      const limited = err instanceof ApiError && err.status === 429
+      const transient = err instanceof ApiError ? err.status === 0 || err.status >= 500 || limited : true
       if (transient) {
         this.offline = true
         this.publish()
-        this.scheduleRetry(questionId)
+        this.scheduleRetry(questionId, limited ? 20_000 : 0)
       } else {
         // 401 is handled globally (session lost); any other 4xx will not succeed by retrying.
         this.hardError = true
@@ -193,10 +194,10 @@ export class AutosaveStore {
     void this.sync(questionId)
   }
 
-  private scheduleRetry(questionId: string) {
+  private scheduleRetry(questionId: string, minimumMs = 0) {
     const n = (this.retries.get(questionId) ?? 0) + 1
     this.retries.set(questionId, n)
-    const delay = Math.min(RETRY_MAX_MS, RETRY_BASE_MS * 2 ** (n - 1))
+    const delay = Math.max(minimumMs, Math.min(RETRY_MAX_MS, RETRY_BASE_MS * 2 ** (n - 1)))
     const timer = setTimeout(() => {
       this.timers.delete(timer)
       void this.sync(questionId)
