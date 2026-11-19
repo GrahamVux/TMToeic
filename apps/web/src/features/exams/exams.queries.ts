@@ -1,5 +1,5 @@
 import { api, apiUpload } from '@/lib/api'
-import type { AttemptPlayerDto, AttemptResultDto, AttemptReviewDto, ExamSummaryDto, StartAttemptInput, AttemptDto } from '@toeic/shared'
+import type { AttemptPlayerDto, AttemptResultDto, AttemptReviewDto, CreateExamBundleInput, ExamBundleDto, ExamSummaryDto, StartAttemptInput, AttemptDto } from '@toeic/shared'
 import { PART_SEED } from '@toeic/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
@@ -79,6 +79,21 @@ export function useArchiveExam() {
   })
 }
 
+export function useExamBundles() {
+  return useQuery({ queryKey: ['exam-bundles'], queryFn: () => api<ExamBundleDto[]>('/exams/bundles') })
+}
+
+export function useCreateExamBundle() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CreateExamBundleInput) => api<ExamBundleDto>('/exams/bundles', { method: 'POST', body: input }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: examKeys.exams })
+      void qc.invalidateQueries({ queryKey: ['exam-bundles'] })
+    },
+  })
+}
+
 export function useDeleteExam() {
   const qc = useQueryClient()
   return useMutation({
@@ -111,6 +126,28 @@ export function useUploadExamAudio() {
       return apiUpload<{ ok: true }>(`/exams/${examId}/audio/file?${q}`, file, audioContentType(file))
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: examKeys.exams }),
+  })
+}
+
+/** Gemini JSON followed by the original Listening PDF, packed as a 4-byte length and then the two files. */
+export function packListeningScan(jsonText: string, pdf: File): Blob {
+  const json = new TextEncoder().encode(jsonText)
+  const header = new Uint8Array(4)
+  new DataView(header.buffer).setUint32(0, json.length, false)
+  return new Blob([header, json, pdf])
+}
+
+export function usePreviewListeningScan() {
+  return useMutation({
+    mutationFn: (file: Blob) => apiUpload<{ images: Record<string, string>; pages: string[] }>('/exams/import-listening-scan/preview', file, 'application/octet-stream'),
+  })
+}
+
+export function useImportListeningScan() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (file: Blob) => apiUpload<ExamSummaryDto>('/exams/import-listening-scan', file, 'application/octet-stream'),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: examKeys.exams }),
   })
 }
 

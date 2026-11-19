@@ -5,7 +5,8 @@ import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Badge, Card } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { cn } from '@/lib/cn'
-import { FILL_QUESTION_TYPE, type AttemptPlayerDto } from '@toeic/shared'
+import { CSRF_HEADER, CSRF_HEADER_VALUE, FILL_QUESTION_TYPE, type AttemptPlayerDto } from '@toeic/shared'
+import { getViewAsId } from '@/lib/view-as'
 import { AlertTriangle, Headphones } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
@@ -52,6 +53,20 @@ function Player({ data }: { data: AttemptPlayerDto }) {
     store.activate() // StrictMode mounts effects twice; a disposed store must be revivable
     return () => store.dispose()
   }, [store])
+  useEffect(() => {
+    if (attempt.mode !== 'FULL_TEST' || attempt.assignmentId) return
+    const id = attempt.id
+    return () => {
+      if (getViewAsId()) return
+      if (window.location.pathname.includes(`/attempts/${id}`)) return
+      void fetch(`/api/v1/attempts/${id}/abandon`, {
+        method: 'POST',
+        credentials: 'include',
+        keepalive: true,
+        headers: { [CSRF_HEADER]: CSRF_HEADER_VALUE },
+      })
+    }
+  }, [attempt.assignmentId, attempt.id, attempt.mode])
   const save = useSyncExternalStore(store.subscribe, store.getSnapshot)
   const focus = useFocusGuard(attempt.id, attempt.focusWatch)
 

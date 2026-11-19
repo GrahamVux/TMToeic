@@ -227,6 +227,26 @@ export const exams = pgTable(
   (t) => [uniqueIndex('exams_code_uq').on(t.code), index('exams_status_idx').on(t.status)],
 ).enableRLS()
 
+/** A full test made by pairing one Listening exam with one Reading exam. The playable paper is `examId`. */
+export const examBundles = pgTable(
+  'exam_bundles',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    examId: uuid('exam_id')
+      .notNull()
+      .references(() => exams.id, { onDelete: 'cascade' }),
+    listeningExamId: uuid('listening_exam_id')
+      .notNull()
+      .references(() => exams.id, { onDelete: 'restrict' }),
+    readingExamId: uuid('reading_exam_id')
+      .notNull()
+      .references(() => exams.id, { onDelete: 'restrict' }),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('exam_bundles_exam_uq').on(t.examId), uniqueIndex('exam_bundles_pair_uq').on(t.listeningExamId, t.readingExamId)],
+).enableRLS()
+
 export const examParts = pgTable(
   'exam_parts',
   {

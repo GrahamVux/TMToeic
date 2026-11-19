@@ -37,7 +37,7 @@ export function examTextStyle(scale: number): CSSProperties {
   return { '--exam-scale': String(scale) } as CSSProperties
 }
 
-/** Exam figure. `frame` fills the question width. `listening` stays short so the choices stay in view. */
+/** Exam figure. Both fits fill the column and keep the picture's own height. */
 export function ZoomableImage({ src, alt, fit = 'frame' }: { src: string; alt: string; fit?: 'frame' | 'listening' }) {
   const [scale, setScale] = useState(1)
   const [open, setOpen] = useState(false)

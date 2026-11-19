@@ -28,6 +28,11 @@ function isUniqueViolation(err: unknown): boolean {
   return e?.code === '23505' || e?.cause?.code === '23505'
 }
 
+function isForeignKeyViolation(err: unknown): boolean {
+  const e = err as { code?: string; cause?: { code?: string } }
+  return e?.code === '23503' || e?.cause?.code === '23503'
+}
+
 const escapeLike = (v: string) => v.replace(/[\\%_]/g, (m) => `\\${m}`)
 
 @Injectable()
@@ -448,11 +453,16 @@ export class ExamsService {
   async remove(actor: Actor, id: string): Promise<void> {
     const exam = await this.requireExam(id)
     const assetIds = await this.examAssetIds(exam)
-    await this.db.transaction(async (tx) => {
-      await tx.delete(attempts).where(eq(attempts.examId, id))
-      await tx.delete(assignments).where(eq(assignments.examId, id))
-      await tx.delete(exams).where(eq(exams.id, id))
-    })
+    try {
+      await this.db.transaction(async (tx) => {
+        await tx.delete(attempts).where(eq(attempts.examId, id))
+        await tx.delete(assignments).where(eq(assignments.examId, id))
+        await tx.delete(exams).where(eq(exams.id, id))
+      })
+    } catch (err) {
+      if (isForeignKeyViolation(err)) throw AppException.conflict('Đề này đang nằm trong một bộ đề tổng hợp. Hãy xóa bộ đề đó trước.')
+      throw err
+    }
     await this.assetStore.discard(assetIds)
     await this.audit.log({
       action: 'EXAM_DELETED',

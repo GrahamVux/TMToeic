@@ -378,6 +378,20 @@ describe('Exam engine (e2e on PGlite)', () => {
       const again = await student.post(`/exams/${examId}/attempts`).send({ mode: 'FULL_TEST' })
       expect(again.body.id).not.toBe(id)
     })
+
+    it('does not resume a mock test: starting again closes the open sitting', async () => {
+      const examId = await publishedExam(SMALL_LAYOUT, { duration: 3600 })
+      const first = await student.post(`/exams/${examId}/attempts`).send({ mode: 'FULL_TEST' })
+      const second = await student.post(`/exams/${examId}/attempts`).send({ mode: 'FULL_TEST' })
+      expect(second.body.id).not.toBe(first.body.id)
+      expect(second.body.status).toBe('IN_PROGRESS')
+      const closed = await student.get(`/attempts/${first.body.id}/result`)
+      expect(closed.body.attempt.status).toBe('ABANDONED')
+
+      const practice = await student.post(`/exams/${examId}/attempts`).send({ mode: 'PRACTICE' })
+      const resumed = await student.post(`/exams/${examId}/attempts`).send({ mode: 'PRACTICE' })
+      expect(resumed.body.id).toBe(practice.body.id)
+    })
   })
 
   describe('demo exam seeding (dev convenience)', () => {
@@ -550,5 +564,53 @@ describe('Exam engine (e2e on PGlite)', () => {
     expect((await student.post(`/attempts/${started.body.id}/submit`)).status).toBe(200)
     const review = await student.get(`/attempts/${started.body.id}/review`)
     expect(review.body.questions[0].explanation).toBe('before là giới từ chỉ thời điểm.')
+  })
+
+  it('builds a full test from one Listening exam and one Reading exam, and refuses the same pair', async () => {
+    const option = (key: string) => ({ key, text: key, correct: key === 'A' })
+    const paper = async (code: string, parts: Array<{ partCode: string; questionStart: number; questionEnd: number }>) => {
+      const created = await admin.post('/exams').send({ code, title: code, durationSeconds: 600, parts })
+      expect(created.status).toBe(201)
+      const questions = parts.map((part) => ({
+        partCode: part.partCode,
+        number: part.questionStart,
+        prompt: `${code} ${part.partCode}`,
+        options: ['A', 'B', 'C', 'D'].map(option),
+      }))
+      expect((await put(admin, `/exams/${created.body.id}/content`, { groups: [], questions })).status).toBe(200)
+      expect((await admin.post(`/exams/${created.body.id}/publish`)).status).toBe(200)
+      return created.body.id as string
+    }
+    const listening = [
+      { partCode: 'PART_1', questionStart: 1, questionEnd: 1 },
+      { partCode: 'PART_2', questionStart: 7, questionEnd: 7 },
+      { partCode: 'PART_3', questionStart: 32, questionEnd: 32 },
+      { partCode: 'PART_4', questionStart: 71, questionEnd: 71 },
+    ]
+    const reading = [
+      { partCode: 'PART_5', questionStart: 101, questionEnd: 101 },
+      { partCode: 'PART_6', questionStart: 131, questionEnd: 131 },
+      { partCode: 'PART_7', questionStart: 147, questionEnd: 147 },
+    ]
+    const listeningId = await paper(`L-FULL-${Date.now()}`, listening)
+    const readingId = await paper(`R-FULL-${Date.now()}`, reading)
+    const otherReadingId = await paper(`R-FULL-B-${Date.now()}`, reading)
+
+    const created = await admin.post('/exams/bundles').send({ listeningExamId: listeningId, readingExamId: readingId })
+    expect(created.status).toBe(201)
+    expect(created.body.listeningExamId).toBe(listeningId)
+    expect(created.body.readingExamId).toBe(readingId)
+    expect(created.body.status).toBe('PUBLISHED')
+    const summary = await admin.get(`/exams/${created.body.examId}`)
+    expect(summary.body.parts.map((part: { code: string }) => part.code)).toEqual(['PART_1', 'PART_2', 'PART_3', 'PART_4', 'PART_5', 'PART_6', 'PART_7'])
+    expect(summary.body.totalQuestions).toBe(7)
+
+    const again = await admin.post('/exams/bundles').send({ listeningExamId: listeningId, readingExamId: readingId })
+    expect(again.status).toBe(409)
+
+    const random = await admin.post('/exams/bundles').send({ random: true })
+    expect(random.status).toBe(201)
+    expect(random.body.readingExamId).toBe(otherReadingId)
+    expect((await admin.post('/exams/bundles').send({ random: true })).status).toBe(409)
   })
 })

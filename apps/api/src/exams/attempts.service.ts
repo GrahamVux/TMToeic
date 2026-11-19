@@ -109,7 +109,11 @@ export class AttemptsService {
       .limit(1)
     if (live) {
       const current = await this.expireIfNeeded(live)
-      if (current.status === 'IN_PROGRESS') return this.toDto(current, exam.title)
+      if (current.status === 'IN_PROGRESS') {
+        // A mock test is one sitting. Leaving it, or starting again, ends that sitting. Practice still resumes.
+        if (input.mode === 'FULL_TEST' && !current.assignmentId) await this.finalize(current, 'ABANDONED')
+        else return this.toDto(current, exam.title)
+      }
     }
 
     const scope = await this.scopeQuestions(this.db, examId, partCodes)
@@ -350,6 +354,15 @@ export class AttemptsService {
   }
 
   // ---------------------------------------------------------------- submit (idempotent)
+  /** Ends a mock test the student left. Practice and homework sittings stay open. */
+  async abandon(actor: Actor, attemptId: string): Promise<{ status: string }> {
+    const attempt = await this.requireOwn(actor, attemptId)
+    if (attempt.mode !== 'FULL_TEST' || attempt.assignmentId) return { status: attempt.status }
+    if (attempt.status !== 'IN_PROGRESS') return { status: attempt.status }
+    const done = await this.finalize(attempt, 'ABANDONED')
+    return { status: done.status }
+  }
+
   async submit(actor: Actor, attemptId: string): Promise<AttemptResultDto> {
     const attempt = await this.requireOwn(actor, attemptId)
     const closed = attempt.status === 'IN_PROGRESS' ? await this.expireIfNeeded(attempt) : attempt
@@ -454,7 +467,7 @@ export class AttemptsService {
   }
 
   /** Atomically claims the attempt (IN_PROGRESS → final status) and scores it in the same transaction — exactly once. */
-  private async finalize(a: AttemptRow, status: 'SUBMITTED' | 'EXPIRED'): Promise<AttemptRow> {
+  private async finalize(a: AttemptRow, status: 'SUBMITTED' | 'EXPIRED' | 'ABANDONED'): Promise<AttemptRow> {
     return this.db.transaction(async (tx) => {
       const submittedAt = status === 'EXPIRED' && a.deadlineAt ? a.deadlineAt : new Date()
       const [claimed] = await tx

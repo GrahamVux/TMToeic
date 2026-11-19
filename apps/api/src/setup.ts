@@ -17,6 +17,14 @@ export function configureApp(app: INestApplication) {
   http.disable('x-powered-by')
 
   app.setGlobalPrefix(API_PREFIX)
+  // Gemini's Listening JSON is a few hundred kilobytes; the photographed PDF beside it is several megabytes.
+  http.use((req: Request, res: Response, next: NextFunction) => {
+    const path = req.path.split('?')[0] ?? req.path
+    if (req.method === 'POST' && /\/exams\/import-listening-scan(?:\/preview)?$/.test(path)) {
+      return express.raw({ type: () => true, limit: '20mb' })(req, res, next)
+    }
+    next()
+  })
   http.useBodyParser('json', { limit: '5mb' })
   // Listening recordings are posted as raw bytes, not JSON (the 5mb JSON parser would reject a full test).
   http.use((req: Request, res: Response, next: NextFunction) => {

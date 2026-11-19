@@ -1,5 +1,5 @@
 import { PartDrills } from './PartDrills'
 
 export function ReadingDrillsPage() {
-  return <PartDrills skill="READING" title="Bài luyện ngắn Reading" subtitle="Luyện từng Part 5–7 trên các đề đã publish." />
+  return <PartDrills skill="READING" title="Luyện Reading" subtitle="Bài ngắn theo từng part. Tìm đề theo tên hoặc lọc part." />
 }

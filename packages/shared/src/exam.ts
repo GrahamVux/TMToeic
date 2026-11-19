@@ -1,6 +1,18 @@
 import { z } from 'zod'
 import { PART_CODE_PATTERN, type ExamMode, type Skill } from './domain'
 
+/** A full Listening paper contains every listening part. */
+export const FULL_LISTENING_PARTS = ['PART_1', 'PART_2', 'PART_3', 'PART_4'] as const
+/** A full Reading paper contains every reading part. */
+export const FULL_READING_PARTS = ['PART_5', 'PART_6', 'PART_7'] as const
+
+export function isFullSkillExam(parts: ReadonlyArray<{ code: string; skill: string }>, skill: 'LISTENING' | 'READING'): boolean {
+  const required = skill === 'LISTENING' ? FULL_LISTENING_PARTS : FULL_READING_PARTS
+  const codes = new Set(parts.map((part) => part.code))
+  const skills = new Set(parts.map((part) => part.skill))
+  return skills.size === 1 && skills.has(skill) && required.every((code) => codes.has(code))
+}
+
 export const EXAM_STATUSES = ['DRAFT', 'PROCESSING', 'PENDING_REVIEW', 'PUBLISHED', 'ARCHIVED', 'REJECTED'] as const
 export type ExamStatus = (typeof EXAM_STATUSES)[number]
 
@@ -133,6 +145,83 @@ export const importAuthoredExamSchema = createExamSchema.extend({
 })
 export type ImportAuthoredExamInput = z.infer<typeof importAuthoredExamSchema>
 
+const scanBox = z.tuple([z.number(), z.number(), z.number(), z.number()])
+
+/** JSON Gemini returns for one Listening booklet. The PDF is uploaded beside it; boxes are cut from that PDF. */
+export const listeningScanSchema = z.object({
+  sourceFile: z.string().trim().max(200).optional(),
+  testNo: z.number().int().min(1).max(99).optional(),
+  code: z
+    .string()
+    .trim()
+    .min(3)
+    .max(40)
+    .regex(/^[A-Za-z0-9._-]+$/, 'Chỉ dùng chữ, số, . _ -'),
+  title: z.string().trim().min(3).max(200),
+  durationSeconds: z.number().int().min(60).max(4 * 3600).default(45 * 60),
+  continued: z.boolean().optional(),
+  nextNumber: z.number().int().nullable().optional(),
+  pages: z
+    .array(
+      z.object({
+        page: z.number().int().min(1).max(80),
+        role: z.enum(['skip', 'part1-photos', 'part3-4']).optional(),
+        rotationDegrees: z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)]).default(0),
+      }),
+    )
+    .max(80)
+    .default([]),
+  groups: z
+    .array(
+      z.object({
+        key: z.string().trim().min(1).max(40),
+        partCode: z.enum(['PART_3', 'PART_4']),
+        instructions: z.string().trim().max(1000).optional(),
+        imageFile: z.string().trim().min(1).max(80).nullable().optional(),
+      }),
+    )
+    .max(40)
+    .default([]),
+  questions: z
+    .array(
+      z.object({
+        number: z.number().int().min(1).max(100),
+        partCode: z.enum(['PART_1', 'PART_2', 'PART_3', 'PART_4']),
+        prompt: z.string().trim().max(5000).default(''),
+        groupKey: z.string().trim().min(1).max(40).optional(),
+        imageFile: z.string().trim().min(1).max(80).optional(),
+        answer: z.enum(['A', 'B', 'C', 'D']).nullable().optional(),
+        options: z
+          .array(
+            z.object({
+              key: z.enum(OPTION_KEYS),
+              text: z.string().trim().max(2000).default(''),
+            }),
+          )
+          .min(2)
+          .max(4),
+      }),
+    )
+    .min(1)
+    .max(100),
+  crops: z
+    .array(
+      z.object({
+        file: z.string().trim().min(1).max(80),
+        page: z.number().int().min(1).max(80),
+        kind: z.enum(['photo', 'graphic']).optional(),
+        /** Set when an editor dragged this box. The server then cuts that box instead of guessing the photograph. */
+        manual: z.boolean().optional(),
+        questionNumbers: z.array(z.number().int()).max(10).optional(),
+        box: scanBox,
+      }),
+    )
+    .max(40)
+    .default([]),
+  warnings: z.array(z.string().max(300)).max(200).optional(),
+})
+export type ListeningScanInput = z.infer<typeof listeningScanSchema>
+
 const importAssetInput = z.object({
   objectKey: z.string().trim().min(1).max(500),
   mimeType: z.string().trim().min(1).max(120),
@@ -202,6 +291,33 @@ export const setExamAudioSchema = z.object({
   partCode: z.string().trim().min(1).max(32).optional(),
 })
 export type SetExamAudioInput = z.infer<typeof setExamAudioSchema>
+
+/** Combine one full Listening exam with one full Reading exam. `random` picks a pair that does not exist yet. */
+export const createExamBundleSchema = z
+  .object({
+    listeningExamId: z.uuid().optional(),
+    readingExamId: z.uuid().optional(),
+    random: z.boolean().optional(),
+  })
+  .refine((value) => value.random === true || (Boolean(value.listeningExamId) && Boolean(value.readingExamId)), {
+    message: 'Chọn một đề Listening và một đề Reading, hoặc tạo nhanh.',
+  })
+export type CreateExamBundleInput = z.infer<typeof createExamBundleSchema>
+
+export type ExamBundleDto = {
+  id: string
+  examId: string
+  code: string
+  title: string
+  status: ExamStatus
+  listeningExamId: string
+  readingExamId: string
+  listeningCode: string
+  listeningTitle: string
+  readingCode: string
+  readingTitle: string
+  createdAt: string
+}
 
 export const listExamsQuerySchema = z.object({
   status: z.enum(EXAM_STATUSES).optional(),

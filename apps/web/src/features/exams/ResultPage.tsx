@@ -40,6 +40,7 @@ export function ResultPage() {
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-gold-deep">{r.attempt.examTitle}</p>
           {r.attempt.status === 'EXPIRED' ? <Badge tone="warn">Tự nộp do hết giờ</Badge> : null}
+          {r.attempt.status === 'ABANDONED' ? <Badge tone="danger">Đã rời bài thi — không làm tiếp được</Badge> : null}
         </div>
         {scaled ? (
           <>

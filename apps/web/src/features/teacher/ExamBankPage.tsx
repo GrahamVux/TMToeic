@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthContext'
 import { useImportAuthoredExam } from '@/features/assignments/assignments.queries'
 import { Button } from '@/components/ui/Button'
 import { CornerNotice, flashError, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
@@ -5,10 +6,12 @@ import { FilePick } from '@/components/ui/FilePick'
 import { Modal } from '@/components/ui/Modal'
 import { Badge, Card, Input } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
-import { partName, useArchiveExam, useDeleteExam, useExams, usePublishExam, useUploadExamAudio } from '@/features/exams/exams.queries'
+import { packListeningScan, partName, useArchiveExam, useDeleteExam, useExams, useImportListeningScan, usePreviewListeningScan, usePublishExam, useUploadExamAudio } from '@/features/exams/exams.queries'
 import { ApiError } from '@/lib/api'
-import { ERROR_CODES, EXAM_STATUS_LABEL, importAuthoredExamSchema, OPTION_KEYS, PART_SEED, type ExamStatus, type ExamSummaryDto, type ImportAuthoredExamInput, type Skill } from '@toeic/shared'
+import { ERROR_CODES, EXAM_STATUS_LABEL, importAuthoredExamSchema, listeningScanSchema, OPTION_KEYS, PART_SEED, type ExamStatus, type ExamSummaryDto, type ImportAuthoredExamInput, type ListeningScanInput, type Skill } from '@toeic/shared'
+import { ExamBundlePanel } from './ExamBundlePanel'
 import { ImportReview } from './ImportReview'
+import { ListeningScanReview } from './ListeningScanReview'
 import { FileUp } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -24,6 +27,7 @@ export function ExamBankPage() {
         <h1 className="serif mt-2 text-3xl sm:text-4xl">Ngân hàng đề — mỗi part là một nhóm giao bài</h1>
         <p className="mt-2 text-sm text-ink/60">Import đề Listening và đề Reading riêng. Đề Listening có thể gắn file nghe sau khi vào ngân hàng.</p>
       </div>
+      <ExamBundlePanel />
       <div className="flex flex-wrap gap-2">
         <button type="button" className={tabClass(skill === 'LISTENING')} onClick={() => setSkill('LISTENING')}>
           Import đề Listening
@@ -58,7 +62,10 @@ function foreignPartCodes(raw: ImportAuthoredExamInput, skill: Skill) {
 }
 
 function AuthoredImport({ skill }: { skill: Skill }) {
+  const { user } = useAuth()
   const importExam = useImportAuthoredExam()
+  const importScan = useImportListeningScan()
+  const previewScan = usePreviewListeningScan()
   const uploadAudio = useUploadExamAudio()
   const parts = PART_SEED.filter((p) => p.skill === skill && p.code.startsWith('PART_'))
   const [title, setTitle] = useState('')
@@ -67,6 +74,9 @@ function AuthoredImport({ skill }: { skill: Skill }) {
   const [rows, setRows] = useState([{ prompt: '', a: '', b: '', c: '', d: '', correct: 'A', explanation: '' }])
   const [preview, setPreview] = useState<ImportAuthoredExamInput | null>(null)
   const [audio, setAudio] = useState<File | null>(null)
+  const [scan, setScan] = useState<{ name: string; draft: ListeningScanInput } | null>(null)
+  const [scanPdf, setScanPdf] = useState<File | null>(null)
+  const [scanReview, setScanReview] = useState<{ draft: ListeningScanInput; images: Record<string, string>; pages: string[] } | null>(null)
   const [notice, setNotice] = useState<CornerNoticeState | null>(null)
 
   function reportError(message: string) {
@@ -74,7 +84,7 @@ function AuthoredImport({ skill }: { skill: Skill }) {
   }
   const sampleHref = skill === 'LISTENING' ? '/mau-import-listening.json' : '/mau-import-reading.json'
   const sampleName = skill === 'LISTENING' ? 'mau-de-listening.json' : 'mau-de-reading.json'
-  const busy = importExam.isPending || uploadAudio.isPending
+  const busy = importExam.isPending || uploadAudio.isPending || importScan.isPending || previewScan.isPending
 
   function addRow() {
     setRows((r) => [...r, { prompt: '', a: '', b: '', c: '', d: '', correct: 'A', explanation: '' }])
@@ -140,10 +150,67 @@ function AuthoredImport({ skill }: { skill: Skill }) {
     }
   }
 
+  async function openScanReview() {
+    if (!scan || !scanPdf) return
+    setNotice(null)
+    try {
+      const result = await previewScan.mutateAsync(packListeningScan(JSON.stringify(scan.draft), scanPdf))
+      setScanReview({ draft: scan.draft, images: result.images, pages: result.pages })
+    } catch (e) {
+      reportError(e instanceof ApiError ? e.message : 'Không cắt được ảnh từ PDF.')
+    }
+  }
+
+  async function recutScan(next: ListeningScanInput) {
+    if (!scanPdf) return null
+    setNotice(null)
+    try {
+      const result = await previewScan.mutateAsync(packListeningScan(JSON.stringify(next), scanPdf))
+      return result.images
+    } catch (e) {
+      reportError(e instanceof ApiError ? e.message : 'Không cắt lại được ảnh.')
+      return null
+    }
+  }
+
+  async function saveScan(next: ListeningScanInput) {
+    if (!scanPdf) return
+    setNotice(null)
+    try {
+      const exam = await importScan.mutateAsync(packListeningScan(JSON.stringify(next), scanPdf))
+      setScan(null)
+      setScanPdf(null)
+      setScanReview(null)
+      setNotice(
+        flashNotice(
+          exam.status === 'PUBLISHED'
+            ? `Đã thêm “${exam.title}” và cắt ảnh từ PDF.`
+            : `Đã thêm “${exam.title}” ở dạng bản nháp. Hãy kiểm tra đáp án trước khi xuất bản.`,
+        ),
+      )
+    } catch (e) {
+      reportError(e instanceof ApiError ? e.message : 'Không lưu được đề Listening.')
+    }
+  }
+
   async function onJsonFile(file: File) {
     setNotice(null)
     try {
-      const parsed = importAuthoredExamSchema.safeParse(JSON.parse(await file.text()))
+      const text = await file.text()
+      const raw = JSON.parse(text) as unknown
+      if (raw && typeof raw === 'object' && 'crops' in raw) {
+        const scanParsed = listeningScanSchema.safeParse(raw)
+        if (!scanParsed.success) {
+          reportError(scanParsed.error.issues.map((issue) => issue.message).join(' '))
+          return
+        }
+        setPreview(null)
+        setScanReview(null)
+        setScan({ name: file.name, draft: scanParsed.data })
+        return
+      }
+      setScan(null)
+      const parsed = importAuthoredExamSchema.safeParse(raw)
       if (!parsed.success) {
         reportError(parsed.error.issues.map((issue) => issue.message).join(' '))
         return
@@ -180,6 +247,23 @@ function AuthoredImport({ skill }: { skill: Skill }) {
     }
   }
 
+  if (scanReview && scanPdf) {
+    return (
+      <>
+        <CornerNotice notice={notice} />
+        <ListeningScanReview
+          draft={scanReview.draft}
+          images={scanReview.images}
+          pages={scanReview.pages}
+          busy={busy}
+          onCancel={() => setScanReview(null)}
+          onRecut={recutScan}
+          onSave={(next) => void saveScan(next)}
+        />
+      </>
+    )
+  }
+
   if (preview) {
     return (
       <>
@@ -203,21 +287,44 @@ function AuthoredImport({ skill }: { skill: Skill }) {
         <h2 className="serif mt-2 text-2xl">{skill === 'LISTENING' ? 'Import JSON đề Listening' : 'Import JSON đề Reading'}</h2>
         <p className="mt-2 text-sm text-ink/60">
           {skill === 'LISTENING'
-            ? 'File gồm Part 1–4. Chọn file để xem lại câu hỏi, đáp án và lời giải trước khi lưu. File nghe chọn riêng bên dưới.'
+            ? 'File gồm Part 1–4. JSON có khung cắt thì chọn thêm PDF, xem ảnh và sửa câu trước khi lưu. File nghe chọn riêng bên dưới.'
             : 'File gồm Part 5–7. Mỗi đề chỉ thuộc một kỹ năng. Chọn file để xem lại câu hỏi, đáp án và lời giải trước khi lưu.'}
         </p>
         <a className="mt-2 inline-block text-sm font-semibold text-gold-deep underline" href={sampleHref} download={sampleName}>
           {skill === 'LISTENING' ? 'Tải file mẫu Listening' : 'Tải file mẫu Reading'}
         </a>
-        <div className="mt-4">
+        {skill === 'LISTENING' && user?.role === 'ADMIN' ? (
+          <a className="mt-1 block text-sm font-semibold text-gold-deep underline" href="/ybm-lc-gemini-chat.json" download="ybm-lc-gemini-chat.json">
+            Tải hướng dẫn Gemini cho đề Listening PDF
+          </a>
+        ) : null}
+        <div className="mt-4 space-y-3">
           <FilePick
             label="Chọn file JSON"
             accept="application/json,.json"
+            chosen={scan?.name ?? null}
             onFiles={(files) => {
               const file = files[0]
               if (file) void onJsonFile(file)
             }}
           />
+          {skill === 'LISTENING' ? (
+            <FilePick
+              label="Chọn file PDF đề"
+              accept="application/pdf,.pdf"
+              chosen={scanPdf?.name ?? null}
+              hint={scan ? 'JSON này có khung cắt. Chọn đúng PDF đã gửi cho Gemini.' : 'Dùng khi JSON do Gemini trả về có khung cắt ảnh.'}
+              onFiles={(files) => {
+                const file = files[0]
+                if (file) setScanPdf(file)
+              }}
+            />
+          ) : null}
+          {scan && scanPdf ? (
+            <Button disabled={busy} onClick={() => void openScanReview()}>
+              {previewScan.isPending ? 'Đang cắt ảnh…' : 'Xem và chỉnh sửa trước khi lưu'}
+            </Button>
+          ) : null}
         </div>
       </Card>
 

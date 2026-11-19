@@ -1,0 +1,153 @@
+{
+  "name": "ybm-listening-gemini-chat",
+  "version": 5,
+  "cachGui": "Đính kèm file hướng dẫn này, một PDF đề Listening, và dán danh sách đáp án (nếu có) vào cùng một tin nhắn. Dán userMessage rồi gửi. Khi import lên web, nộp lại đúng PDF đó cùng JSON Gemini trả về. Backend cắt ảnh gốc trong PDF theo đúng số trang và khung trong JSON. JSON tạo bằng hướng dẫn version 1 đang ghi sai trang biểu đồ và sai góc xoay, hãy tạo lại.",
+  "userMessage": "File JSON là hướng dẫn version 5. File PDF là một đề Listening. Nếu tin nhắn có danh sách đáp án thì điền answer theo danh sách đó. Chỉ trả về một JSON mới theo outputSchema. Không giải thích, không tạo PDF hay ảnh. Đừng chép số trang hay kích thước khung trong example. Mỗi biểu đồ một khung riêng, đúng viền của biểu đồ đó.",
+  "instruction": "Read every page of the attached Listening PDF in a PDF reader. Reply with one JSON object and no other text. Do not create a PDF or a new image. Do not copy page numbers from the example. The example only shows the shape of the JSON.\n\nPAGE NUMBER\n- page is the page number shown by the PDF reader, starting at 1. List every page, including the cover, directions, and Part 2.\n- The number printed on the paper (17, 18, 23, …) is not the page field. In this series the first photograph is often printed as 17 and is still PDF page 1.\n- One photographed spread is still one PDF page. The right-hand half is not the next PDF page.\n- Unused images stored inside the PDF are not extra pages. Trust the page count the reader shows.\n- A photo crop's page is the PDF page that contains that photograph.\n- A graphic crop's page is the PDF page that contains that table, chart, form, or map. It is the same page as the questions that say \"Look at the graphic\". Never put the graphic on an earlier page of different questions.\n- Before writing a crop, look at that PDF page again. Confirm one detail that exists only there: the object in the photo, or a word on the graphic (a product code, a chart title, a room name). If that detail is not on the page you chose, change the page.\n\nROTATION AND BOX\n- Always write rotationDegrees as 0. The server turns the page upright from the PDF's own rotation and ignores this number. Writing 90, 180, or 270 makes the crop cut across two photos.\n- box is [ymin, xmin, ymax, xmax]. Each value is 0 to 1000. Measure it on the page as the PDF reader shows it, already upright. ymin is the top edge, xmin is the left edge.\n- The box holds the whole photograph or the whole graphic, including the outer border. It must not include the next photo, a thumb, the facing page's question column, or the question text under the figure.\n- Part 1 has one crop per photo for questions 1–6, files q001.jpg through q006.jpg. On these booklets the two photographs on a page are stacked: the earlier number is on top, the next number is below. Do not split that page into a left column and a right column. The upper photo's ymax stays above the lower photo's ymin. A box running from the top of the page to the bottom cuts both photos.\n\nGRAPHIC BOX\nThe server cuts exactly the box you send. It does not resize or guess. Each drawing has its own width and height. Never copy a box from the example or from another crop.\nMeasure only that drawing, on the upright page, scale 0 to 1000:\n1. Find the outer border of this one drawing.\n2. xmin is its left border, xmax its right border, ymin its top border, ymax its bottom border. Add about 8 units of white padding and stop.\n3. The box must not contain a question number or the choices (A) (B) (C) (D). If it does, move ymax up to the bottom border of the drawing.\n4. A wide table and a small map get different boxes. Do not give them the same width or the same height.\n5. Every column must be fully inside. If the right header is cut off, increase xmax. If the left column is cut off, decrease xmin.\n6. Two drawings on one PDF page are two crops of that same page. The white gutter between them is outside both boxes, so the boxes do not overlap.\n7. fig-q095.jpg is only the drawing printed above questions 95–97. fig-q098.jpg is only the drawing printed above questions 98–100. Do not swap them, and do not use one box for both.\n8. The drawing is on the PDF page that prints that question number. The map above question 62 is on the page where 62. is visible, not on the next page. Leave out the gray TEST tab on the outer edge.\n\nQUESTIONS\nQuestions 7–31 are Part 2. Empty prompt, options A–C only, no image.\nQuestions 32–70 are Part 3 and 71–100 are Part 4. Copy the printed prompt and choices exactly, without the (A) marker. Groups are fixed sets of three: q32-34, q35-37, … and q71-73, q74-76, …. A shared graphic uses cropFile fig-q062.jpg from the first question number and is referenced by the group's imageFile.\n\nanswer is A, B, C, or D from the answer list in the user message. Part 2 answers are only A–C. If no answer list was provided, answer is null. Never guess.\n\nIf the reply would be cut off, set continued to true and nextNumber to the first missing question. Otherwise continued is false and nextNumber is null.\n\nBEFORE YOU ANSWER, all of these must be true. If one fails, fix the JSON:\n1. pages lists every PDF page from 1 through the reader's page count, each page once.\n2. Every crop.page is one of those pages, and the photo or graphic is actually visible on it.\n3. Every rotationDegrees is 0.\n4. No box covers two photos, two drawings, the facing page, or the question text under a drawing.\n5. When continued is false, questions 1–100 are all present. Part 2 options are only A–C. answer is null when no answer list was given.\n6. Each graphic box is a different size, hugs that drawing's own border, contains no question text, and does not overlap the next drawing.",
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["sourceFile", "testNo", "code", "title", "durationSeconds", "continued", "nextNumber", "pages", "groups", "questions", "crops", "warnings"],
+    "properties": {
+      "sourceFile": { "type": "string" },
+      "testNo": { "type": "integer" },
+      "code": { "type": "string" },
+      "title": { "type": "string" },
+      "durationSeconds": { "type": "integer" },
+      "continued": { "type": "boolean" },
+      "nextNumber": { "type": ["integer", "null"] },
+      "pages": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["page", "role", "rotationDegrees"],
+          "properties": {
+            "page": { "type": "integer" },
+            "role": { "enum": ["skip", "part1-photos", "part3-4"] },
+            "rotationDegrees": { "enum": [0, 90, 180, 270] }
+          }
+        }
+      },
+      "groups": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["key", "partCode", "instructions"],
+          "properties": {
+            "key": { "type": "string" },
+            "partCode": { "enum": ["PART_3", "PART_4"] },
+            "instructions": { "type": "string" },
+            "imageFile": { "type": ["string", "null"] }
+          }
+        }
+      },
+      "questions": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["number", "partCode", "prompt", "answer", "options"],
+          "properties": {
+            "number": { "type": "integer" },
+            "partCode": { "enum": ["PART_1", "PART_2", "PART_3", "PART_4"] },
+            "prompt": { "type": "string" },
+            "groupKey": { "type": "string" },
+            "imageFile": { "type": "string" },
+            "answer": { "enum": ["A", "B", "C", "D", null] },
+            "options": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["key", "text"],
+                "properties": {
+                  "key": { "enum": ["A", "B", "C", "D"] },
+                  "text": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "crops": {
+        "type": "array",
+        "description": "page is the PDF-reader page that contains the pixels. The server cuts that page and does not add or subtract pages. rotationDegrees is ignored; always send 0. box is [ymin, xmin, ymax, xmax] on the upright page.",
+        "items": {
+          "type": "object",
+          "required": ["file", "page", "box"],
+          "properties": {
+            "file": { "type": "string" },
+            "page": { "type": "integer" },
+            "kind": { "enum": ["photo", "graphic"] },
+            "questionNumbers": { "type": "array", "items": { "type": "integer" } },
+            "box": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "number" } }
+          }
+        }
+      },
+      "warnings": { "type": "array", "items": { "type": "string" } }
+    }
+  },
+  "example": {
+    "sourceFile": "EXAMPLE-ONLY.pdf",
+    "testNo": 1,
+    "code": "YBM-2026-LC-TEST-01",
+    "title": "YBM 2026 Listening Test 1",
+    "durationSeconds": 2700,
+    "continued": false,
+    "nextNumber": null,
+    "pages": [
+      { "page": 1, "role": "part1-photos", "rotationDegrees": 0 },
+      { "page": 2, "role": "part1-photos", "rotationDegrees": 0 }
+    ],
+    "groups": [
+      {
+        "key": "q62-64",
+        "partCode": "PART_3",
+        "instructions": "Questions 62 through 64 refer to the following conversation.",
+        "imageFile": "fig-q062.jpg"
+      }
+    ],
+    "questions": [
+      {
+        "number": 1,
+        "partCode": "PART_1",
+        "prompt": "",
+        "imageFile": "q001.jpg",
+        "answer": "A",
+        "options": [
+          { "key": "A", "text": "" },
+          { "key": "B", "text": "" },
+          { "key": "C", "text": "" },
+          { "key": "D", "text": "" }
+        ]
+      },
+      {
+        "number": 7,
+        "partCode": "PART_2",
+        "prompt": "",
+        "answer": "B",
+        "options": [
+          { "key": "A", "text": "" },
+          { "key": "B", "text": "" },
+          { "key": "C", "text": "" }
+        ]
+      },
+      {
+        "number": 62,
+        "partCode": "PART_3",
+        "groupKey": "q62-64",
+        "prompt": "Câu in trên sách, chép nguyên văn.",
+        "answer": "C",
+        "options": [
+          { "key": "A", "text": "Lựa chọn A" },
+          { "key": "B", "text": "Lựa chọn B" },
+          { "key": "C", "text": "Lựa chọn C" },
+          { "key": "D", "text": "Lựa chọn D" }
+        ]
+      }
+    ],
+    "crops": [
+      { "file": "q001.jpg", "page": 1, "kind": "photo", "questionNumbers": [1], "box": [40, 40, 480, 960] },
+      { "file": "fig-q062.jpg", "page": 1, "kind": "graphic", "questionNumbers": [62, 63, 64], "box": [80, 500, 420, 960] }
+    ],
+    "warnings": []
+  }
+}

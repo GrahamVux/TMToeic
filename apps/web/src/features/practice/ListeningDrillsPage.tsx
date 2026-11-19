@@ -1,5 +1,5 @@
 import { PartDrills } from './PartDrills'
 
 export function ListeningDrillsPage() {
-  return <PartDrills skill="LISTENING" title="Bài luyện ngắn Listening" subtitle="Luyện từng Part 1–4 trên các đề đã publish." />
+  return <PartDrills skill="LISTENING" title="Luyện Listening" subtitle="Bài ngắn theo từng part. Tìm đề theo tên hoặc lọc part." />
 }

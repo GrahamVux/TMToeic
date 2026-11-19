@@ -49,6 +49,12 @@ export class AttemptsController {
     return this.attempts.recordFocus(actorOf(user, req), id, parse(recordFocusSchema, body))
   }
 
+  @Post(':id/abandon')
+  @HttpCode(200)
+  abandon(@CurrentUser() user: AuthUser, @Param('id', new ParseUUIDPipe()) id: string, @Req() req: Request) {
+    return this.attempts.abandon(actorOf(user, req), id)
+  }
+
   @Post(':id/submit')
   @HttpCode(200)
   submit(@CurrentUser() user: AuthUser, @Param('id', new ParseUUIDPipe()) id: string, @Req() req: Request) {
