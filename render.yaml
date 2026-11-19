@@ -4,6 +4,7 @@ services:
   - type: web
     name: toeic-api-prod
     runtime: node
+    plan: free
     branch: main
     buildCommand: npm install && npm run build -w @toeic/shared && npm run build -w @toeic/api
     startCommand: npm run start -w @toeic/api
@@ -45,6 +46,7 @@ services:
   - type: web
     name: toeic-api-dev
     runtime: node
+    plan: free
     branch: dev-version
     buildCommand: npm install && npm run build -w @toeic/shared && npm run build -w @toeic/api
     startCommand: npm run start -w @toeic/api
