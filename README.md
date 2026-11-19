@@ -35,7 +35,7 @@ Hai môi trường tách database, tách API, tách kho file. Site cũ (`toeic-a
 | Database | Supabase project mới | Supabase project mới khác |
 | File | bucket R2 riêng | bucket R2 riêng |
 
-Web gọi `/api` cùng tên miền. Pages dùng `functions/api/[[path]].js` (đặt `API_ORIGIN` = URL Render production). Vercel dùng `api/[...path].js` (đặt `API_ORIGIN` = URL Render dev). API tự chạy migration khi khởi động (`AUTO_MIGRATE`). `DATABASE_URL` lấy chuỗi **Session pooler**, cổng **5432**.
+Web gọi `/api` cùng tên miền. Pages dùng `functions/api/[[path]].js` (đặt `API_ORIGIN` = URL Render production). Vercel chuyển `/api` sang `https://toeic-api-dev.onrender.com` qua `vercel.json`. API tự chạy migration khi khởi động (`AUTO_MIGRATE`). `DATABASE_URL` lấy chuỗi **Session pooler**, cổng **5432**.
 - Cấu hình: copy `apps/api/.env.example` → `apps/api/.env` (API tự nạp `.env` trong thư mục `apps/api`; biến môi trường thật luôn được ưu tiên).
 
 ## Tài khoản & phân quyền

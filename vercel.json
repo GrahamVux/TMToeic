@@ -4,6 +4,8 @@
   "installCommand": "npm install --include=dev",
   "buildCommand": "npm run build -w @toeic/shared && npm run build -w @toeic/web",
   "outputDirectory": "apps/web/dist",
-  "ignoreCommand": "node -e \"const b=process.env.VERCEL_GIT_COMMIT_REF; process.exit(!b || b==='dev-version' ? 1 : 0)\"",
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://toeic-api-dev.onrender.com/api/:path*" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
 }

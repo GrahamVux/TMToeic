@@ -6,13 +6,7 @@
 export const config = { runtime: 'edge' }
 
 export default async function handler(request) {
-  const apiOrigin = String(process.env.API_ORIGIN || '').replace(/\/$/, '')
-  if (!apiOrigin) {
-    return Response.json(
-      { error: { code: 'INTERNAL', message: 'Bản dev chưa có API_ORIGIN.' } },
-      { status: 500 },
-    )
-  }
+  const apiOrigin = String(process.env.API_ORIGIN || 'https://toeic-api-dev.onrender.com').replace(/\/$/, '')
 
   const incoming = new URL(request.url)
   const target = `${apiOrigin}${incoming.pathname}${incoming.search}`
