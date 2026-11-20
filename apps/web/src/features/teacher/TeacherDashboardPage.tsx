@@ -7,7 +7,7 @@ import { formatGoal, INACTIVE_AFTER_DAYS, SUPPORT_ACCURACY_BELOW, type UserStatu
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { InactiveList } from './ReportsPage'
-import { ClassRooms, ClassSelect, TeacherClassPanels } from './ClassRooms'
+import { ClassRooms, ClassSelect, CreateClassButton, TeacherClassPanels } from './ClassRooms'
 import { AccountActions, TeacherAccessPanel } from './StudentDialogs'
 import { useClasses } from './users.queries'
 import { useStudentStats, useStudents, type StudentFilters } from './users.queries'
@@ -25,6 +25,12 @@ function useDebounced<T>(value: T, ms = 300) {
 
 const dateFmt = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
 
+function initialsOf(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  const letters = parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : (parts[0]?.slice(0, 2) ?? '?')
+  return letters.toUpperCase()
+}
+
 export function TeacherDashboardPage() {
   const { user } = useAuth()
   const grants = user?.permissions
@@ -39,10 +45,11 @@ export function TeacherDashboardPage() {
   const [classId, setClassId] = useState('')
   const q = useDebounced(search.trim())
   const rooms = useClasses()
+  const knownClassId = !rooms.data || rooms.data.some((room) => room.id === classId) ? classId : ''
 
-  const filters: StudentFilters = { q, status, classId, page, pageSize: PAGE_SIZE }
+  const filters: StudentFilters = { q, status, classId: knownClassId, page, pageSize: PAGE_SIZE }
   const students = useStudents(filters, canSeeStudents)
-  const stats = useStudentStats(canSeeStudents)
+  const stats = useStudentStats(canSeeStudents, knownClassId)
   const total = students.data?.total ?? 0
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
@@ -59,26 +66,32 @@ export function TeacherDashboardPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Cổng quản lý đào tạo</p>
-          <h1 className="serif mt-2 text-3xl sm:text-4xl">Quản lý học viên & giám sát tiến độ</h1>
-          <p className="mt-2 text-sm text-ink/60">Tạo tài khoản, theo dõi tiến độ và xem bài làm chi tiết của từng học viên.</p>
+          <h1 className="serif mt-2 text-3xl sm:text-4xl">Quản lý Lớp & Học viên</h1>
+          <p className="mt-2 text-sm text-ink/60">Xem tất cả học viên, hoặc tìm đúng một lớp rồi mở lớp đó.</p>
         </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:gap-3">
-          {canAssign ? <Link to="/admin/assignments" className="sm:w-auto"><Button className="w-full" variant="paper">Giao bài tập</Button></Link> : null}
-          {canAssign ? <Link to="/admin/exams" className="sm:w-auto"><Button className="w-full">Import đề mới</Button></Link> : null}
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+          {isAdmin ? <CreateClassButton /> : null}
+          {isAdmin ? (
+            <Button variant="navy" type="button" onClick={() => document.getElementById('tai-khoan-giao-vien')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+              Thêm giáo viên
+            </Button>
+          ) : null}
+          {canAssign ? <Link to="/admin/assignments"><Button variant="paper">Giao bài tập</Button></Link> : null}
+          {canAssign ? <Link to="/admin/exams"><Button variant="ghost">Import đề</Button></Link> : null}
         </div>
       </div>
 
+      {isAdmin ? <ClassRooms selectedId={knownClassId} onSelect={(id) => { setClassId(id); setPage(1) }} /> : canSeeStudents ? <TeacherClassPanels canCreate={canCreate} selectedId={knownClassId} onSelect={(id) => { setClassId(id); setPage(1) }} /> : null}
       {isAdmin ? <TeacherAccessPanel /> : null}
-      {isAdmin ? <ClassRooms /> : canSeeStudents ? <TeacherClassPanels canCreate={canCreate} /> : null}
       {!canSeeStudents ? (
         <Card className="p-6">
           <p className="text-sm text-ink/70">Tài khoản này chưa được cấp quyền. Quản trị viên cần bật tạo học viên, giao bài hoặc xem tiến độ.</p>
         </Card>
       ) : null}
       {canSeeStudents ? <div className="grid gap-4 md:grid-cols-4">
-        <Stat title="Tổng học viên" value={stats.data?.total} meta="Tài khoản do giáo viên cấp" />
+        <Stat title="Tổng học viên" value={stats.data?.total} meta={knownClassId ? 'Trong lớp đang chọn' : 'Mọi lớp bạn được xem'} />
         <Stat title="Đang hoạt động" value={stats.data?.active} meta="Có thể đăng nhập" />
-        <Stat title="Chưa đổi mật khẩu tạm" value={stats.data?.pendingFirstLogin} meta="Cần nhắc học viên đăng nhập lần đầu" />
+        <Stat title="Chưa đổi mật khẩu tạm" value={stats.data?.pendingFirstLogin} meta="Cần nhắc đăng nhập lần đầu" />
         <Stat title="Đã khóa" value={stats.data?.disabled} meta="Không thể đăng nhập" />
       </div> : null}
 
@@ -99,24 +112,6 @@ export function TeacherDashboardPage() {
             </button>
           ))}
         </div>
-        {(rooms.data ?? []).length > 0 ? (
-          <select
-            className="rounded-xl border border-gold/40 bg-white px-3 py-2 text-sm"
-            aria-label="Lọc theo lớp"
-            value={classId}
-            onChange={(event) => {
-              setClassId(event.target.value)
-              setPage(1)
-            }}
-          >
-            <option value="">{isAdmin ? 'Mọi lớp' : 'Mọi lớp được giao'}</option>
-            {(rooms.data ?? []).map((room) => (
-              <option key={room.id} value={room.id}>
-                {room.name}
-              </option>
-            ))}
-          </select>
-        ) : null}
         <Input
           className="w-full sm:max-w-xs"
           placeholder="Tìm theo tên hoặc mã HV (TM-1000)…"
@@ -134,6 +129,7 @@ export function TeacherDashboardPage() {
           <thead className="bg-paper text-xs tracking-wide text-ink/45 uppercase">
             <tr>
               <th className="px-4 py-3">Học viên</th>
+              <th className="px-4 py-3">Lớp</th>
               <th className="px-4 py-3">Trạng thái</th>
               <th className="px-4 py-3">Mục tiêu</th>
               <th className="px-4 py-3">Đăng nhập gần nhất</th>
@@ -142,10 +138,10 @@ export function TeacherDashboardPage() {
           </thead>
           <tbody>
             {students.isPending ? (
-              <tr><td colSpan={5} className="px-4 py-10 text-center text-ink/50">Đang tải danh sách…</td></tr>
+              <tr><td colSpan={6} className="px-4 py-10 text-center text-ink/50">Đang tải danh sách…</td></tr>
             ) : !students.data?.items.length ? (
               <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-ink/55">
+                <td colSpan={6} className="px-4 py-10 text-center text-ink/55">
                   {q || status ? 'Không có học viên khớp bộ lọc.' : 'Chưa có học viên nào. Hãy nhập file Excel để tạo tài khoản.'}
                 </td>
               </tr>
@@ -153,8 +149,16 @@ export function TeacherDashboardPage() {
               (students.data?.items ?? []).map((u) => (
                 <tr key={u.id} className="border-t border-gold/25">
                   <td className="px-4 py-3">
-                    <p className="font-semibold">{u.fullName}</p>
-                    <p className="text-xs text-ink/50">{u.studentCode}{u.email ? ` • ${u.email}` : ''}{u.className ? ` • ${u.className}` : ''}</p>
+                    <div className="flex items-center gap-3">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-teal-soft text-xs font-bold text-gold-deep">{initialsOf(u.fullName)}</span>
+                      <div>
+                        <p className="font-semibold">{u.fullName}</p>
+                        <p className="text-xs text-ink/50">{u.studentCode}{u.email ? ` • ${u.email}` : ''}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <p className="text-sm text-ink/70">{u.className ?? 'Chưa xếp lớp'}</p>
                     {isAdmin ? <ClassSelect userId={u.id} classId={u.classId} /> : null}
                   </td>
                   <td className="px-4 py-3">
@@ -180,13 +184,23 @@ export function TeacherDashboardPage() {
             )}
           </tbody>
         </table>
-        {total > PAGE_SIZE && (
-          <div className="flex items-center justify-between border-t border-gold/25 px-4 py-3 text-sm text-ink/60">
-            <span>Trang {page} / {pages} • {total} học viên</span>
-            <div className="flex gap-2">
-              <Button variant="ghost" className="px-3 py-1.5 text-xs" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Trước</Button>
-              <Button variant="ghost" className="px-3 py-1.5 text-xs" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>Sau</Button>
-            </div>
+        {total > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gold/25 px-4 py-3 text-sm text-ink/60">
+            <span>Hiển thị {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} / {total} học viên</span>
+            {pages > 1 ? (
+              <div className="flex gap-1">
+                {Array.from({ length: pages }, (_, index) => index + 1)
+                  .filter((n) => n === 1 || n === pages || Math.abs(n - page) <= 1)
+                  .map((n, index, list) => (
+                    <span key={n} className="flex items-center gap-1">
+                      {index > 0 && list[index - 1] !== n - 1 ? <span className="px-1">…</span> : null}
+                      <button type="button" className={`grid size-8 place-items-center rounded-full text-xs font-semibold ${n === page ? 'bg-gold-deep text-white' : 'bg-paper-2 text-ink/70'}`} onClick={() => setPage(n)}>
+                        {n}
+                      </button>
+                    </span>
+                  ))}
+              </div>
+            ) : null}
           </div>
         )}
       </div>

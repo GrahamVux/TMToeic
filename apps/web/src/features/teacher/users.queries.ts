@@ -8,7 +8,7 @@ const keys = {
   all: ['users'] as const,
   list: (f: StudentFilters) => ['users', 'list', f] as const,
   detail: (id: string) => ['users', 'detail', id] as const,
-  stats: ['users', 'stats'] as const,
+  stats: (classId: string) => ['users', 'stats', classId] as const,
 }
 
 export function useStudents(filters: StudentFilters, enabled = true) {
@@ -26,8 +26,12 @@ export function useStudents(filters: StudentFilters, enabled = true) {
   })
 }
 
-export function useStudentStats(enabled = true) {
-  return useQuery({ queryKey: keys.stats, queryFn: () => api<StudentStatsDto>('/users/stats/students'), enabled })
+export function useStudentStats(enabled = true, classId = '') {
+  return useQuery({
+    queryKey: keys.stats(classId),
+    queryFn: () => api<StudentStatsDto>(`/users/stats/students${classId ? `?classId=${encodeURIComponent(classId)}` : ''}`),
+    enabled,
+  })
 }
 
 export function useUser(id: string | undefined) {

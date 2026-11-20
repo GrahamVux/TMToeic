@@ -229,11 +229,16 @@ export class UsersService implements OnModuleInit {
     return { items: await this.withClasses(rows), total, page: query.page, pageSize: query.pageSize }
   }
 
-  async studentStats(actor: Actor): Promise<StudentStatsDto> {
+  async studentStats(actor: Actor, classId?: string): Promise<StudentStatsDto> {
     this.assertAnyGrant(actor)
     const mine = actor.role === 'TEACHER' ? await this.managedClassIds(actor.id) : null
     if (mine && mine.length === 0) return { total: 0, active: 0, disabled: 0, pendingFirstLogin: 0 }
-    const scope = mine ? and(eq(users.role, 'STUDENT'), inArray(users.id, this.memberIds(mine))) : eq(users.role, 'STUDENT')
+    if (classId && mine && !mine.includes(classId)) throw AppException.forbidden('Bạn không quản lý lớp này.')
+    const scope = classId
+      ? and(eq(users.role, 'STUDENT'), inArray(users.id, this.memberIds([classId])))
+      : mine
+        ? and(eq(users.role, 'STUDENT'), inArray(users.id, this.memberIds(mine)))
+        : eq(users.role, 'STUDENT')
     const [row] = await this.db
       .select({
         total: sql<number>`count(*)::int`,

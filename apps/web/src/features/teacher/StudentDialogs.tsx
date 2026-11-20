@@ -149,16 +149,20 @@ export function AddOneStudentDialog({
 }
 
 /** Stays on the class card so Excel and single adds can be repeated. */
-export function AddStudentActions({ classId, className }: { classId: string; className: string }) {
+export function AddStudentActions({ classId, className, prominent = false }: { classId: string; className: string; prominent?: boolean }) {
   const [mode, setMode] = useState<'one' | 'excel' | null>(null)
   const [issued, setIssued] = useState<CredentialsIssuedDto | null>(null)
   const [note, setNote] = useState<string | null>(null)
 
   return (
-    <div className="mt-3">
+    <div className={prominent ? undefined : 'mt-3'}>
       <div className="flex flex-wrap gap-2">
-        <Button type="button" className="px-3 py-1.5 text-xs" onClick={() => setMode('one')}>Thêm lẻ</Button>
-        <Button type="button" variant="paper" className="px-3 py-1.5 text-xs" onClick={() => setMode('excel')}>Thêm từ Excel</Button>
+        <Button type="button" className={prominent ? undefined : 'px-3 py-1.5 text-xs'} onClick={() => setMode('one')}>
+          {prominent ? '+ Thêm học viên' : 'Thêm lẻ'}
+        </Button>
+        <Button type="button" variant="paper" className={prominent ? undefined : 'px-3 py-1.5 text-xs'} onClick={() => setMode('excel')}>
+          {prominent ? 'Nhập Excel' : 'Thêm từ Excel'}
+        </Button>
       </div>
       {note ? <p className="mt-2 text-sm text-olive">{note}</p> : null}
       {mode === 'one' ? (
@@ -227,7 +231,7 @@ export function TeacherAccessPanel() {
   }
 
   return (
-    <section className="rounded-2xl border border-gold/35 bg-cream p-5">
+    <section id="tai-khoan-giao-vien" className="rounded-2xl border border-gold/35 bg-cream p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="serif text-2xl">Giáo viên</h2>

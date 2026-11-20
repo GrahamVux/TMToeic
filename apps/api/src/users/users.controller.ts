@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query, Req, Res } from '@nestjs/common'
 import { createStaffSchema, createStudentSchema, listUsersQuerySchema, updateTeacherPermissionsSchema } from '@toeic/shared'
+import { z } from 'zod'
 import type { Request, Response } from 'express'
 import { clientIp, CurrentUser, Roles, type AuthUser } from '../common/decorators'
 import { parse } from '../common/zod'
@@ -20,8 +21,9 @@ export class UsersController {
   }
 
   @Get('stats/students')
-  studentStats(@CurrentUser() user: AuthUser, @Req() req: Request) {
-    return this.users.studentStats(this.actor(user, req))
+  studentStats(@CurrentUser() user: AuthUser, @Query('classId') classId: string | undefined, @Req() req: Request) {
+    const id = classId ? parse(z.uuid('Mã lớp không hợp lệ'), classId) : undefined
+    return this.users.studentStats(this.actor(user, req), id)
   }
 
   @Get('students/template')
