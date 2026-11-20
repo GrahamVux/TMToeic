@@ -96,6 +96,17 @@ export type DailyGoalsDto = {
    * so a full test counts once for each. Vocabulary counts flashcards reviewed.
    */
   done: DailyGoalCounts
+  /**
+   * Yesterday against the saved targets. Null when those targets did not exist before today.
+   * `delta` is done minus target: negative is short, positive is extra, zero is exact.
+   * A kind with target 0 stays 0 and is not part of the result.
+   */
+  yesterday: {
+    day: string
+    done: DailyGoalCounts
+    delta: DailyGoalCounts
+    met: boolean
+  } | null
 }
 
 export type ScorePointDto = { attemptId: string; at: string; totalScore: number; listeningScore: number | null; readingScore: number | null }

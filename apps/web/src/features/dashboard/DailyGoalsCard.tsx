@@ -63,13 +63,18 @@ export function DailyGoalsCard() {
           <h2 className="serif mt-1 text-2xl">Mục tiêu hôm nay</h2>
           <p className="mt-1 text-sm text-ink/55">{dayLabel(data.day)}</p>
         </div>
-        {sum.active > 0 ? (
-          <Button variant="navy" onClick={() => setEditing(true)}>
-            <SlidersHorizontal className="size-4" aria-hidden />
-            Mục tiêu ngày
-          </Button>
-        ) : null}
+        <div className="flex flex-col items-stretch gap-2 sm:items-end">
+          {data.yesterday ? <YesterdayCorner yesterday={data.yesterday} /> : null}
+          {sum.active > 0 ? (
+            <Button variant="navy" onClick={() => setEditing(true)}>
+              <SlidersHorizontal className="size-4" aria-hidden />
+              Mục tiêu ngày
+            </Button>
+          ) : null}
+        </div>
       </div>
+
+      {next ? <GoalReminder next={next} /> : null}
 
       {sum.active === 0 ? (
         <div className="mt-5 rounded-2xl border border-dashed border-gold-deep/40 bg-teal-soft/50 p-5">
@@ -116,28 +121,6 @@ export function DailyGoalsCard() {
               <GoalTile key={kind} kind={kind} done={data.done[kind]} target={data.targets[kind]} />
             ))}
           </div>
-
-          {next ? (
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-gold-deep/40 p-4">
-              <p className="text-sm text-ink/75">
-                {next.done === 0 ? (
-                  <>
-                    Hôm nay bạn chưa luyện <b>{next.label}</b>. Mục tiêu là {next.target} {next.unit}.
-                  </>
-                ) : (
-                  <>
-                    Còn <b>{next.target - next.done} {next.unit}</b> nữa là đạt mục tiêu <b>{next.label}</b> hôm nay.
-                  </>
-                )}
-              </p>
-              <Link to={next.to}>
-                <Button>
-                  {next.cta}
-                  <ArrowRight className="size-4" aria-hidden />
-                </Button>
-              </Link>
-            </div>
-          ) : null}
         </>
       )}
 
@@ -152,6 +135,60 @@ export function DailyGoalsCard() {
         />
       ) : null}
     </Card>
+  )
+}
+
+function YesterdayCorner({ yesterday }: { yesterday: NonNullable<DailyGoalsDto['yesterday']> }) {
+  const lines = DAILY_GOAL_KINDS.flatMap((kind) => {
+    const target = yesterday.done[kind] - yesterday.delta[kind]
+    if (target <= 0) return []
+    const delta = yesterday.delta[kind]
+    const { label, unit } = KINDS[kind]
+    if (delta < 0) return [{ kind, text: `${label} thiếu ${-delta} ${unit}`, tone: 'text-coral' }]
+    if (delta > 0) return [{ kind, text: `${label} thừa ${delta} ${unit}`, tone: 'text-olive' }]
+    return [{ kind, text: `${label} vừa đủ`, tone: 'text-ink/70' }]
+  })
+  return (
+    <aside className="w-full max-w-52 rounded-xl border border-gold/50 bg-white px-3 py-2 text-xs shadow-sm sm:w-52">
+      <p className={cn('font-semibold', yesterday.met ? 'text-olive' : 'text-coral')}>{yesterday.met ? 'Hôm qua đã xong' : 'Hôm qua chưa xong'}</p>
+      <ul className="mt-1 space-y-0.5">
+        {lines.map((line) => (
+          <li key={line.kind} className={line.tone}>
+            {line.text}
+          </li>
+        ))}
+      </ul>
+    </aside>
+  )
+}
+
+function GoalReminder({ next }: { next: (typeof KINDS)[DailyGoalKind] & { done: number; target: number } }) {
+  const Icon = next.icon
+  const remaining = next.target - next.done
+  return (
+    <Link
+      to={next.to}
+      className="mt-5 flex flex-col gap-4 rounded-2xl bg-gold-deep px-5 py-4 text-white shadow-[0_14px_32px_rgba(43,138,156,0.35)] sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-white text-gold-deep">
+          <Icon className="size-6" aria-hidden />
+        </span>
+        <div>
+          <p className="text-xs font-semibold tracking-[0.14em] text-white/80 uppercase">Việc cần làm hôm nay</p>
+          <p className="mt-1 text-lg font-semibold leading-snug">
+            {next.done === 0 ? `Bạn chưa luyện ${next.label}` : `Còn ${remaining} ${next.unit} nữa là xong ${next.label}`}
+          </p>
+          <p className="mt-1 text-sm text-white/90">
+            Mục tiêu hôm nay là {next.target} {next.unit}. Đã xong {next.done}.
+          </p>
+        </div>
+      </div>
+      <span className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-white px-5 text-sm font-semibold text-gold-deep">
+        {next.cta}
+        <ArrowRight className="size-4" aria-hidden />
+      </span>
+    </Link>
   )
 }
 

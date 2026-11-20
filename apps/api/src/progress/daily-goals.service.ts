@@ -10,6 +10,35 @@ const TZ_SQL = sql.raw(`'${TZ}'`)
 
 type Rows<T> = { rows: T[] }
 
+/** `day` is YYYY-MM-DD in Asia/Ho_Chi_Minh, which stays UTC+7. */
+function startOfLocalDay(day: string): Date {
+  return new Date(`${day}T00:00:00+07:00`)
+}
+
+function previousLocalDay(day: string): string {
+  const t = startOfLocalDay(day)
+  t.setUTCDate(t.getUTCDate() - 1)
+  return localDay(t)
+}
+
+function flagged(value: unknown): boolean {
+  return value === true || value === 't' || value === 'true' || value === 1
+}
+
+function countsFor(
+  sittings: Array<{ earlier: boolean; skill: string; n: number }>,
+  cards: Array<{ earlier: boolean; n: number }>,
+  earlier: boolean,
+) {
+  const bySkill = new Map(sittings.filter((row) => flagged(row.earlier) === earlier).map((row) => [row.skill, Number(row.n)]))
+  const vocab = cards.find((row) => flagged(row.earlier) === earlier)
+  return {
+    reading: bySkill.get('READING') ?? 0,
+    listening: bySkill.get('LISTENING') ?? 0,
+    vocab: Number(vocab?.n ?? 0),
+  }
+}
+
 @Injectable()
 export class DailyGoalsService {
   constructor(
@@ -23,8 +52,9 @@ export class DailyGoalsService {
     const [saved, sittings, cards] = await Promise.all([
       this.db.select().from(dailyGoals).where(eq(dailyGoals.userId, userId)).limit(1),
       // attempt_answers holds a row only for a question the student answered.
+      // `earlier` is yesterday; the other bucket is today.
       this.db.execute(sql`
-        select s.code as skill, count(distinct a.id)::int as n
+        select (a.submitted_at < ${dayStart}) as earlier, s.code as skill, count(distinct a.id)::int as n
         from attempts a
         join attempt_answers aa on aa.attempt_id = a.id
         join questions q on q.id = aa.question_id
@@ -33,33 +63,48 @@ export class DailyGoalsService {
         join skills s on s.id = p.skill_id
         where a.user_id = ${userId}
           and a.status in ('SUBMITTED', 'EXPIRED')
-          and a.submitted_at >= ${dayStart}
+          and a.submitted_at >= ${dayStart} - interval '1 day'
           and a.submitted_at < ${dayStart} + interval '1 day'
-        group by s.code`) as unknown as Promise<Rows<{ skill: string; n: number }>>,
-      // One row per card, so a card reviewed several times today counts once.
+        group by 1, s.code`) as unknown as Promise<Rows<{ earlier: boolean; skill: string; n: number }>>,
       this.db.execute(sql`
-        select count(*)::int as n
+        select (updated_at < ${dayStart}) as earlier, count(*)::int as n
         from card_reviews
         where user_id = ${userId}
-          and updated_at >= ${dayStart}
-          and updated_at < ${dayStart} + interval '1 day'`) as unknown as Promise<Rows<{ n: number }>>,
+          and updated_at >= ${dayStart} - interval '1 day'
+          and updated_at < ${dayStart} + interval '1 day'
+        group by 1`) as unknown as Promise<Rows<{ earlier: boolean; n: number }>>,
     ])
 
     const row = saved[0]
-    const bySkill = new Map(sittings.rows.map((r) => [r.skill, Number(r.n)]))
+    const today = localDay(now)
+    const targets = {
+      reading: row?.readingTarget ?? 0,
+      listening: row?.listeningTarget ?? 0,
+      vocab: row?.vocabTarget ?? 0,
+    }
+    const done = countsFor(sittings.rows, cards.rows, false)
+    const hadTargetsYesterday = Boolean(row && row.createdAt < startOfLocalDay(today))
+    const active = targets.reading + targets.listening + targets.vocab > 0
+    const yesterdayDone = countsFor(sittings.rows, cards.rows, true)
+    const delta = {
+      reading: targets.reading > 0 ? yesterdayDone.reading - targets.reading : 0,
+      listening: targets.listening > 0 ? yesterdayDone.listening - targets.listening : 0,
+      vocab: targets.vocab > 0 ? yesterdayDone.vocab - targets.vocab : 0,
+    }
     return {
-      day: localDay(now),
+      day: today,
       configured: Boolean(row),
-      targets: {
-        reading: row?.readingTarget ?? 0,
-        listening: row?.listeningTarget ?? 0,
-        vocab: row?.vocabTarget ?? 0,
-      },
-      done: {
-        reading: bySkill.get('READING') ?? 0,
-        listening: bySkill.get('LISTENING') ?? 0,
-        vocab: Number(cards.rows[0]?.n ?? 0),
-      },
+      targets,
+      done,
+      yesterday:
+        hadTargetsYesterday && active
+          ? {
+              day: previousLocalDay(today),
+              done: yesterdayDone,
+              delta,
+              met: (['reading', 'listening', 'vocab'] as const).every((kind) => targets[kind] === 0 || delta[kind] >= 0),
+            }
+          : null,
     }
   }
 

@@ -1,8 +1,8 @@
 import type { INestApplication } from '@nestjs/common'
 import { ERROR_CODES, VIEW_AS_HEADER, type DailyGoalsDto } from '@toeic/shared'
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { DB, type Db } from '../db/database.module'
-import { attempts, cardReviews } from '../db/schema'
+import { attempts, cardReviews, dailyGoals } from '../db/schema'
 import { ADMIN, createTestApp, login, type TestClient } from '../test/test-app'
 
 const LAYOUT = [
@@ -147,6 +147,37 @@ describe('Daily study goals (e2e on PGlite)', () => {
       .set({ updatedAt: new Date(Date.now() - 2 * 86_400_000) })
       .where(eq(cardReviews.notebookEntryId, cardIds[0]))
     expect((await goals(c)).done.vocab).toBe(1)
+  })
+
+  it('shows how far yesterday fell short or ran ahead, and ignores a goal saved today', async () => {
+    const examId = await publishedExam()
+    const { c, id } = await newStudent('Hôm Qua')
+    expect((await put(c, '/me/daily-goals', { reading: 1, listening: 1, vocab: 5 })).status).toBe(200)
+    const today = (await goals(c)).day
+    const [year, month, date] = today.split('-').map(Number)
+    const yesterdayNoon = new Date(Date.UTC(year, month - 1, date - 1, 5, 0, 0))
+    const db = app.get<Db>(DB)
+    await db
+      .update(dailyGoals)
+      .set({ createdAt: new Date(yesterdayNoon.getTime() - 3 * 86_400_000) })
+      .where(eq(dailyGoals.userId, id))
+
+    const reading = await sit(c, examId, ['PART_5'])
+    const listening = await sit(c, examId, ['PART_1'])
+    const extra = await sit(c, examId, ['PART_1'])
+    await db.update(attempts).set({ submittedAt: yesterdayNoon }).where(inArray(attempts.id, [reading, listening, extra]))
+
+    const report = await goals(c)
+    expect(report.done).toEqual({ reading: 0, listening: 0, vocab: 0 })
+    expect(report.yesterday).toMatchObject({
+      done: { reading: 1, listening: 2, vocab: 0 },
+      delta: { reading: 0, listening: 1, vocab: -5 },
+      met: false,
+    })
+
+    const newbie = await newStudent('Mới Đặt Hôm Nay')
+    expect((await put(newbie.c, '/me/daily-goals', { reading: 1, listening: 1, vocab: 5 })).status).toBe(200)
+    expect((await goals(newbie.c)).yesterday).toBeNull()
   })
 
   it('keeps each student’s targets and progress to themselves', async () => {
