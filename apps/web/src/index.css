@@ -53,6 +53,42 @@ label,
   user-select: none;
 }
 
+/* Tailwind 4 resets buttons to the arrow cursor. Anything a person can press or choose uses the hand. */
+@layer base {
+  :is(
+    a[href],
+    button,
+    select,
+    summary,
+    label:has(input:is([type='checkbox'], [type='radio'], [type='file'], [type='color'], [type='range'])),
+    [role='button'],
+    [role='tab'],
+    [role='menuitem'],
+    [role='option'],
+    [role='switch'],
+    [role='checkbox'],
+    [role='radio'],
+    [role='link'],
+    input:is(
+      [type='button'],
+      [type='submit'],
+      [type='reset'],
+      [type='checkbox'],
+      [type='radio'],
+      [type='file'],
+      [type='color'],
+      [type='range']
+    ),
+    ::file-selector-button
+  ):not(:disabled, [aria-disabled='true']) {
+    cursor: pointer;
+  }
+
+  :is(button, select, summary, [role='button'], [role='tab'], [role='switch'], input:is([type='button'], [type='submit'], [type='reset'], [type='checkbox'], [type='radio'], [type='file'], [type='color'], [type='range'])):is(:disabled, [aria-disabled='true']) {
+    cursor: not-allowed;
+  }
+}
+
 .site-wash {
   background:
     radial-gradient(circle at top right, color-mix(in srgb, var(--color-gold) 70%, transparent), transparent 42%),

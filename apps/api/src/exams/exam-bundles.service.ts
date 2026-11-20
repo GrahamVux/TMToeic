@@ -34,13 +34,6 @@ function isUniqueViolation(err: unknown): boolean {
   return e?.code === '23505' || e?.cause?.code === '23505'
 }
 
-function bundleCode(listeningCode: string, readingCode: string): string {
-  const joined = `${listeningCode}+${readingCode}`
-  if (joined.length <= 40 && /^[A-Za-z0-9._+-]+$/.test(joined)) return joined
-  const compact = `SET-${listeningCode.replace(/[^A-Za-z0-9]/g, '').slice(-12)}-${readingCode.replace(/[^A-Za-z0-9]/g, '').slice(-12)}`
-  return compact.slice(0, 40)
-}
-
 @Injectable()
 export class ExamBundlesService {
   constructor(
@@ -64,11 +57,11 @@ export class ExamBundlesService {
   }
 
   async create(actor: Actor, input: CreateExamBundleInput): Promise<ExamBundleDto> {
-    if (input.random) return this.createRandom(actor)
-    return this.combine(actor, input.listeningExamId!, input.readingExamId!)
+    if (input.random) return this.createRandom(actor, input.code, input.title)
+    return this.combine(actor, input.listeningExamId!, input.readingExamId!, input.code, input.title)
   }
 
-  private async createRandom(actor: Actor): Promise<ExamBundleDto> {
+  private async createRandom(actor: Actor, code: string, title: string): Promise<ExamBundleDto> {
     const [listening, reading, used] = await Promise.all([this.fullIds('LISTENING'), this.fullIds('READING'), this.usedPairs()])
     const free: Array<[string, string]> = []
     for (const left of listening) {
@@ -76,10 +69,10 @@ export class ExamBundlesService {
     }
     if (!free.length) throw AppException.conflict('Mọi cặp đề full Listening và Reading đã có bộ đề tổng hợp.')
     const [listeningExamId, readingExamId] = free[Math.floor(Math.random() * free.length)]!
-    return this.combine(actor, listeningExamId, readingExamId)
+    return this.combine(actor, listeningExamId, readingExamId, code, title)
   }
 
-  private async combine(actor: Actor, listeningExamId: string, readingExamId: string): Promise<ExamBundleDto> {
+  private async combine(actor: Actor, listeningExamId: string, readingExamId: string, code: string, title: string): Promise<ExamBundleDto> {
     if (listeningExamId === readingExamId) throw AppException.badRequest('Hãy chọn hai đề khác nhau.')
     const listening = await this.loadGraph(listeningExamId)
     const reading = await this.loadGraph(readingExamId)
@@ -89,11 +82,11 @@ export class ExamBundlesService {
     const numbers = new Set(listening.questionRows.map((row) => row.questionNumber))
     const overlap = reading.questionRows.filter((row) => numbers.has(row.questionNumber)).map((row) => row.questionNumber)
     if (overlap.length) throw AppException.badRequest(`Hai đề đang dùng chung số câu ${overlap.slice(0, 8).join(', ')}.`)
+    const [takenCode] = await this.db.select({ id: exams.id }).from(exams).where(eq(exams.code, code)).limit(1)
+    if (takenCode) throw AppException.conflict(`Mã bộ đề ${code} đã được dùng.`)
 
     try {
       const created = await this.db.transaction(async (tx) => {
-        const code = await this.unusedCode(tx, bundleCode(listening.exam.code, reading.exam.code))
-        const title = `Bộ đề ${listening.exam.code} + ${reading.exam.code}`.slice(0, 200)
         const [exam] = await tx
           .insert(exams)
           .values({
@@ -164,17 +157,6 @@ export class ExamBundlesService {
   private async usedPairs(): Promise<Set<string>> {
     const rows = await this.db.select({ listeningExamId: examBundles.listeningExamId, readingExamId: examBundles.readingExamId }).from(examBundles)
     return new Set(rows.map((row) => `${row.listeningExamId}|${row.readingExamId}`))
-  }
-
-  private async unusedCode(tx: Db, base: string): Promise<string> {
-    let code = base
-    for (let n = 2; n < 50; n++) {
-      const [taken] = await tx.select({ id: exams.id }).from(exams).where(eq(exams.code, code)).limit(1)
-      if (!taken) return code
-      const suffix = `-${n}`
-      code = `${base.slice(0, 40 - suffix.length)}${suffix}`
-    }
-    throw AppException.conflict('Không tạo được mã bộ đề mới.')
   }
 
   private async loadGraph(examId: string): Promise<Graph> {

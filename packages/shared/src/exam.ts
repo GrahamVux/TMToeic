@@ -298,6 +298,13 @@ export const createExamBundleSchema = z
     listeningExamId: z.uuid().optional(),
     readingExamId: z.uuid().optional(),
     random: z.boolean().optional(),
+    code: z
+      .string()
+      .trim()
+      .min(3, 'Mã bộ đề cần ít nhất 3 ký tự.')
+      .max(40, 'Mã bộ đề tối đa 40 ký tự.')
+      .regex(/^[A-Za-z0-9._-]+$/, 'Mã bộ đề chỉ dùng chữ, số, dấu chấm, gạch dưới hoặc gạch ngang.'),
+    title: z.string().trim().min(3, 'Tên bộ đề cần ít nhất 3 ký tự.').max(200, 'Tên bộ đề tối đa 200 ký tự.'),
   })
   .refine((value) => value.random === true || (Boolean(value.listeningExamId) && Boolean(value.readingExamId)), {
     message: 'Chọn một đề Listening và một đề Reading, hoặc tạo nhanh.',

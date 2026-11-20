@@ -74,8 +74,6 @@ export function DailyGoalsCard() {
         </div>
       </div>
 
-      {next ? <GoalReminder next={next} /> : null}
-
       {sum.active === 0 ? (
         <div className="mt-5 rounded-2xl border border-dashed border-gold-deep/40 bg-teal-soft/50 p-5">
           <p className="font-semibold">Bạn chưa đặt mục tiêu mỗi ngày</p>
@@ -121,6 +119,8 @@ export function DailyGoalsCard() {
               <GoalTile key={kind} kind={kind} done={data.done[kind]} target={data.targets[kind]} />
             ))}
           </div>
+
+          {next ? <GoalReminder next={next} /> : null}
         </>
       )}
 
@@ -163,32 +163,36 @@ function YesterdayCorner({ yesterday }: { yesterday: NonNullable<DailyGoalsDto['
 }
 
 function GoalReminder({ next }: { next: (typeof KINDS)[DailyGoalKind] & { done: number; target: number } }) {
-  const Icon = next.icon
   const remaining = next.target - next.done
   return (
-    <Link
-      to={next.to}
-      className="mt-5 flex flex-col gap-4 rounded-2xl bg-gold-deep px-5 py-4 text-white shadow-[0_14px_32px_rgba(43,138,156,0.35)] sm:flex-row sm:items-center sm:justify-between"
-    >
-      <div className="flex min-w-0 items-start gap-3">
-        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-white text-gold-deep">
-          <Icon className="size-6" aria-hidden />
-        </span>
-        <div>
-          <p className="text-xs font-semibold tracking-[0.14em] text-white/80 uppercase">Việc cần làm hôm nay</p>
-          <p className="mt-1 text-lg font-semibold leading-snug">
-            {next.done === 0 ? `Bạn chưa luyện ${next.label}` : `Còn ${remaining} ${next.unit} nữa là xong ${next.label}`}
-          </p>
-          <p className="mt-1 text-sm text-white/90">
-            Mục tiêu hôm nay là {next.target} {next.unit}. Đã xong {next.done}.
-          </p>
-        </div>
-      </div>
-      <span className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-white px-5 text-sm font-semibold text-gold-deep">
-        {next.cta}
-        <ArrowRight className="size-4" aria-hidden />
-      </span>
-    </Link>
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-gold-deep/40 p-4">
+      <p className="text-sm text-ink/75">
+        {next.done === 0 ? (
+          <>
+            Hôm nay bạn chưa luyện <b>{next.label}</b>. Mục tiêu là <RemainCount value={remaining} unit={next.unit} />.
+          </>
+        ) : (
+          <>
+            Còn <RemainCount value={remaining} unit={next.unit} /> nữa là đạt mục tiêu <b>{next.label}</b> hôm nay.
+          </>
+        )}
+      </p>
+      <Link to={next.to}>
+        <Button>
+          {next.cta}
+          <ArrowRight className="size-4" aria-hidden />
+        </Button>
+      </Link>
+    </div>
+  )
+}
+
+function RemainCount({ value, unit }: { value: number; unit: string }) {
+  return (
+    <span className="mx-0.5 inline-flex items-baseline gap-1 rounded-lg bg-gold-deep px-2 py-0.5 align-middle text-white shadow-[0_6px_14px_rgba(43,138,156,0.28)]">
+      <span className="text-lg leading-none font-bold tabular-nums">{value}</span>
+      <span className="text-xs font-semibold">{unit}</span>
+    </span>
   )
 }
 

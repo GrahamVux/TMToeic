@@ -33,21 +33,21 @@ function ExamColumn({
     <div className="min-w-0">
       <h3 className="font-semibold">{title}</h3>
       <Input className="mt-2" value={query} placeholder="Tìm mã hoặc tên đề" onChange={(e) => onQuery(e.target.value)} />
-      <div className="mt-2 max-h-80 space-y-2 overflow-y-auto pr-1">
+      <div className="mt-2 max-h-[calc(4.875rem*3+0.5rem*2)] space-y-2 overflow-y-auto pr-1">
         {visible.length === 0 ? <p className="rounded-xl bg-paper px-3 py-4 text-sm text-ink/55">Không có đề phù hợp.</p> : null}
         {visible.map((exam) => (
           <button
             key={exam.id}
             type="button"
             className={cn(
-              'w-full rounded-xl border px-3 py-2 text-left',
+              'h-[4.875rem] w-full overflow-hidden rounded-xl border px-3 py-2 text-left',
               selectedId === exam.id ? 'border-gold-deep bg-gold/20' : 'border-ink/10 bg-white hover:border-gold/60',
             )}
             onClick={() => onSelect(exam.id)}
           >
-            <p className="text-sm font-semibold">{exam.code}</p>
-            <p className="text-sm text-ink/70">{exam.title}</p>
-            <p className="mt-1 text-xs text-ink/45">{exam.parts.map((part) => partName(part.code).split(' — ')[0]).join(' · ')} · {exam.totalQuestions} câu</p>
+            <p className="truncate text-sm font-semibold">{exam.code}</p>
+            <p className="truncate text-sm text-ink/70">{exam.title}</p>
+            <p className="mt-1 truncate text-xs text-ink/45">{exam.parts.map((part) => partName(part.code).split(' — ')[0]).join(' · ')} · {exam.totalQuestions} câu</p>
           </button>
         ))}
       </div>
@@ -63,6 +63,8 @@ export function ExamBundlePanel() {
   const [readingQuery, setReadingQuery] = useState('')
   const [listeningId, setListeningId] = useState<string | null>(null)
   const [readingId, setReadingId] = useState<string | null>(null)
+  const [code, setCode] = useState('')
+  const [title, setTitle] = useState('')
   const [notice, setNotice] = useState<CornerNoticeState | null>(null)
 
   const bank = useMemo(() => (exams.data ?? []).filter((exam) => exam.status !== 'ARCHIVED'), [exams.data])
@@ -71,9 +73,18 @@ export function ExamBundlePanel() {
   const used = new Set((bundles.data ?? []).map((bundle) => `${bundle.listeningExamId}|${bundle.readingExamId}`))
   const pairTaken = listeningId && readingId ? used.has(`${listeningId}|${readingId}`) : false
   const noFreePair = listening.length > 0 && reading.length > 0 && listening.every((left) => reading.every((right) => used.has(`${left.id}|${right.id}`)))
+  const trimmedCode = code.trim()
+  const trimmedTitle = title.trim()
+  const codeOk = /^[A-Za-z0-9._-]{3,40}$/.test(trimmedCode)
+  const titleOk = trimmedTitle.length >= 3 && trimmedTitle.length <= 200
+  const identityOk = codeOk && titleOk
 
   function report(error: unknown) {
     setNotice(flashError(error instanceof ApiError ? error.message : 'Không tạo được bộ đề.'))
+  }
+
+  function identity() {
+    return { code: trimmedCode, title: trimmedTitle }
   }
 
   return (
@@ -81,21 +92,37 @@ export function ExamBundlePanel() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="serif text-2xl">Bộ đề tổng hợp</h2>
-          <p className="mt-1 text-sm text-ink/60">Ghép một đề Listening đủ Part 1–4 với một đề Reading đủ Part 5–7. Mỗi cặp chỉ tạo một lần.</p>
+          <p className="mt-1 text-sm text-ink/60">Ghép một đề Listening đủ Part 1–4 với một đề Reading đủ Part 5–7. Mỗi cặp chỉ tạo một lần. Mã và tên bộ đề do bạn đặt.</p>
         </div>
         <Button
           variant="teal"
-          disabled={create.isPending || noFreePair || listening.length === 0 || reading.length === 0}
+          disabled={create.isPending || !identityOk || noFreePair || listening.length === 0 || reading.length === 0}
           onClick={() => {
             setNotice(null)
-            void create.mutateAsync({ random: true }).then(
-              (bundle) => setNotice(flashNotice(`Đã tạo nhanh bộ đề ${bundle.code}.`)),
+            void create.mutateAsync({ random: true, ...identity() }).then(
+              (bundle) => {
+                setCode('')
+                setTitle('')
+                setNotice(flashNotice(`Đã tạo nhanh bộ đề ${bundle.code}.`))
+              },
               report,
             )
           }}
         >
           Tạo nhanh
         </Button>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <label className="block text-sm">
+          <span className="font-semibold">Mã bộ đề</span>
+          <Input className="mt-1" value={code} maxLength={40} placeholder="VD: ETS-2024-01" autoComplete="off" onChange={(e) => setCode(e.target.value)} />
+          {trimmedCode && !codeOk ? <span className="mt-1 block text-xs text-coral">3–40 ký tự: chữ, số, dấu chấm, gạch dưới hoặc gạch ngang.</span> : null}
+        </label>
+        <label className="block text-sm">
+          <span className="font-semibold">Tên bộ đề</span>
+          <Input className="mt-1" value={title} maxLength={200} placeholder="VD: ETS 2024 Test 1" onChange={(e) => setTitle(e.target.value)} />
+          {trimmedTitle && !titleOk ? <span className="mt-1 block text-xs text-coral">Tên cần từ 3 đến 200 ký tự.</span> : null}
+        </label>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-4">
         <ExamColumn title="Listening" query={listeningQuery} onQuery={setListeningQuery} exams={listening} selectedId={listeningId} onSelect={setListeningId} />
@@ -104,14 +131,16 @@ export function ExamBundlePanel() {
       <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
         {pairTaken ? <p className="text-sm text-coral">Cặp này đã có bộ đề tổng hợp.</p> : null}
         <Button
-          disabled={create.isPending || !listeningId || !readingId || pairTaken}
+          disabled={create.isPending || !identityOk || !listeningId || !readingId || pairTaken}
           onClick={() => {
             if (!listeningId || !readingId) return
             setNotice(null)
-            void create.mutateAsync({ listeningExamId: listeningId, readingExamId: readingId }).then(
+            void create.mutateAsync({ listeningExamId: listeningId, readingExamId: readingId, ...identity() }).then(
               (bundle) => {
                 setListeningId(null)
                 setReadingId(null)
+                setCode('')
+                setTitle('')
                 setNotice(flashNotice(`Đã tạo bộ đề ${bundle.code}.`))
               },
               report,
@@ -126,6 +155,7 @@ export function ExamBundlePanel() {
           {bundles.data?.map((bundle) => (
             <li key={bundle.id} className="text-sm text-ink/75">
               <span className="font-semibold text-ink">{bundle.code}</span>
+              <span> · {bundle.title}</span>
               <span> · {bundle.listeningCode} + {bundle.readingCode}</span>
             </li>
           ))}

@@ -289,7 +289,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 </button>
                 {deskMoreOpen ? (
                   <>
-                    <button type="button" className="fixed inset-0 z-30 cursor-default" aria-label="Đóng menu Khác" onClick={() => setDeskMoreOpen(false)} />
+                    <button type="button" className="fixed inset-0 z-30" aria-label="Đóng menu Khác" onClick={() => setDeskMoreOpen(false)} />
                     <div className="absolute top-full left-0 z-40 mt-2 w-48 rounded-2xl border border-gold/30 bg-white p-1.5 shadow-[0_12px_32px_rgba(30,51,60,0.16)]">
                       {desktopMore.map((item) => (
                         <NavLink

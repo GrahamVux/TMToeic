@@ -596,8 +596,11 @@ describe('Exam engine (e2e on PGlite)', () => {
     const readingId = await paper(`R-FULL-${Date.now()}`, reading)
     const otherReadingId = await paper(`R-FULL-B-${Date.now()}`, reading)
 
-    const created = await admin.post('/exams/bundles').send({ listeningExamId: listeningId, readingExamId: readingId })
+    const code = `SET-${Date.now()}`
+    const created = await admin.post('/exams/bundles').send({ listeningExamId: listeningId, readingExamId: readingId, code, title: 'Bộ đề thử nghiệm' })
     expect(created.status).toBe(201)
+    expect(created.body.code).toBe(code)
+    expect(created.body.title).toBe('Bộ đề thử nghiệm')
     expect(created.body.listeningExamId).toBe(listeningId)
     expect(created.body.readingExamId).toBe(readingId)
     expect(created.body.status).toBe('PUBLISHED')
@@ -605,12 +608,17 @@ describe('Exam engine (e2e on PGlite)', () => {
     expect(summary.body.parts.map((part: { code: string }) => part.code)).toEqual(['PART_1', 'PART_2', 'PART_3', 'PART_4', 'PART_5', 'PART_6', 'PART_7'])
     expect(summary.body.totalQuestions).toBe(7)
 
-    const again = await admin.post('/exams/bundles').send({ listeningExamId: listeningId, readingExamId: readingId })
+    const again = await admin.post('/exams/bundles').send({ listeningExamId: listeningId, readingExamId: readingId, code: `${code}-2`, title: 'Bộ đề thử nghiệm' })
     expect(again.status).toBe(409)
 
-    const random = await admin.post('/exams/bundles').send({ random: true })
+    const duplicateCode = await admin.post('/exams/bundles').send({ listeningExamId: listeningId, readingExamId: otherReadingId, code, title: 'Tên khác' })
+    expect(duplicateCode.status).toBe(409)
+
+    const random = await admin.post('/exams/bundles').send({ random: true, code: `${code}-R`, title: 'Bộ đề ngẫu nhiên' })
     expect(random.status).toBe(201)
+    expect(random.body.code).toBe(`${code}-R`)
+    expect(random.body.title).toBe('Bộ đề ngẫu nhiên')
     expect(random.body.readingExamId).toBe(otherReadingId)
-    expect((await admin.post('/exams/bundles').send({ random: true })).status).toBe(409)
+    expect((await admin.post('/exams/bundles').send({ random: true, code: `${code}-R2`, title: 'Hết cặp' })).status).toBe(409)
   })
 })
