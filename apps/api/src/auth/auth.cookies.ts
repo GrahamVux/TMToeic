@@ -12,7 +12,15 @@ export class AuthCookies {
   constructor(@Inject(APP_CONFIG) private readonly config: AppConfig) {}
 
   private base(): CookieOptions {
-    return { httpOnly: true, secure: this.config.cookieSecure, sameSite: this.config.cookieSameSite }
+    // Production web (pages.dev) and the API (onrender.com) are different sites.
+    // Lax cookies are not sent on that cross-site fetch, so the browser never stays signed in.
+    const crossSite = this.config.isProd
+    return {
+      httpOnly: true,
+      secure: crossSite || this.config.cookieSecure,
+      sameSite: crossSite ? 'none' : this.config.cookieSameSite,
+      ...(crossSite ? { partitioned: true } : {}),
+    }
   }
 
   set(res: Response, tokens: { accessToken: string; refreshToken: string }) {

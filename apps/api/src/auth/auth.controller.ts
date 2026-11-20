@@ -18,7 +18,7 @@ export class AuthController {
   ) {}
 
   @Public()
-  @Throttle({ default: { limit: () => Number(process.env.LOGIN_RATE_LIMIT ?? 10), ttl: 60_000 } })
+  @Throttle({ default: { limit: () => Number(process.env.LOGIN_RATE_LIMIT ?? 120), ttl: 60_000 } })
   @Post('login')
   @HttpCode(200)
   async login(@Body() body: unknown, @Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<SessionDto> {
@@ -51,7 +51,7 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ default: { limit: () => Number(process.env.LOGIN_RATE_LIMIT ?? 10), ttl: 60_000 } })
+  @Throttle({ default: { limit: () => Number(process.env.LOGIN_RATE_LIMIT ?? 120), ttl: 60_000 } })
   @Post('recover-admin')
   @HttpCode(200)
   async recoverAdmin(@Body() body: unknown, @Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<SessionDto> {

@@ -8,6 +8,13 @@ import { APP_CONFIG, type AppConfig } from './config/app-config'
 
 export const API_PREFIX = 'api/v1'
 
+const PAGES_ORIGIN = /^https:\/\/([a-z0-9-]+\.)?toeic-prod\.pages\.dev$/i
+
+/** Pages calls the API cross-site. Allow that host even when the Render env list is stale. */
+export function allowedApiOrigin(origin: string, configured: string[]): boolean {
+  return configured.includes(origin) || PAGES_ORIGIN.test(origin)
+}
+
 /** Shared by main.ts and e2e tests so tests exercise the real HTTP pipeline. */
 export function configureApp(app: INestApplication) {
   const config = app.get<AppConfig>(APP_CONFIG)
@@ -34,10 +41,13 @@ export function configureApp(app: INestApplication) {
     }
     next()
   })
-  app.use(helmet())
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
   app.use(cookieParser())
   app.enableCors({
-    origin: config.corsOrigins,
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean | string) => void) => {
+      if (!origin) callback(null, true)
+      else callback(null, allowedApiOrigin(origin, config.corsOrigins) ? origin : false)
+    },
     credentials: true,
     allowedHeaders: ['Content-Type', CSRF_HEADER, VIEW_AS_HEADER],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],

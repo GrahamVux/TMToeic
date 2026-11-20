@@ -38,7 +38,7 @@ const envSchema = z
     R2_SECRET_ACCESS_KEY: z.string().optional(),
     R2_BUCKET: z.string().optional(),
 
-    LOGIN_RATE_LIMIT: z.coerce.number().int().min(1).default(10),
+    LOGIN_RATE_LIMIT: z.coerce.number().int().min(1).default(120),
     LOGIN_LOCKOUT_THRESHOLD: z.coerce.number().int().min(1).default(5),
     LOGIN_LOCKOUT_MINUTES: z.coerce.number().int().min(1).default(15),
   })

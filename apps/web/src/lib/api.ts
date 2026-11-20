@@ -1,15 +1,21 @@
 import { CSRF_HEADER, CSRF_HEADER_VALUE, ERROR_CODES, type ApiErrorBody, type ErrorCode } from '@toeic/shared'
 import { viewAsHeaders } from './view-as'
 
+/** Production Pages host. Its Function proxy shares a few Cloudflare IPs, and Render's Cloudflare answers 429. */
+const PROD_PAGES_API = 'https://toeic-api-prod.onrender.com/api/v1'
+
 /**
- * Always same-origin `/api/v1` in the browser (Vite proxy in dev, Cloudflare Pages Function in prod).
- * Absolute `VITE_API_URL` values are ignored: a separate API host makes login cookies third-party,
- * which iOS Safari blocks.
+ * Local and Vercel stay on same-origin `/api/v1`. The production Pages site calls Render directly
+ * so each student is their own IP. A Pages Function fetch is one shared Cloudflare IP, which
+ * Render's Cloudflare challenges with HTTP 429.
  */
-export function resolveApiBase(raw: string | undefined): string {
+export function resolveApiBase(raw: string | undefined, hostname?: string): string {
   const v = raw?.trim()
-  if (!v || /^https?:\/\//i.test(v)) return '/api/v1'
-  return v.replace(/\/$/, '')
+  if (v && !/^https?:\/\//i.test(v)) return v.replace(/\/$/, '')
+  if (v && /^https?:\/\//i.test(v)) return v.replace(/\/$/, '')
+  const host = (hostname ?? (typeof window !== 'undefined' ? window.location.hostname : '')).toLowerCase()
+  if (host === 'toeic-prod.pages.dev' || host.endsWith('.toeic-prod.pages.dev')) return PROD_PAGES_API
+  return '/api/v1'
 }
 
 const BASE = resolveApiBase(import.meta.env.VITE_API_URL as string | undefined)
