@@ -3,7 +3,7 @@ import { FilePick } from '@/components/ui/FilePick'
 import { Card } from '@/components/ui/Primitives'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
-import { ApiError } from '@/lib/api'
+import { ApiError, downloadApiFile } from '@/lib/api'
 import type { NotebookEntryDto } from '@toeic/shared'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -126,9 +126,18 @@ function ExcelList() {
     <div className="mt-5 border-t border-gold/30 pt-5">
       <h3 className="font-semibold">Thêm cả danh sách từ Excel</h3>
       <p className="mt-1 text-sm text-ink/60">Ba cột: từ vựng, loại từ, nghĩa. Dòng đã có trong sổ tay được cập nhật nghĩa.</p>
-      <a className="mt-2 inline-block text-sm font-semibold text-gold-deep underline underline-offset-4" href="/api/v1/study/notebook/template">
+      <button
+        type="button"
+        className="mt-2 text-sm font-semibold text-gold-deep underline underline-offset-4"
+        onClick={() => {
+          setError(null)
+          void downloadApiFile('/study/notebook/template', 'mau-so-tay.xlsx').catch((err: unknown) => {
+            setError(err instanceof ApiError ? err.message : 'Không tải được file mẫu.')
+          })
+        }}
+      >
         Tải file mẫu
-      </a>
+      </button>
       <div className="mt-3">
         <FilePick
           label={importList.isPending ? 'Đang nhập…' : 'Chọn file .xlsx'}

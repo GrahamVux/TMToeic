@@ -160,8 +160,8 @@ export async function apiDownload(path: string, file: Blob, contentType: string)
   return { blob: await res.blob(), filename: match?.[1] ?? 'download.xlsx', headers: res.headers }
 }
 
-/** GET a file the API returns as bytes (class result workbook). */
-export async function apiGetFile(path: string): Promise<{ blob: Blob; filename: string }> {
+/** GET a file the API returns as bytes (class result workbook, Excel templates). */
+export async function apiGetFile(path: string, fallbackName = 'ket-qua.xlsx'): Promise<{ blob: Blob; filename: string }> {
   const sendRaw = async () => {
     try {
       return await fetch(`${BASE}${path}`, {
@@ -184,5 +184,18 @@ export async function apiGetFile(path: string): Promise<{ blob: Blob; filename: 
     throw err
   }
   const match = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')
-  return { blob: await res.blob(), filename: match?.[1] ?? 'ket-qua.xlsx' }
+  return { blob: await res.blob(), filename: match?.[1] ?? fallbackName }
+}
+
+/** Save an authenticated file download. A plain link skips the session cookie on the deployed site. */
+export async function downloadApiFile(path: string, fallbackName: string) {
+  const file = await apiGetFile(path, fallbackName)
+  const url = URL.createObjectURL(file.blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = file.filename || fallbackName
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

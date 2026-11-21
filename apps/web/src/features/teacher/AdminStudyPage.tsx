@@ -4,7 +4,7 @@ import { FilePick } from '@/components/ui/FilePick'
 import { Card } from '@/components/ui/Primitives'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
-import { ApiError } from '@/lib/api'
+import { ApiError, downloadApiFile } from '@/lib/api'
 import { useState } from 'react'
 import { useClearGrammarPdf, useCreateGrammar, useDeleteGrammar, useDeleteVocab, useGrammarLessons, useImportVocab, useUploadGrammarPdf, useVocabSearch } from '@/features/study/study.queries'
 import type { GrammarLessonDto } from '@toeic/shared'
@@ -40,9 +40,18 @@ export function AdminStudyPage() {
       <Card className="p-6">
         <h2 className="serif text-2xl">Nhập từ vựng từ Excel</h2>
         <p className="mt-2 text-sm text-ink/60">Dòng đầu có thể là tiêu đề: Từ vựng, Loại từ, Nghĩa. Nếu không có tiêu đề, ba cột đầu được hiểu theo thứ tự đó.</p>
-        <a className="mt-3 inline-block text-sm font-semibold text-gold-deep underline underline-offset-4" href="/api/v1/study/vocab/template">
+        <button
+          type="button"
+          className="mt-3 text-sm font-semibold text-gold-deep underline underline-offset-4"
+          onClick={() => {
+            setNote(null)
+            void downloadApiFile('/study/vocab/template', 'mau-tu-vung.xlsx').catch((error: unknown) => {
+              setNote(error instanceof ApiError ? error.message : 'Không tải được file mẫu.')
+            })
+          }}
+        >
           Tải file mẫu
-        </a>
+        </button>
         <div className="mt-4">
           <FilePick
             label={importVocab.isPending ? 'Đang nhập…' : 'Chọn file .xlsx'}

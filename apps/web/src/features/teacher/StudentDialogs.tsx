@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/Button'
 import { FilePick } from '@/components/ui/FilePick'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Primitives'
-import { ApiError } from '@/lib/api'
+import { ApiError, downloadApiFile } from '@/lib/api'
 import { DEFAULT_NEW_ACCOUNT_PASSWORD, type CredentialsIssuedDto, type TeacherPermissions, type UserDto } from '@toeic/shared'
 import { useState, type FormEvent } from 'react'
 import { useCreateStaff, useCreateStudent, useImportStudents, useResetPassword, useSetUserStatus, useTeachers, useUpdateTeacherPermissions } from './users.queries'
@@ -71,9 +71,18 @@ export function ImportStudentsDialog({
       <p className="mt-2 text-sm text-ink/65">
         Mật khẩu mặc định của mọi tài khoản mới là <span className="font-mono font-semibold">{DEFAULT_NEW_ACCOUNT_PASSWORD}</span>. Lần đăng nhập đầu phải đổi mật khẩu.
       </p>
-      <a className="mt-3 inline-block text-sm font-semibold text-gold-deep underline underline-offset-4" href="/api/v1/users/students/template">
+      <button
+        type="button"
+        className="mt-3 text-sm font-semibold text-gold-deep underline underline-offset-4"
+        onClick={() => {
+          setError(null)
+          void downloadApiFile('/users/students/template', 'mau-hoc-vien.xlsx').catch((err: unknown) => {
+            setError(err instanceof ApiError ? err.message : 'Không tải được file mẫu.')
+          })
+        }}
+      >
         Tải file mẫu
-      </a>
+      </button>
       <div className="mt-4">
         <FilePick
           label={importStudents.isPending ? 'Đang tạo tài khoản…' : 'Chọn file .xlsx'}
