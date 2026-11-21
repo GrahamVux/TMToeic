@@ -11,6 +11,7 @@ import type {
   SaveReadingMarkInput,
   StudyOverviewDto,
   UpdateNotebookInput,
+  VocabCourseDto,
   VocabImportResult,
   VocabListDto,
 } from '@toeic/shared'
@@ -19,6 +20,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 export const studyKeys = {
   overview: ['study', 'overview'] as const,
   vocab: (q: string) => ['study', 'vocab', q] as const,
+  course: ['study', 'vocab-course'] as const,
   notebook: ['study', 'notebook'] as const,
   deck: (deck: 'catalog' | 'notebook') => ['study', 'flashcards', deck] as const,
   grammar: ['study', 'grammar'] as const,
@@ -32,6 +34,10 @@ function refreshStudy(qc: ReturnType<typeof useQueryClient>) {
 
 export function useStudyOverview() {
   return useQuery({ queryKey: studyKeys.overview, queryFn: () => api<StudyOverviewDto>('/study/overview') })
+}
+
+export function useVocabCourse() {
+  return useQuery({ queryKey: studyKeys.course, queryFn: () => api<VocabCourseDto>('/study/vocab/sets') })
 }
 
 export function useVocabSearch(q: string) {
@@ -104,8 +110,12 @@ export function useDeleteNotebook() {
   })
 }
 
-export function useFlashcards(deck: 'catalog' | 'notebook') {
-  return useQuery({ queryKey: studyKeys.deck(deck), queryFn: () => api<FlashcardDeckDto>(`/study/flashcards?deck=${deck}`) })
+export function useFlashcards(deck: 'catalog' | 'notebook', unit?: { setId: string; unit: number }) {
+  const scope = unit ? `&setId=${encodeURIComponent(unit.setId)}&unit=${unit.unit}` : ''
+  return useQuery({
+    queryKey: [...studyKeys.deck(deck), unit?.setId ?? '', unit?.unit ?? 0] as const,
+    queryFn: () => api<FlashcardDeckDto>(`/study/flashcards?deck=${deck}${scope}`),
+  })
 }
 
 export function useReviewCard() {
@@ -139,10 +149,20 @@ export function useGrammarProgress() {
 export function useImportVocab() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (file: File) => {
-      if (!file.name.toLowerCase().endsWith('.xlsx')) return Promise.reject(new ApiError(400, 'VALIDATION_FAILED', 'Hãy chọn file .xlsx.'))
-      if (file.size > 8 * 1024 * 1024) return Promise.reject(new ApiError(400, 'VALIDATION_FAILED', 'File Excel quá lớn (tối đa 8MB).'))
-      return apiUpload<VocabImportResult>('/study/vocab/import', file, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    mutationFn: (input: { file: File; mode?: 'new' | 'unit'; topic?: string; title?: string; setId?: string }) => {
+      if (!input.file.name.toLowerCase().endsWith('.xlsx')) return Promise.reject(new ApiError(400, 'VALIDATION_FAILED', 'Hãy chọn file .xlsx.'))
+      if (input.file.size > 8 * 1024 * 1024) return Promise.reject(new ApiError(400, 'VALIDATION_FAILED', 'File Excel quá lớn (tối đa 8MB).'))
+      const query = new URLSearchParams()
+      if (input.mode === 'new' && input.topic && input.title) {
+        query.set('mode', 'new')
+        query.set('topic', input.topic.trim())
+        query.set('title', input.title.trim())
+      } else if (input.mode === 'unit' && input.setId) {
+        query.set('mode', 'unit')
+        query.set('setId', input.setId)
+      }
+      const suffix = query.size > 0 ? `?${query}` : ''
+      return apiUpload<VocabImportResult>(`/study/vocab/import${suffix}`, input.file, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     },
     onSuccess: () => refreshStudy(qc),
   })

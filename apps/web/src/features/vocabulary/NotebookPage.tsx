@@ -7,6 +7,7 @@ import { ApiError, downloadApiFile } from '@/lib/api'
 import type { NotebookEntryDto } from '@toeic/shared'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { VocabNav } from '@/features/study/VocabCourse'
 import { notebookSavedMessage, useDeleteNotebook, useImportNotebook, useNotebook, useSaveNotebookWord, useUpdateNotebook } from '@/features/study/study.queries'
 
 export function NotebookPage() {
@@ -23,6 +24,7 @@ export function NotebookPage() {
 
   return (
     <div className="space-y-6">
+      <VocabNav current="mine" />
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Học tập / Sổ tay</p>

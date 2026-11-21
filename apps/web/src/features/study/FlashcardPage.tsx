@@ -11,16 +11,27 @@ import { useFlashcards, useReviewCard } from './study.queries'
 export function FlashcardPage() {
   const [params, setParams] = useSearchParams()
   const deck = params.get('deck') === 'notebook' ? 'notebook' : 'catalog'
-  const query = useFlashcards(deck)
+  const setId = params.get('set') ?? ''
+  const unitNumber = Number(params.get('unit'))
+  const unit = deck === 'catalog' && setId && Number.isInteger(unitNumber) && unitNumber > 0 ? { setId, unit: unitNumber } : undefined
+  const scope = unit ? `${unit.setId}:${unit.unit}` : deck
+  const query = useFlashcards(deck, unit)
   const review = useReviewCard()
   const [cards, setCards] = useState<FlashcardDto[] | null>(null)
+  const [loadedScope, setLoadedScope] = useState('')
   const [flipped, setFlipped] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  if (loadedScope !== scope) {
+    setLoadedScope(scope)
+    setCards(null)
+    setFlipped(false)
+  }
+
   useEffect(() => {
-    if (!query.data || query.data.deck !== deck) return
+    if (!query.data || query.data.deck !== deck || loadedScope !== scope) return
     setCards((current) => current ?? query.data.cards)
-  }, [query.data, deck])
+  }, [query.data, deck, loadedScope, scope])
 
   function switchDeck(next: 'catalog' | 'notebook') {
     setCards(null)
@@ -53,20 +64,22 @@ export function FlashcardPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Học tập / Flashcard</p>
-          <h1 className="serif mt-2 text-3xl">Ôn từ vựng</h1>
+          <h1 className="serif mt-2 text-3xl">{query.data?.title || 'Ôn từ vựng'}</h1>
         </div>
         <Link to={deck === 'notebook' ? '/study/notebook' : '/study'} className="text-sm font-semibold text-gold-deep underline underline-offset-4">
           Quay lại
         </Link>
       </div>
-      <div className="flex gap-2">
-        <button type="button" className={tab(deck === 'catalog')} onClick={() => switchDeck('catalog')}>
-          Kho từ
-        </button>
-        <button type="button" className={tab(deck === 'notebook')} onClick={() => switchDeck('notebook')}>
-          Sổ tay
-        </button>
-      </div>
+      {unit ? null : (
+        <div className="flex gap-2">
+          <button type="button" className={tab(deck === 'catalog')} onClick={() => switchDeck('catalog')}>
+            Kho từ
+          </button>
+          <button type="button" className={tab(deck === 'notebook')} onClick={() => switchDeck('notebook')}>
+            Sổ tay
+          </button>
+        </div>
+      )}
       <p className="text-sm text-ink/55">
         {query.data?.dueCount ?? 0} thẻ đến hạn • {query.data?.newCount ?? 0} từ mới • còn {cards.length} thẻ trong lượt này
       </p>

@@ -59,17 +59,55 @@ export type VocabEntryDto = {
   word: string
   partOfSpeech: string
   meaning: string
+  set: { topic: string; title: string; unit: number } | null
 }
+
+const vocabTopic = z.string().trim().min(2, 'Chủ đề cần ít nhất 2 ký tự').max(80, 'Chủ đề quá dài')
+const vocabTitle = z.string().trim().min(2, 'Tên bộ từ cần ít nhất 2 ký tự').max(120, 'Tên bộ từ quá dài')
+
+/** A workbook either starts a new set or appends the next unit to one that already exists. */
+export const vocabImportTargetSchema = z.discriminatedUnion('mode', [
+  z.object({ mode: z.literal('new'), topic: vocabTopic, title: vocabTitle }),
+  z.object({ mode: z.literal('unit'), setId: z.uuid('Hãy chọn một bộ từ') }),
+])
+export type VocabImportTarget = z.infer<typeof vocabImportTargetSchema>
 
 export type VocabListDto = {
   total: number
   items: VocabEntryDto[]
 }
 
+/** One uploaded file is split into units of this many words, in file order. */
+export const VOCAB_UNIT_SIZE = 30
+
+/** Words imported before sets existed, or not attached to a named set. */
+export const UNASSIGNED_VOCAB_SET = 'unassigned'
+
+export type VocabUnitDto = {
+  index: number
+  wordCount: number
+  learnedCount: number
+}
+
+export type VocabSetCardDto = {
+  id: string
+  topic: string
+  title: string
+  wordCount: number
+  learnedCount: number
+  units: VocabUnitDto[]
+}
+
+export type VocabCourseDto = {
+  sets: VocabSetCardDto[]
+}
+
 export type VocabImportResult = {
   imported: number
   updated: number
   skipped: number
+  /** Units created by this upload. Zero when every row already existed. */
+  units: number
 }
 
 /** A student's own Excel list added to their notebook. */
@@ -113,6 +151,7 @@ export type FlashcardDto = {
 
 export type FlashcardDeckDto = {
   deck: 'catalog' | 'notebook'
+  title: string
   dueCount: number
   newCount: number
   cards: FlashcardDto[]

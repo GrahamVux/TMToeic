@@ -1,10 +1,13 @@
 import ExcelJS from 'exceljs'
 
-export type VocabRow = { word: string; partOfSpeech: string; meaning: string }
+export type VocabRow = { word: string; partOfSpeech: string; meaning: string; unit: number | null }
 
 const WORD_HEADERS = new Set(['tu vung', 'vocabulary', 'word', 'vocab', 'tu'])
 const POS_HEADERS = new Set(['loai tu', 'tu loai', 'part of speech', 'pos', 'word class', 'loai'])
 const MEANING_HEADERS = new Set(['nghia', 'meaning', 'definition', 'nghia tieng viet'])
+const SET_LABELS = new Set(['bo de', 'bo tu', 'bo tu vung', 'ten bo', 'ten bo tu', 'ten bo de'])
+const TOPIC_LABELS = new Set(['chu de', 'topic', 'chuyen de'])
+const UNIT_LABELS = new Set(['unit', 'tap'])
 
 export class VocabSheetError extends Error {}
 
@@ -39,8 +42,27 @@ function columnsOf(header: string[]) {
   return { word: 0, pos: 1, meaning: 2, header: false }
 }
 
-/** Read the first worksheet. Header row is optional; otherwise columns are word, part of speech, meaning. */
-export async function readVocabSheet(raw: Buffer): Promise<{ rows: VocabRow[]; skipped: number }> {
+function unitNumber(line: string[]) {
+  const at = line.findIndex((cell) => UNIT_LABELS.has(fold(cell)))
+  if (at < 0) return null
+  for (const cell of line.slice(at + 1)) {
+    if (!/^\d+$/.test(cell)) continue
+    const value = Number(cell)
+    if (value >= 1 && value <= 500) return value
+  }
+  return null
+}
+
+function labelValue(line: string[], labels: Set<string>) {
+  const cells = line.map((cell, index) => ({ cell, index })).filter((item) => item.cell)
+  if (cells.length < 2 || !labels.has(fold(cells[0]?.cell ?? ''))) return null
+  return cells[1]?.cell ?? null
+}
+
+export type VocabSheet = { rows: VocabRow[]; skipped: number; title: string | null; topic: string | null; structured: boolean }
+
+/** Read the first worksheet. A plain sheet is word, part of speech, meaning. A sample sheet names the set and each unit. */
+export async function readVocabSheet(raw: Buffer): Promise<VocabSheet> {
   const workbook = new ExcelJS.Workbook()
   try {
     await workbook.xlsx.load(raw as unknown as ExcelJS.Buffer)
@@ -57,19 +79,45 @@ export async function readVocabSheet(raw: Buffer): Promise<{ rows: VocabRow[]; s
   })
   if (grid.length === 0) throw new VocabSheetError('File không có dòng từ vựng nào.')
 
+  const structured = grid.some((line) => labelValue(line, SET_LABELS) || labelValue(line, TOPIC_LABELS) || unitNumber(line) != null)
   const map = columnsOf(grid[0] ?? [])
-  const body = map.header ? grid.slice(1) : grid
   const rows: VocabRow[] = []
   let skipped = 0
+  let title: string | null = null
+  let topic: string | null = null
+  let currentUnit: number | null = structured ? 1 : null
+  let columns = map.header ? { word: map.word, pos: map.pos, meaning: map.meaning } : null
   const seen = new Set<string>()
-  for (const line of body) {
+  for (const line of grid) {
+    const setName = labelValue(line, SET_LABELS)
+    if (setName) {
+      title ??= setName.slice(0, 120)
+      continue
+    }
+    const topicName = labelValue(line, TOPIC_LABELS)
+    if (topicName) {
+      topic ??= topicName.slice(0, 80)
+      continue
+    }
+    const marked = unitNumber(line)
+    if (marked != null) {
+      currentUnit = marked
+      continue
+    }
+    const header = columnsOf(line)
+    if (header.header) {
+      columns = { word: header.word, pos: header.pos, meaning: header.meaning }
+      continue
+    }
+    if (structured && !columns) continue
+    const used = columns ?? { word: 0, pos: 1, meaning: 2 }
     if (rows.length >= 2000) {
       skipped++
       continue
     }
-    const word = (line[map.word] ?? '').trim()
-    const partOfSpeech = (map.pos >= 0 ? line[map.pos] ?? '' : '').trim()
-    const meaning = (line[map.meaning] ?? '').trim()
+    const word = (line[used.word] ?? '').trim()
+    const partOfSpeech = (used.pos >= 0 ? line[used.pos] ?? '' : '').trim()
+    const meaning = (line[used.meaning] ?? '').trim()
     if (!word && !partOfSpeech && !meaning) continue
     if (!word || !partOfSpeech || !meaning || word.length > 80 || partOfSpeech.length > 40 || meaning.length > 500) {
       skipped++
@@ -78,17 +126,34 @@ export async function readVocabSheet(raw: Buffer): Promise<{ rows: VocabRow[]; s
     const key = `${word.toLowerCase()}\0${partOfSpeech.toLowerCase()}`
     if (seen.has(key)) {
       const previous = rows.findIndex((row) => `${row.word.toLowerCase()}\0${row.partOfSpeech.toLowerCase()}` === key)
-      if (previous >= 0) rows[previous] = { word, partOfSpeech, meaning }
+      if (previous >= 0) rows[previous] = { word, partOfSpeech, meaning, unit: rows[previous]?.unit ?? currentUnit }
       continue
     }
     seen.add(key)
-    rows.push({ word, partOfSpeech, meaning })
+    rows.push({ word, partOfSpeech, meaning, unit: currentUnit })
   }
   if (rows.length === 0) throw new VocabSheetError('Không có dòng hợp lệ. Cần đủ cột từ vựng, loại từ và nghĩa.')
-  return { rows, skipped }
+  return { rows, skipped, title, topic, structured }
 }
 
 export async function vocabTemplate(): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook()
+  const sheet = workbook.addWorksheet('Tu vung')
+  sheet.addRow(['Bộ đề', 'Demo'])
+  sheet.addRow([null, 'Unit', 1])
+  sheet.addRow([null, null, 'Từ vựng', 'Loại từ', 'Nghĩa'])
+  sheet.addRow([null, null, 'substantial', 'adjective', 'đáng kể, lớn, quan trọng'])
+  sheet.addRow([null, 'Unit', 2])
+  sheet.addRow([null, null, 'Từ vựng', 'Loại từ', 'Nghĩa'])
+  sheet.addRow([null, null, 'invoice', 'noun', 'hóa đơn'])
+  for (const index of [1, 3, 6]) sheet.getRow(index).font = { bold: true }
+  sheet.columns = [{ width: 14 }, { width: 12 }, { width: 24 }, { width: 18 }, { width: 42 }]
+  const out = await workbook.xlsx.writeBuffer()
+  return Buffer.from(out)
+}
+
+/** Three columns for a student's own notebook, which has no set or unit. */
+export async function simpleVocabTemplate(): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook()
   const sheet = workbook.addWorksheet('Tu vung')
   sheet.addRow(['Từ vựng', 'Loại từ', 'Nghĩa'])

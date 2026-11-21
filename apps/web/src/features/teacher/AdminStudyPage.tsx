@@ -6,8 +6,13 @@ import { PageLoading } from '@/components/ui/LoadingScreen'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { ApiError, downloadApiFile } from '@/lib/api'
 import { useState } from 'react'
-import { useClearGrammarPdf, useCreateGrammar, useDeleteGrammar, useDeleteVocab, useGrammarLessons, useImportVocab, useUploadGrammarPdf, useVocabSearch } from '@/features/study/study.queries'
-import type { GrammarLessonDto } from '@toeic/shared'
+import { useClearGrammarPdf, useCreateGrammar, useDeleteGrammar, useDeleteVocab, useGrammarLessons, useImportVocab, useUploadGrammarPdf, useVocabCourse, useVocabSearch } from '@/features/study/study.queries'
+import { UNASSIGNED_VOCAB_SET, type GrammarLessonDto, type VocabImportResult } from '@toeic/shared'
+
+function importMessage(result: VocabImportResult) {
+  const created = result.units > 0 ? ` Tạo ${result.units} unit mới.` : ' Không có từ mới nên không tạo thêm unit.'
+  return `Đã thêm ${result.imported} từ, cập nhật ${result.updated} từ, bỏ qua ${result.skipped} dòng.${created}`
+}
 
 export function AdminStudyPage() {
   const [q, setQ] = useState('')
@@ -23,6 +28,13 @@ export function AdminStudyPage() {
   const [title, setTitle] = useState('')
   const [summary, setSummary] = useState('')
   const [body, setBody] = useState('')
+  const [topic, setTopic] = useState('')
+  const [setName, setSetName] = useState('')
+  const [mode, setMode] = useState<'new' | 'unit'>('new')
+  const [setId, setSetId] = useState('')
+  const course = useVocabCourse()
+  const namedSets = (course.data?.sets ?? []).filter((set) => set.id !== UNASSIGNED_VOCAB_SET)
+  const setReady = mode === 'new' ? topic.trim().length >= 2 && setName.trim().length >= 2 : Boolean(setId)
 
   if (vocab.isPending || lessons.isPending) return <PageLoading message="Đang tải học liệu…" />
   if (vocab.error) return <QueryErrorRedirect error={vocab.error} />
@@ -39,7 +51,55 @@ export function AdminStudyPage() {
 
       <Card className="p-6">
         <h2 className="serif text-2xl">Nhập từ vựng từ Excel</h2>
-        <p className="mt-2 text-sm text-ink/60">Dòng đầu có thể là tiêu đề: Từ vựng, Loại từ, Nghĩa. Nếu không có tiêu đề, ba cột đầu được hiểu theo thứ tự đó.</p>
+        <p className="mt-2 text-sm text-ink/60">File mẫu ghi tên bộ ở dòng Bộ đề và đánh số Unit. Tải file đó lên là hệ thống tự tạo bộ và các unit. File chỉ có ba cột Từ vựng, Loại từ, Nghĩa thì chọn tạo bộ mới hoặc thêm unit bên dưới.</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button type="button" className={mode === 'new' ? 'rounded-full bg-gold-deep px-4 py-2 text-sm font-semibold text-white' : 'rounded-full bg-paper-2 px-4 py-2 text-sm font-semibold text-ink'} onClick={() => setMode('new')}>
+            Tạo bộ mới
+          </button>
+          <button type="button" className={mode === 'unit' ? 'rounded-full bg-gold-deep px-4 py-2 text-sm font-semibold text-white' : 'rounded-full bg-paper-2 px-4 py-2 text-sm font-semibold text-ink'} onClick={() => setMode('unit')}>
+            Thêm unit vào bộ có sẵn
+          </button>
+        </div>
+        {mode === 'new' ? (
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <label className="block text-sm">
+              <span className="font-semibold">Chủ đề</span>
+              <input
+                className="mt-1 h-10 w-full rounded-xl border border-ink/12 px-3 text-sm"
+                value={topic}
+                maxLength={80}
+                placeholder="Ví dụ: Công sở"
+                onChange={(event) => setTopic(event.target.value)}
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="font-semibold">Tên bộ từ vựng</span>
+              <input
+                className="mt-1 h-10 w-full rounded-xl border border-ink/12 px-3 text-sm"
+                value={setName}
+                maxLength={120}
+                placeholder="Ví dụ: Hóa đơn và thanh toán"
+                onChange={(event) => setSetName(event.target.value)}
+              />
+            </label>
+          </div>
+        ) : (
+          <label className="mt-4 block text-sm">
+            <span className="font-semibold">Bộ từ vựng</span>
+            <select
+              className="mt-1 h-10 w-full rounded-xl border border-ink/12 bg-white px-3 text-sm"
+              value={setId}
+              onChange={(event) => setSetId(event.target.value)}
+            >
+              <option value="">{namedSets.length === 0 ? 'Chưa có bộ nào' : 'Chọn bộ'}</option>
+              {namedSets.map((set) => (
+                <option key={set.id} value={set.id}>
+                  {set.title} · {set.topic} · {set.units.length} tập
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <button
           type="button"
           className="mt-3 text-sm font-semibold text-gold-deep underline underline-offset-4"
@@ -57,13 +117,14 @@ export function AdminStudyPage() {
             label={importVocab.isPending ? 'Đang nhập…' : 'Chọn file .xlsx'}
             accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             disabled={importVocab.isPending}
-            hint="Tối đa 8MB, 2000 từ. Từ trùng sẽ được cập nhật nghĩa."
+            hint="Tối đa 8MB, 2000 từ. File mẫu tự nhận tên bộ và unit. Từ đã có chỉ được cập nhật nghĩa."
             onFiles={(files) => {
               const file = files[0]
               if (!file) return
               setNote(null)
-              void importVocab.mutateAsync(file).then(
-                (result) => setNotice(flashNotice(`Đã thêm ${result.imported} từ, cập nhật ${result.updated} từ, bỏ qua ${result.skipped} dòng.`)),
+              const payload = !setReady ? { file } : mode === 'new' ? { file, mode, topic, title: setName } : { file, mode, setId }
+              void importVocab.mutateAsync(payload).then(
+                (result) => setNotice(flashNotice(importMessage(result))),
                 (error) => {
                   setNote(error instanceof ApiError ? error.message : 'Không nhập được file.')
                 },
@@ -91,6 +152,7 @@ export function AdminStudyPage() {
             <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
               <span>
                 <span className="font-semibold">{item.word}</span> <span className="text-ink/50">{item.partOfSpeech}</span> — {item.meaning}
+                {item.set ? <span className="mt-0.5 block text-xs text-ink/45">{item.set.topic} · {item.set.title} · Unit {item.set.unit}</span> : null}
               </span>
               <button type="button" className="font-semibold text-coral underline underline-offset-4" onClick={() => void removeVocab.mutateAsync(item.id)}>
                 Xóa

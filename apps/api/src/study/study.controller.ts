@@ -1,6 +1,8 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query, Req, Res, StreamableFile } from '@nestjs/common'
+import { vocabImportTargetSchema } from '@toeic/shared'
 import type { Request, Response } from 'express'
 import { clientIp, CurrentUser, Roles, type AuthUser } from '../common/decorators'
+import { parse } from '../common/zod'
 import { StudyService } from './study.service'
 
 const actorOf = (user: AuthUser, req: Request) => ({ id: user.id, ip: clientIp(req) })
@@ -17,6 +19,11 @@ export class StudyController {
   @Get('overview')
   overview(@CurrentUser() user: AuthUser) {
     return this.study.overview(user.id)
+  }
+
+  @Get('vocab/sets')
+  vocabSets(@CurrentUser() user: AuthUser) {
+    return this.study.vocabCourse(user.id)
   }
 
   @Get('vocab')
@@ -36,8 +43,16 @@ export class StudyController {
   @Roles('ADMIN')
   @Post('vocab/import')
   @HttpCode(200)
-  importVocab(@CurrentUser() user: AuthUser, @Req() req: Request) {
-    return this.study.importVocab(actorOf(user, req), req.body)
+  importVocab(
+    @CurrentUser() user: AuthUser,
+    @Query('mode') mode: string | undefined,
+    @Query('topic') topic: string | undefined,
+    @Query('title') title: string | undefined,
+    @Query('setId') setId: string | undefined,
+    @Req() req: Request,
+  ) {
+    const target = mode ? parse(vocabImportTargetSchema, { mode, topic, title, setId }) : null
+    return this.study.importVocab(actorOf(user, req), req.body, target)
   }
 
   @Roles('ADMIN')
@@ -64,7 +79,7 @@ export class StudyController {
 
   @Get('notebook/template')
   async notebookTemplate(@Res() res: Response) {
-    const file = await this.study.template()
+    const file = await this.study.notebookTemplate()
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     res.setHeader('Content-Disposition', 'attachment; filename="mau-so-tay.xlsx"')
     res.send(file)
@@ -98,8 +113,13 @@ export class StudyController {
   }
 
   @Get('flashcards')
-  flashcards(@CurrentUser() user: AuthUser, @Query('deck') deck: string | undefined) {
-    return this.study.flashcards(user.id, deck === 'notebook' ? 'notebook' : 'catalog')
+  flashcards(
+    @CurrentUser() user: AuthUser,
+    @Query('deck') deck: string | undefined,
+    @Query('setId') setId: string | undefined,
+    @Query('unit') unit: string | undefined,
+  ) {
+    return this.study.flashcards(user.id, deck === 'notebook' ? 'notebook' : 'catalog', setId, unit)
   }
 
   @Post('flashcards/review')

@@ -28,9 +28,10 @@ describe('Study notebook and flashcards (e2e)', () => {
 
   afterAll(() => app.close())
 
-  function importFile(who: TestClient, body: Buffer) {
+  function importFile(who: TestClient, body: Buffer, set?: Record<string, string>) {
+    const query = set ? `?${new URLSearchParams(set).toString()}` : ''
     return who.agent
-      .post('/api/v1/study/vocab/import')
+      .post(`/api/v1/study/vocab/import${query}`)
       .set(CSRF_HEADER, CSRF_HEADER_VALUE)
       .set('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
       .send(body)
@@ -43,22 +44,75 @@ describe('Study notebook and flashcards (e2e)', () => {
       ['invoice', 'verb', 'lập hóa đơn'],
       ['', 'noun', 'thiếu từ'],
     ])
-    expect((await importFile(student, file)).status).toBe(403)
-    const imported = await importFile(admin, file)
+    const set = { mode: 'new', topic: 'Công sở', title: 'Hóa đơn' }
+    expect((await importFile(student, file, set)).status).toBe(403)
+    expect((await importFile(admin, file)).status).toBe(400)
+    const imported = await importFile(admin, file, set)
     expect(imported.status).toBe(200)
-    expect(imported.body).toMatchObject({ imported: 2, skipped: 1 })
-
-    const again = await importFile(admin, file)
-    expect(again.body.updated).toBe(2)
+    expect(imported.body).toMatchObject({ imported: 2, skipped: 1, units: 1 })
 
     const listed = await student.get('/study/vocab?q=invoice')
     expect(listed.body.total).toBeGreaterThanOrEqual(2)
     expect(listed.body.items).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ word: 'invoice', partOfSpeech: 'noun', meaning: 'hóa đơn' }),
-        expect.objectContaining({ word: 'invoice', partOfSpeech: 'verb', meaning: 'lập hóa đơn' }),
+        expect.objectContaining({ word: 'invoice', partOfSpeech: 'noun', meaning: 'hóa đơn', set: { topic: 'Công sở', title: 'Hóa đơn', unit: 1 } }),
+        expect.objectContaining({ word: 'invoice', partOfSpeech: 'verb', meaning: 'lập hóa đơn', set: { topic: 'Công sở', title: 'Hóa đơn', unit: 1 } }),
       ]),
     )
+
+    const course = await student.get('/study/vocab/sets')
+    expect(course.status).toBe(200)
+    const courseSet = course.body.sets.find((item: { title: string }) => item.title === 'Hóa đơn')
+    expect(courseSet).toMatchObject({ topic: 'Công sở', wordCount: 2, learnedCount: 0 })
+    expect(courseSet.units).toEqual([expect.objectContaining({ index: 1, wordCount: 2, learnedCount: 0 })])
+    const again = await importFile(admin, file, { mode: 'unit', setId: courseSet.id })
+    expect(again.body).toMatchObject({ updated: 2, imported: 0, units: 0 })
+    const unitCards = await student.get(`/study/flashcards?deck=catalog&setId=${courseSet.id}&unit=1`)
+    expect(unitCards.status).toBe(200)
+    expect(unitCards.body.title).toBe('Hóa đơn · Unit 1')
+    expect(unitCards.body.cards).toHaveLength(2)
+    expect((await student.post('/study/flashcards/review').send({ kind: 'CATALOG', id: unitCards.body.cards[0].id, result: 'GOOD' })).status).toBe(200)
+    const learned = await student.get('/study/vocab/sets')
+    expect(learned.body.sets.find((item: { id: string }) => item.id === courseSet.id).learnedCount).toBe(1)
+
+    const extra = await workbook([
+      ['Từ vựng', 'Loại từ', 'Nghĩa'],
+      ['deadline', 'noun', 'hạn chót'],
+    ])
+    const added = await importFile(admin, extra, { mode: 'unit', setId: courseSet.id })
+    expect(added.status).toBe(200)
+    expect(added.body).toMatchObject({ imported: 1, units: 1 })
+    const clash = await importFile(admin, extra, set)
+    expect(clash.status).toBe(409)
+    const grown = await student.get('/study/vocab/sets')
+    const units = grown.body.sets.find((item: { id: string }) => item.id === courseSet.id).units
+    expect(units).toEqual([
+      expect.objectContaining({ index: 1, wordCount: 2 }),
+      expect.objectContaining({ index: 2, wordCount: 1, learnedCount: 0 }),
+    ])
+
+    const styled = new ExcelJS.Workbook()
+    const layout = styled.addWorksheet('Tu vung')
+    layout.addRow(['Bộ đề', 'Demo'])
+    layout.addRow([null, 'Unit', 1])
+    layout.addRow([null, null, 'Từ vựng', 'Loại từ', 'Nghĩa'])
+    layout.addRow([null, null, 'substantial', 'adjective', 'đáng kể, lớn, quan trọng'])
+    layout.addRow([null, 'Unit', 2])
+    layout.addRow([null, null, 'Từ vựng', 'Loại từ', 'Nghĩa'])
+    layout.addRow([null, null, 'shipment', 'noun', 'lô hàng'])
+    const recognized = await admin.agent
+      .post('/api/v1/study/vocab/import')
+      .set(CSRF_HEADER, CSRF_HEADER_VALUE)
+      .set('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      .send(Buffer.from(await styled.xlsx.writeBuffer()))
+    expect(recognized.status).toBe(200)
+    expect(recognized.body).toMatchObject({ imported: 2, units: 2 })
+    const demo = (await student.get('/study/vocab/sets')).body.sets.find((item: { title: string }) => item.title === 'Demo')
+    expect(demo).toMatchObject({ topic: 'Từ vựng', wordCount: 2 })
+    expect(demo.units).toEqual([
+      expect.objectContaining({ index: 1, wordCount: 1 }),
+      expect.objectContaining({ index: 2, wordCount: 1 }),
+    ])
 
     const saved = await student.post('/study/notebook').send({ word: 'invoice' })
     expect(saved.status).toBe(200)

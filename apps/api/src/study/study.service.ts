@@ -6,7 +6,12 @@ import {
   reviewCardSchema,
   saveNotebookSchema,
   saveReadingMarkSchema,
+  UNASSIGNED_VOCAB_SET,
   updateNotebookSchema,
+  VOCAB_UNIT_SIZE,
+  type VocabCourseDto,
+  type VocabImportTarget,
+  type VocabSetCardDto,
   type ReadingMarkDto,
   type FlashcardDeckDto,
   type FlashcardDto,
@@ -16,17 +21,17 @@ import {
   type NotebookListDto,
   type SaveNotebookResult,
   type StudyOverviewDto,
-  type VocabEntryDto,
   type VocabImportResult,
   type VocabListDto,
 } from '@toeic/shared'
 import { and, asc, eq, ilike, isNull, lte, or, sql } from 'drizzle-orm'
+import { z } from 'zod'
 import { AuditService } from '../audit/audit.service'
 import { AppException } from '../common/app-exception'
 import { parse } from '../common/zod'
 import { DB, type Db } from '../db/database.module'
-import { attempts, cardReviews, grammarLessonFiles, grammarLessons, grammarProgress, notebookEntries, readingMarks, vocabEntries } from '../db/schema'
-import { readVocabSheet, vocabTemplate, VocabSheetError } from './vocab-sheet'
+import { attempts, cardReviews, grammarLessonFiles, grammarLessons, grammarProgress, notebookEntries, readingMarks, vocabEntries, vocabSets, vocabUnits } from '../db/schema'
+import { readVocabSheet, simpleVocabTemplate, vocabTemplate, VocabSheetError, type VocabSheet } from './vocab-sheet'
 
 type Actor = { id: string; ip?: string }
 const MAX_XLSX_BYTES = 8 * 1024 * 1024
@@ -74,16 +79,36 @@ export class StudyService {
       : undefined
     const [total, items] = await Promise.all([
       this.count(vocabEntries),
-      this.db.select().from(vocabEntries).where(where).orderBy(asc(vocabEntries.word)).limit(40),
+      this.db
+        .select({ entry: vocabEntries, topic: vocabSets.topic, title: vocabSets.title, position: vocabUnits.position })
+        .from(vocabEntries)
+        .leftJoin(vocabSets, eq(vocabEntries.setId, vocabSets.id))
+        .leftJoin(vocabUnits, eq(vocabEntries.unitId, vocabUnits.id))
+        .where(where)
+        .orderBy(asc(vocabEntries.word))
+        .limit(40),
     ])
-    return { total, items: items.map(toVocab) }
+    return {
+      total,
+      items: items.map((row) => ({
+        id: row.entry.id,
+        word: row.entry.word,
+        partOfSpeech: row.entry.partOfSpeech,
+        meaning: row.entry.meaning,
+        set: row.topic && row.title ? { topic: row.topic, title: row.title, unit: row.position ?? 1 } : null,
+      })),
+    }
   }
 
   template() {
     return vocabTemplate()
   }
 
-  async importVocab(actor: Actor, raw: unknown): Promise<VocabImportResult> {
+  notebookTemplate() {
+    return simpleVocabTemplate()
+  }
+
+  async importVocab(actor: Actor, raw: unknown, target: VocabImportTarget | null): Promise<VocabImportResult> {
     if (!Buffer.isBuffer(raw) || raw.length === 0) throw AppException.badRequest('Hãy chọn một file .xlsx.')
     if (raw.length > MAX_XLSX_BYTES) throw AppException.badRequest('File Excel quá lớn (tối đa 8MB).')
     let parsed: Awaited<ReturnType<typeof readVocabSheet>>
@@ -93,44 +118,166 @@ export class StudyService {
       if (error instanceof VocabSheetError) throw AppException.badRequest(error.message)
       throw AppException.badRequest('Không đọc được file Excel. Hãy dùng định dạng .xlsx.')
     }
+    if (parsed.structured) return this.importStructured(actor, parsed, target)
+    if (!target) throw AppException.badRequest('Hãy chọn tạo bộ mới hoặc thêm unit, hoặc dùng file mẫu có dòng Bộ đề và Unit.')
+    const setId = target.mode === 'new' ? await this.createVocabSet(actor, target.topic, target.title) : await this.requireVocabSet(target.setId)
     const existing = await this.db.select({ wordKey: vocabEntries.wordKey, partOfSpeech: vocabEntries.partOfSpeech }).from(vocabEntries)
     const known = new Set(existing.map((row) => `${row.wordKey}\0${row.partOfSpeech.toLowerCase()}`))
     let imported = 0
     let updated = 0
-    for (const row of parsed.rows) {
-      const key = `${row.word.toLowerCase()}\0${row.partOfSpeech.toLowerCase()}`
-      if (known.has(key)) updated++
-      else {
-        imported++
-        known.add(key)
+    let units = 0
+    let position = await this.nextUnitPosition(setId)
+    for (let start = 0; start < parsed.rows.length; start += VOCAB_UNIT_SIZE) {
+      const chunk = parsed.rows.slice(start, start + VOCAB_UNIT_SIZE)
+      const fresh = chunk.filter((row) => !known.has(`${row.word.toLowerCase()}\0${row.partOfSpeech.toLowerCase()}`))
+      for (const row of chunk) {
+        const key = `${row.word.toLowerCase()}\0${row.partOfSpeech.toLowerCase()}`
+        if (!known.has(key)) continue
+        updated++
+        await this.db
+          .update(vocabEntries)
+          .set({ word: row.word, meaning: row.meaning, updatedAt: new Date() })
+          .where(and(eq(vocabEntries.wordKey, row.word.toLowerCase()), sql`lower(${vocabEntries.partOfSpeech}) = ${row.partOfSpeech.toLowerCase()}`))
       }
-      await this.db
-        .insert(vocabEntries)
-        .values({
+      if (fresh.length === 0) continue
+      const [unit] = await this.db.insert(vocabUnits).values({ setId, position }).returning({ id: vocabUnits.id })
+      if (!unit) throw new Error('Không tạo được unit.')
+      position++
+      units++
+      for (const [index, row] of fresh.entries()) {
+        const key = `${row.word.toLowerCase()}\0${row.partOfSpeech.toLowerCase()}`
+        known.add(key)
+        imported++
+        await this.db.insert(vocabEntries).values({
+          setId,
+          unitId: unit.id,
+          displayOrder: index + 1,
           word: row.word,
           wordKey: row.word.toLowerCase(),
           partOfSpeech: row.partOfSpeech,
           meaning: row.meaning,
           createdBy: actor.id,
         })
-        .onConflictDoUpdate({
-          target: [vocabEntries.wordKey, vocabEntries.partOfSpeech],
-          set: { word: sql`excluded.word`, meaning: sql`excluded.meaning`, updatedAt: new Date() },
-        })
+      }
     }
+    if (units === 0 && target.mode === 'new') await this.db.delete(vocabSets).where(eq(vocabSets.id, setId))
     await this.audit.log({
       action: 'VOCAB_IMPORTED',
       actorId: actor.id,
       entityType: 'vocab',
-      metadata: { imported, updated, skipped: parsed.skipped },
+      metadata: { imported, updated, skipped: parsed.skipped, units, mode: target.mode, setId: units === 0 && target.mode === 'new' ? null : setId },
       ip: actor.ip,
     })
-    return { imported, updated, skipped: parsed.skipped }
+    return { imported, updated, skipped: parsed.skipped, units }
+  }
+
+  private async importStructured(actor: Actor, parsed: VocabSheet, target: VocabImportTarget | null): Promise<VocabImportResult> {
+    const title = parsed.title?.trim() ?? ''
+    if (title.length < 2) throw AppException.badRequest('File mẫu cần tên bộ ở ô cạnh nhãn Bộ đề.')
+    const topic = (parsed.topic?.trim() || (target?.mode === 'new' ? target.topic : '') || 'Từ vựng').slice(0, 80)
+    if (topic.length < 2) throw AppException.badRequest('Chủ đề cần ít nhất 2 ký tự.')
+    let setId = await this.findVocabSet(topic, title)
+    let createdSet = false
+    if (!setId) {
+      setId = await this.createVocabSet(actor, topic, title)
+      createdSet = true
+    }
+    const existing = await this.db.select({ wordKey: vocabEntries.wordKey, partOfSpeech: vocabEntries.partOfSpeech }).from(vocabEntries)
+    const known = new Set(existing.map((row) => `${row.wordKey}\0${row.partOfSpeech.toLowerCase()}`))
+    const groups = new Map<number, VocabSheet['rows']>()
+    for (const row of parsed.rows) {
+      const position = row.unit ?? 1
+      groups.set(position, [...(groups.get(position) ?? []), row])
+    }
+    let imported = 0
+    let updated = 0
+    let units = 0
+    for (const [position, rows] of [...groups.entries()].sort((a, b) => a[0] - b[0])) {
+      const fresh = rows.filter((row) => !known.has(`${row.word.toLowerCase()}\0${row.partOfSpeech.toLowerCase()}`))
+      for (const row of rows) {
+        const key = `${row.word.toLowerCase()}\0${row.partOfSpeech.toLowerCase()}`
+        if (!known.has(key)) continue
+        updated++
+        await this.db
+          .update(vocabEntries)
+          .set({ word: row.word, meaning: row.meaning, updatedAt: new Date() })
+          .where(and(eq(vocabEntries.wordKey, row.word.toLowerCase()), sql`lower(${vocabEntries.partOfSpeech}) = ${row.partOfSpeech.toLowerCase()}`))
+      }
+      if (fresh.length === 0) continue
+      const [found] = await this.db.select({ id: vocabUnits.id }).from(vocabUnits).where(and(eq(vocabUnits.setId, setId), eq(vocabUnits.position, position))).limit(1)
+      const [created] = found ? [found] : await this.db.insert(vocabUnits).values({ setId, position }).returning({ id: vocabUnits.id })
+      if (!created) throw new Error('Không tạo được unit.')
+      if (!found) units++
+      const [last] = await this.db.select({ n: sql<number>`coalesce(max(${vocabEntries.displayOrder}), 0)::int` }).from(vocabEntries).where(eq(vocabEntries.unitId, created.id))
+      let order = last?.n ?? 0
+      for (const row of fresh) {
+        known.add(`${row.word.toLowerCase()}\0${row.partOfSpeech.toLowerCase()}`)
+        imported++
+        order++
+        await this.db.insert(vocabEntries).values({
+          setId,
+          unitId: created.id,
+          displayOrder: order,
+          word: row.word,
+          wordKey: row.word.toLowerCase(),
+          partOfSpeech: row.partOfSpeech,
+          meaning: row.meaning,
+          createdBy: actor.id,
+        })
+      }
+    }
+    if (createdSet && imported === 0) await this.db.delete(vocabSets).where(eq(vocabSets.id, setId))
+    await this.audit.log({
+      action: 'VOCAB_IMPORTED',
+      actorId: actor.id,
+      entityType: 'vocab',
+      metadata: { imported, updated, skipped: parsed.skipped, units, mode: 'file', title, topic },
+      ip: actor.ip,
+    })
+    return { imported, updated, skipped: parsed.skipped, units }
+  }
+
+  private async findVocabSet(topic: string, title: string) {
+    const [row] = await this.db
+      .select({ id: vocabSets.id })
+      .from(vocabSets)
+      .where(and(eq(vocabSets.topicKey, topic.toLowerCase()), eq(vocabSets.titleKey, title.toLowerCase())))
+      .limit(1)
+    return row?.id ?? null
+  }
+
+  private async createVocabSet(actor: Actor, topic: string, title: string) {
+    try {
+      const [created] = await this.db
+        .insert(vocabSets)
+        .values({ topic, topicKey: topic.toLowerCase(), title, titleKey: title.toLowerCase(), createdBy: actor.id })
+        .returning({ id: vocabSets.id })
+      if (!created) throw new Error('Không tạo được bộ từ vựng.')
+      return created.id
+    } catch (error) {
+      if (isUniqueViolation(error)) throw AppException.conflict('Đã có bộ từ với chủ đề và tên này. Hãy thêm unit vào bộ đó.')
+      throw error
+    }
+  }
+
+  private async requireVocabSet(setId: string) {
+    const [set] = await this.db.select({ id: vocabSets.id }).from(vocabSets).where(eq(vocabSets.id, setId)).limit(1)
+    if (!set) throw AppException.notFound('Không tìm thấy bộ từ này.')
+    return set.id
+  }
+
+  private async nextUnitPosition(setId: string) {
+    const [row] = await this.db.select({ n: sql<number>`coalesce(max(${vocabUnits.position}), 0)::int` }).from(vocabUnits).where(eq(vocabUnits.setId, setId))
+    return (row?.n ?? 0) + 1
   }
 
   async deleteVocab(actor: Actor, id: string) {
-    const [row] = await this.db.delete(vocabEntries).where(eq(vocabEntries.id, id)).returning({ id: vocabEntries.id })
+    const [row] = await this.db.delete(vocabEntries).where(eq(vocabEntries.id, id)).returning({ id: vocabEntries.id, unitId: vocabEntries.unitId })
     if (!row) throw AppException.notFound('Không tìm thấy từ này.')
+    if (row.unitId) {
+      const [left] = await this.db.select({ n: sql<number>`count(*)::int` }).from(vocabEntries).where(eq(vocabEntries.unitId, row.unitId))
+      if ((left?.n ?? 0) === 0) await this.db.delete(vocabUnits).where(eq(vocabUnits.id, row.unitId))
+    }
     await this.audit.log({ action: 'VOCAB_DELETED', actorId: actor.id, entityType: 'vocab', entityId: id, ip: actor.ip })
     return { ok: true as const }
   }
@@ -293,8 +440,48 @@ export class StudyService {
     return { ok: true as const }
   }
 
-  async flashcards(userId: string, deck: string): Promise<FlashcardDeckDto> {
+  async vocabCourse(userId: string): Promise<VocabCourseDto> {
+    type UnitRow = { set_id: string; unit: number; word_count: number; learned_count: number }
+    const unitResult = (await this.db.execute(sql`
+      select u.set_id::text as set_id, u.position::int as unit, count(v.id)::int as word_count, count(r.id)::int as learned_count
+      from vocab_units u
+      join vocab_entries v on v.unit_id = u.id
+      left join card_reviews r on r.vocab_entry_id = v.id and r.user_id = ${userId}
+      group by u.set_id, u.position
+      union all
+      select ${UNASSIGNED_VOCAB_SET} as set_id, n.unit::int as unit, count(*)::int as word_count, count(r.id)::int as learned_count
+      from (
+        select id, ((row_number() over (order by word_key, id) - 1) / ${sql.raw(String(VOCAB_UNIT_SIZE))}) + 1 as unit
+        from vocab_entries
+        where set_id is null
+      ) n
+      left join card_reviews r on r.vocab_entry_id = n.id and r.user_id = ${userId}
+      group by n.unit
+      order by unit
+    `)) as unknown as { rows: UnitRow[] }
+
+    const named = await this.db.select({ id: vocabSets.id, topic: vocabSets.topic, title: vocabSets.title }).from(vocabSets)
+    const byId = new Map<string, VocabSetCardDto>()
+    for (const set of named) byId.set(set.id, { ...set, wordCount: 0, learnedCount: 0, units: [] })
+    for (const row of unitResult.rows) {
+      if (row.set_id === UNASSIGNED_VOCAB_SET && !byId.has(UNASSIGNED_VOCAB_SET)) {
+        byId.set(UNASSIGNED_VOCAB_SET, { id: UNASSIGNED_VOCAB_SET, topic: 'Chưa gắn bộ', title: 'Kho từ chung', wordCount: 0, learnedCount: 0, units: [] })
+      }
+      const set = byId.get(row.set_id)
+      if (!set) continue
+      const wordCount = Number(row.word_count)
+      const learnedCount = Number(row.learned_count)
+      set.units.push({ index: Number(row.unit), wordCount, learnedCount })
+      set.wordCount += wordCount
+      set.learnedCount += learnedCount
+    }
+    const sets = [...byId.values()].filter((set) => set.wordCount > 0).sort((a, b) => a.title.localeCompare(b.title, 'vi'))
+    return { sets }
+  }
+
+  async flashcards(userId: string, deck: string, setId?: string, unit?: string): Promise<FlashcardDeckDto> {
     if (deck === 'notebook') return this.notebookDeck(userId)
+    if (setId || unit) return this.unitDeck(userId, setId ?? '', unit ?? '')
     return this.catalogDeck(userId)
   }
 
@@ -433,9 +620,57 @@ export class StudyService {
             .limit(20 - due.length)
     return {
       deck: 'catalog',
+      title: 'Kho từ',
       dueCount: await this.catalogCounts(userId),
       newCount: await this.catalogNewCount(userId),
       cards: [...due.map((row) => toCard('CATALOG', row.entry)), ...fresh.map((row) => toCard('CATALOG', row.entry))],
+    }
+  }
+
+  private async unitDeck(userId: string, setId: string, unitRaw: string): Promise<FlashcardDeckDto> {
+    const loose = setId === UNASSIGNED_VOCAB_SET
+    if (!loose && !z.uuid().safeParse(setId).success) throw AppException.badRequest('Mã bộ từ không hợp lệ.')
+    const unit = Number(unitRaw)
+    if (!Number.isInteger(unit) || unit < 1 || unit > 500) throw AppException.badRequest('Unit không hợp lệ.')
+    const named = loose
+      ? { topic: 'Chưa gắn bộ', title: 'Kho từ chung' }
+      : (await this.db.select({ topic: vocabSets.topic, title: vocabSets.title }).from(vocabSets).where(eq(vocabSets.id, setId)).limit(1))[0]
+    if (!named) throw AppException.notFound('Không tìm thấy bộ từ này.')
+    type CardRow = { id: string; word: string; partOfSpeech: string; meaning: string; due_at: Date | string | null }
+    const result = (await this.db.execute(
+      loose
+        ? sql`
+            with numbered as (
+              select id, word, part_of_speech, meaning, 0 as display_order,
+                ((row_number() over (order by word_key, id) - 1) / ${sql.raw(String(VOCAB_UNIT_SIZE))}) + 1 as unit
+              from vocab_entries
+              where set_id is null
+            )
+            select n.id, n.word, n.part_of_speech as "partOfSpeech", n.meaning, r.due_at
+            from numbered n
+            left join card_reviews r on r.vocab_entry_id = n.id and r.user_id = ${userId}
+            where n.unit = ${unit}
+            order by (r.id is null) desc, n.word
+          `
+        : sql`
+            select v.id, v.word, v.part_of_speech as "partOfSpeech", v.meaning, r.due_at
+            from vocab_units u
+            join vocab_entries v on v.unit_id = u.id
+            left join card_reviews r on r.vocab_entry_id = v.id and r.user_id = ${userId}
+            where u.set_id = ${setId} and u.position = ${unit}
+            order by (r.id is null) desc, v.display_order, v.word
+          `,
+    )) as unknown as { rows: CardRow[] }
+    if (result.rows.length === 0) throw AppException.notFound('Unit này không có từ.')
+    const now = Date.now()
+    const dueCount = result.rows.filter((row) => row.due_at != null && new Date(row.due_at).getTime() <= now).length
+    const newCount = result.rows.filter((row) => row.due_at == null).length
+    return {
+      deck: 'catalog',
+      title: `${named.title} · Unit ${unit}`,
+      dueCount,
+      newCount,
+      cards: result.rows.map((row) => toCard('CATALOG', row)),
     }
   }
 
@@ -461,6 +696,7 @@ export class StudyService {
     const summary = await this.notebookSummary(userId)
     return {
       deck: 'notebook',
+      title: 'Sổ tay',
       dueCount: summary.dueCount,
       newCount: summary.newCount,
       cards: [...due.map((row) => toCard('NOTEBOOK', row.entry)), ...fresh.map((row) => toCard('NOTEBOOK', row.entry))],
@@ -611,10 +847,6 @@ function isUniqueViolation(error: unknown) {
     current = 'cause' in current ? (current as { cause?: unknown }).cause : undefined
   }
   return false
-}
-
-function toVocab(row: typeof vocabEntries.$inferSelect): VocabEntryDto {
-  return { id: row.id, word: row.word, partOfSpeech: row.partOfSpeech, meaning: row.meaning }
 }
 
 function toCard(kind: FlashcardDto['kind'], row: { id: string; word: string; partOfSpeech: string; meaning: string }): FlashcardDto {

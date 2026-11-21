@@ -528,11 +528,43 @@ export const bugReports = pgTable(
   ],
 ).enableRLS()
 
+/** One named vocabulary list. The admin sets the topic and title before uploading its words. */
+export const vocabSets = pgTable(
+  'vocab_sets',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    topic: text('topic').notNull(),
+    topicKey: text('topic_key').notNull(),
+    title: text('title').notNull(),
+    titleKey: text('title_key').notNull(),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('vocab_sets_topic_title_uq').on(t.topicKey, t.titleKey)],
+).enableRLS()
+
+/** One study unit inside a vocabulary set. Position is the unit number students see. */
+export const vocabUnits = pgTable(
+  'vocab_units',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    setId: uuid('set_id')
+      .notNull()
+      .references(() => vocabSets.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('vocab_units_set_position_uq').on(t.setId, t.position), index('vocab_units_set_idx').on(t.setId)],
+).enableRLS()
+
 /** Shared vocabulary bank imported by an admin from Excel. */
 export const vocabEntries = pgTable(
   'vocab_entries',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    setId: uuid('set_id').references(() => vocabSets.id, { onDelete: 'set null' }),
+    unitId: uuid('unit_id').references(() => vocabUnits.id, { onDelete: 'cascade' }),
+    displayOrder: integer('display_order').notNull().default(0),
     word: text('word').notNull(),
     wordKey: text('word_key').notNull(),
     partOfSpeech: text('part_of_speech').notNull(),
@@ -540,7 +572,12 @@ export const vocabEntries = pgTable(
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     ...timestamps,
   },
-  (t) => [uniqueIndex('vocab_entries_word_pos_uq').on(t.wordKey, t.partOfSpeech), index('vocab_entries_word_idx').on(t.wordKey)],
+  (t) => [
+    uniqueIndex('vocab_entries_word_pos_uq').on(t.wordKey, t.partOfSpeech),
+    index('vocab_entries_word_idx').on(t.wordKey),
+    index('vocab_entries_set_idx').on(t.setId),
+    index('vocab_entries_unit_idx').on(t.unitId),
+  ],
 ).enableRLS()
 
 /** A student's personal word. Meaning may be empty until they fill it in. */
