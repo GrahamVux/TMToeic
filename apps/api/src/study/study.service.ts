@@ -12,6 +12,7 @@ import {
   type FlashcardDto,
   type GrammarLessonDto,
   type NotebookEntryDto,
+  type NotebookImportResult,
   type NotebookListDto,
   type SaveNotebookResult,
   type StudyOverviewDto,
@@ -132,6 +133,40 @@ export class StudyService {
     if (!row) throw AppException.notFound('Không tìm thấy từ này.')
     await this.audit.log({ action: 'VOCAB_DELETED', actorId: actor.id, entityType: 'vocab', entityId: id, ip: actor.ip })
     return { ok: true as const }
+  }
+
+  async importNotebook(userId: string, raw: unknown): Promise<NotebookImportResult> {
+    if (!Buffer.isBuffer(raw) || raw.length === 0) throw AppException.badRequest('Hãy chọn một file .xlsx.')
+    if (raw.length > MAX_XLSX_BYTES) throw AppException.badRequest('File Excel quá lớn (tối đa 8MB).')
+    let parsed: Awaited<ReturnType<typeof readVocabSheet>>
+    try {
+      parsed = await readVocabSheet(raw)
+    } catch (error) {
+      if (error instanceof VocabSheetError) throw AppException.badRequest(error.message)
+      throw AppException.badRequest('Không đọc được file Excel. Hãy dùng định dạng .xlsx.')
+    }
+    let added = 0
+    let updated = 0
+    let skipped = parsed.skipped
+    for (const row of parsed.rows) {
+      const word = notebookPhrase(row.word)
+      if (!word) {
+        skipped++
+        continue
+      }
+      const inserted = await this.insertNotebook(userId, word, row.partOfSpeech, row.meaning, 'MANUAL', null)
+      if (inserted) {
+        added++
+        continue
+      }
+      await this.db
+        .update(notebookEntries)
+        .set({ word, meaning: row.meaning, updatedAt: new Date() })
+        .where(and(eq(notebookEntries.userId, userId), eq(notebookEntries.wordKey, word.toLowerCase()), eq(notebookEntries.partOfSpeech, row.partOfSpeech)))
+      updated++
+    }
+    if (added === 0 && updated === 0) throw AppException.badRequest('Không có từ hợp lệ để thêm vào sổ tay. Cần từ tiếng Anh, loại từ và nghĩa.')
+    return { added, updated, skipped }
   }
 
   async listNotebook(userId: string): Promise<NotebookListDto> {

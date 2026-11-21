@@ -62,6 +62,20 @@ export class StudyController {
     return this.study.deleteReadingMark(user.id, id)
   }
 
+  @Get('notebook/template')
+  async notebookTemplate(@Res() res: Response) {
+    const file = await this.study.template()
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.setHeader('Content-Disposition', 'attachment; filename="mau-so-tay.xlsx"')
+    res.send(file)
+  }
+
+  @Post('notebook/import')
+  @HttpCode(200)
+  importNotebook(@CurrentUser() user: AuthUser, @Req() req: Request) {
+    return this.study.importNotebook(user.id, req.body)
+  }
+
   @Get('notebook')
   notebook(@CurrentUser() user: AuthUser) {
     return this.study.listNotebook(user.id)

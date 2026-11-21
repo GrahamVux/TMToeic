@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/Button'
+import { FilePick } from '@/components/ui/FilePick'
 import { Card } from '@/components/ui/Primitives'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
@@ -6,7 +7,7 @@ import { ApiError } from '@/lib/api'
 import type { NotebookEntryDto } from '@toeic/shared'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { notebookSavedMessage, useDeleteNotebook, useNotebook, useSaveNotebookWord, useUpdateNotebook } from '@/features/study/study.queries'
+import { notebookSavedMessage, useDeleteNotebook, useImportNotebook, useNotebook, useSaveNotebookWord, useUpdateNotebook } from '@/features/study/study.queries'
 
 export function NotebookPage() {
   const notebook = useNotebook()
@@ -26,7 +27,7 @@ export function NotebookPage() {
         <div>
           <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Học tập / Sổ tay</p>
           <h1 className="serif mt-2 text-3xl sm:text-4xl">Sổ tay cá nhân</h1>
-          <p className="mt-2 text-sm text-ink/60">Từ điển của bạn: từ take note khi làm bài đọc, hoặc từ bạn tự thêm.</p>
+          <p className="mt-2 text-sm text-ink/60">Từ điển của bạn: từ take note khi làm bài đọc, từ bạn tự thêm, hoặc cả danh sách trong file Excel.</p>
         </div>
         <Link to="/study/flashcards?deck=notebook">
           <Button>Luyện flashcard ({data.dueCount})</Button>
@@ -111,7 +112,44 @@ function AddTakeNote() {
           <Button type="submit" disabled={save.isPending}>Thêm vào từ điển của tôi</Button>
         </div>
       </form>
+      <ExcelList />
     </Card>
+  )
+}
+
+function ExcelList() {
+  const importList = useImportNotebook()
+  const [error, setError] = useState<string | null>(null)
+  const [done, setDone] = useState<string | null>(null)
+
+  return (
+    <div className="mt-5 border-t border-gold/30 pt-5">
+      <h3 className="font-semibold">Thêm cả danh sách từ Excel</h3>
+      <p className="mt-1 text-sm text-ink/60">Ba cột: từ vựng, loại từ, nghĩa. Dòng đã có trong sổ tay được cập nhật nghĩa.</p>
+      <a className="mt-2 inline-block text-sm font-semibold text-gold-deep underline underline-offset-4" href="/api/v1/study/notebook/template">
+        Tải file mẫu
+      </a>
+      <div className="mt-3">
+        <FilePick
+          label={importList.isPending ? 'Đang nhập…' : 'Chọn file .xlsx'}
+          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          disabled={importList.isPending}
+          hint="Tối đa 8MB, 2000 từ. Chỉ từ hoặc cụm tiếng Anh."
+          onFiles={(files) => {
+            const file = files[0]
+            if (!file) return
+            setError(null)
+            setDone(null)
+            void importList.mutateAsync(file).then(
+              (result) => setDone(`Đã thêm ${result.added} từ, cập nhật ${result.updated} từ${result.skipped ? `, bỏ qua ${result.skipped} dòng` : ''}.`),
+              (err: unknown) => setError(err instanceof ApiError ? err.message : 'Không nhập được file.'),
+            )
+          }}
+        />
+      </div>
+      {error ? <p className="mt-3 text-sm text-coral" role="alert">{error}</p> : null}
+      {done ? <p className="mt-3 text-sm text-olive">{done}</p> : null}
+    </div>
   )
 }
 

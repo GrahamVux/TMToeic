@@ -1,12 +1,14 @@
+import { useAuth } from '@/app/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
-import { Card, Input } from '@/components/ui/Primitives'
+import { Badge, Card, Input } from '@/components/ui/Primitives'
 import { ApiError } from '@/lib/api'
 import { cn } from '@/lib/cn'
-import type { ClassSummaryDto } from '@toeic/shared'
+import type { ClassSummaryDto, UserDto } from '@toeic/shared'
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { AddStudentActions } from './StudentDialogs'
-import { useAssignClass, useClasses, useCreateClass, useDeleteClass, useSetClassClosed, useSetClassTeachers, useTeachers } from './users.queries'
+import { useAssignClass, useClasses, useCreateClass, useDeleteClass, useSetClassClosed, useSetClassTeachers, useStudents, useTeachers } from './users.queries'
 
 function initialsOf(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -89,15 +91,17 @@ export function ClassSwitcher({
         shown.length === 0 ? (
           <p className="text-right text-sm text-ink/55">Không có lớp khớp “{query.trim()}”.</p>
         ) : (
-          <div className="flex flex-wrap justify-end gap-2">
+          <div className="space-y-2">
             {shown.map((room) => (
-              <ClassPill
-                key={room.id}
-                active={selectedId === room.id}
-                label={room.closedAt ? `${room.name} · đóng` : room.name}
-                count={room.memberCount}
-                onClick={() => pick(room.id)}
-              />
+              <div key={room.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold/40 bg-white px-4 py-3">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{room.name}{room.closedAt ? ' · đã đóng' : ''}</p>
+                  <p className="text-sm text-ink/55">{room.memberCount} học viên</p>
+                </div>
+                <Button type="button" variant={selectedId === room.id ? 'navy' : 'gold'} className="px-3 py-1.5 text-xs" onClick={() => pick(room.id)}>
+                  Quản lý lớp
+                </Button>
+              </div>
             ))}
           </div>
         )
@@ -138,7 +142,7 @@ export function ClassRooms({ selectedId, onSelect }: { selectedId: string; onSel
       {rooms.length > 0 ? <ClassSwitcher rooms={rooms} selectedId={room?.id ?? ''} onSelect={onSelect} /> : null}
       {room ? <ClassWorkspace room={room} /> : rooms.length > 0 ? (
         <Card className="p-5">
-          <p className="text-sm text-ink/70">Đang xem học viên của mọi lớp. Tìm tên lớp bên phải, rồi bấm lớp tìm thấy để gán giáo viên, thêm học viên, đóng hoặc xóa lớp.</p>
+          <p className="text-sm text-ink/70">Đang xem học viên của mọi lớp. Tìm tên lớp bên phải, rồi bấm Quản lý lớp để xem số học viên và tài khoản trong lớp đó.</p>
         </Card>
       ) : null}
     </section>
@@ -241,8 +245,71 @@ function ClassWorkspace({ room }: { room: ClassSummaryDto }) {
         ) : null}
       </div>
       {error ? <p role="alert" className="mt-3 text-sm text-coral">{error}</p> : null}
+      <ClassRoster key={room.id} classId={room.id} memberCount={room.memberCount} />
     </Card>
   )
+}
+
+function ClassRoster({ classId, memberCount }: { classId: string; memberCount: number }) {
+  const [page, setPage] = useState(1)
+  const students = useStudents({ q: '', status: '', classId, page, pageSize: 20 })
+  const total = students.data?.total ?? memberCount
+  const pages = Math.max(1, Math.ceil(total / 20))
+  const items = students.data?.items ?? []
+  const { user } = useAuth()
+  const canOpenProfile = user?.role === 'ADMIN' || Boolean(user?.permissions.viewProgress)
+
+  return (
+    <div className="mt-5 border-t border-gold/30 pt-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h3 className="serif text-xl">Tài khoản học viên</h3>
+          <p className="mt-1 text-sm text-ink/55">Danh sách tài khoản đang ở lớp này.</p>
+        </div>
+        <p className="text-sm font-semibold text-gold-deep">{total} học viên</p>
+      </div>
+      {students.isPending ? <p className="mt-3 text-sm text-ink/55">Đang tải tài khoản…</p> : null}
+      {students.isError ? <p className="mt-3 text-sm text-coral">Không tải được danh sách học viên.</p> : null}
+      {!students.isPending && items.length === 0 ? <p className="mt-3 text-sm text-ink/55">Lớp chưa có học viên.</p> : null}
+      {items.length > 0 ? (
+        <ul className="mt-3 divide-y divide-gold/25">
+          {items.map((student) => (
+            <li key={student.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-teal-soft text-xs font-bold text-gold-deep">{initialsOf(student.fullName)}</span>
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{student.fullName}</p>
+                  <p className="truncate text-xs text-ink/50">{accountLine(student)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <StudentStatus user={student} />
+                {canOpenProfile ? <Link to={`/admin/students/${student.id}`} className="text-xs font-semibold text-gold-deep underline underline-offset-4">Hồ sơ</Link> : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {pages > 1 ? (
+        <div className="mt-3 flex justify-end gap-2">
+          <Button type="button" variant="ghost" className="px-3 py-1.5 text-xs" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Trước</Button>
+          <Button type="button" variant="ghost" className="px-3 py-1.5 text-xs" disabled={page >= pages} onClick={() => setPage((value) => value + 1)}>Sau</Button>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function accountLine(student: UserDto) {
+  const parts = [student.studentCode, student.username]
+  if (student.email) parts.push(student.email)
+  return parts.filter(Boolean).join(' · ')
+}
+
+function StudentStatus({ user }: { user: UserDto }) {
+  if (user.status === 'DISABLED') return <Badge tone="danger">Đã khóa</Badge>
+  if (user.mustChangePassword) return <Badge tone="warn">Chưa đổi MK</Badge>
+  return <Badge tone="olive">Hoạt động</Badge>
 }
 
 export function TeacherClassPanels({
@@ -285,10 +352,11 @@ export function TeacherClassPanels({
               <p className="text-sm text-ink/55">Tài khoản chưa có quyền tạo học viên.</p>
             )}
           </div>
+          <ClassRoster key={room.id} classId={room.id} memberCount={room.memberCount} />
         </Card>
       ) : (
         <Card className="p-5">
-          <p className="text-sm text-ink/70">Đang xem học viên của mọi lớp được giao. Tìm tên lớp bên phải khi cần thêm học viên vào một lớp.</p>
+          <p className="text-sm text-ink/70">Đang xem học viên của mọi lớp được giao. Tìm tên lớp, rồi bấm Quản lý lớp để xem tài khoản trong lớp đó.</p>
         </Card>
       )}
     </section>

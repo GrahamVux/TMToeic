@@ -36,7 +36,7 @@ export function configureApp(app: INestApplication) {
   // Listening recordings are posted as raw bytes, not JSON (the 5mb JSON parser would reject a full test).
   http.use((req: Request, res: Response, next: NextFunction) => {
     const path = req.path.split('?')[0] ?? req.path
-    if (req.method === 'POST' && /\/(?:exams\/[^/]+\/audio\/file|assignments\/[^/]+\/(?:audio\/file|images)|study\/vocab\/import|study\/grammar\/[^/]+\/pdf|users\/students\/import)$/.test(path)) {
+    if (req.method === 'POST' && /\/(?:exams\/[^/]+\/audio\/file|assignments\/[^/]+\/(?:audio\/file|images)|study\/vocab\/import|study\/notebook\/import|study\/grammar\/[^/]+\/pdf|users\/students\/import)$/.test(path)) {
       return express.raw({ type: () => true, limit: '80mb' })(req, res, next)
     }
     next()

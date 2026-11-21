@@ -105,6 +105,34 @@ describe('Study notebook and flashcards (e2e)', () => {
 
     expect(overview.body.notebookTotal).toBe(4)
 
+    const personal = await workbook([
+      ['Từ vựng', 'Loại từ', 'Nghĩa'],
+      ['deadline', 'noun', 'hạn chót'],
+      ['meet the deadline', 'phrase', 'kịp hạn'],
+      ['123', 'noun', 'không phải từ'],
+    ])
+    const importedList = await student.agent
+      .post('/api/v1/study/notebook/import')
+      .set(CSRF_HEADER, CSRF_HEADER_VALUE)
+      .set('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      .send(personal)
+    expect(importedList.status).toBe(200)
+    expect(importedList.body).toMatchObject({ added: 2, updated: 0 })
+    expect(importedList.body.skipped).toBeGreaterThanOrEqual(1)
+    const againList = await student.agent
+      .post('/api/v1/study/notebook/import')
+      .set(CSRF_HEADER, CSRF_HEADER_VALUE)
+      .set('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      .send(personal)
+    expect(againList.body.updated).toBe(2)
+    const afterImport = await student.get('/study/notebook')
+    expect(afterImport.body.items).toEqual(
+      expect.arrayContaining([expect.objectContaining({ word: 'deadline', source: 'MANUAL', meaning: 'hạn chót', partOfSpeech: 'noun' })]),
+    )
+    const sample = await student.agent.get('/api/v1/study/notebook/template')
+    expect(sample.status).toBe(200)
+    expect(sample.headers['content-type']).toMatch(/spreadsheetml/)
+
     const pdf = Buffer.from('%PDF-1.1\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF')
     expect((await postPdf(student, lessonId, 'bi-mat.pdf', pdf)).status).toBe(403)
     expect((await postPdf(admin, lessonId, 'khong-phai.pdf', Buffer.from('hello'))).status).toBe(400)

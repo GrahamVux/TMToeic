@@ -4,6 +4,7 @@ import type {
   GrammarLessonDto,
   GrammarLessonInput,
   NotebookEntryDto,
+  NotebookImportResult,
   NotebookListDto,
   ReadingMarkDto,
   SaveNotebookResult,
@@ -39,6 +40,18 @@ export function useVocabSearch(q: string) {
 
 export function useNotebook() {
   return useQuery({ queryKey: studyKeys.notebook, queryFn: () => api<NotebookListDto>('/study/notebook') })
+}
+
+export function useImportNotebook() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (file: File) => {
+      if (!file.name.toLowerCase().endsWith('.xlsx')) return Promise.reject(new ApiError(400, 'VALIDATION_FAILED', 'Hãy chọn file .xlsx.'))
+      if (file.size > 8 * 1024 * 1024) return Promise.reject(new ApiError(400, 'VALIDATION_FAILED', 'File Excel quá lớn (tối đa 8MB).'))
+      return apiUpload<NotebookImportResult>('/study/notebook/import', file, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    },
+    onSuccess: () => refreshStudy(qc),
+  })
 }
 
 export function useSaveNotebookWord() {

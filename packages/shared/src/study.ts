@@ -72,6 +72,13 @@ export type VocabImportResult = {
   skipped: number
 }
 
+/** A student's own Excel list added to their notebook. */
+export type NotebookImportResult = {
+  added: number
+  updated: number
+  skipped: number
+}
+
 export type NotebookEntryDto = {
   id: string
   word: string
