@@ -7,6 +7,7 @@ import { useAssignments } from '@/features/assignments/assignments.queries'
 import { HonorBoards } from '@/features/honor/HonorBoards'
 import { formatGoal, type GoalDto, type SkillStatDto, type StudentDashboardDto } from '@toeic/shared'
 import type { ReactNode } from 'react'
+import { Flame } from 'lucide-react'
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Link } from 'react-router-dom'
 import { useStudyOverview } from '@/features/study/study.queries'
@@ -139,7 +140,8 @@ function Hero({ d, name }: { d: StudentDashboardDto; name: string }) {
           <Stat
             label="Chuỗi rèn luyện"
             value={`${streak.days} ngày`}
-            hint={streak.days === 0 ? 'Làm bài hôm nay để bắt đầu' : streak.activeToday ? 'Đã luyện hôm nay 🔥' : 'Luyện hôm nay để giữ chuỗi'}
+            hint={streak.days === 0 ? 'Làm bài hôm nay để bắt đầu' : streak.activeToday ? 'Đã luyện hôm nay' : 'Luyện hôm nay để giữ chuỗi'}
+            flame={streak.activeToday}
           />
           <Stat label="Mock test gần nhất" value={latestScore ? String(latestScore.totalScore) : '—'} hint={latestScore ? '/ 990' : 'Chưa có bài đủ 200 câu'} />
           <Stat label="Mục tiêu cá nhân" value={goalLabel ?? 'Chưa đặt'} hint={goal ? (goal.track === 'FOUR_SKILL' ? '4 kỹ năng' : '2 kỹ năng') : undefined} to="/settings#goal" />
@@ -212,11 +214,24 @@ function SkillCard({ stat, kind }: { stat: SkillStatDto | undefined; kind: 'LIST
   )
 }
 
-function Stat({ label, value, hint, to }: { label: string; value: string; hint?: string; to?: string }) {
+function StreakFlame() {
+  return (
+    <span className="streak-flame relative grid size-11 shrink-0 place-items-center" aria-hidden="true">
+      <span className="absolute size-9 rounded-full bg-orange-400/70 blur-md" />
+      <Flame className="absolute size-9 fill-orange-500 text-orange-700 drop-shadow-[0_0_10px_rgba(249,115,22,0.9)]" strokeWidth={1.75} />
+      <Flame className="absolute size-5 translate-y-0.5 fill-amber-200 text-amber-50" strokeWidth={1.5} />
+    </span>
+  )
+}
+
+function Stat({ label, value, hint, to, flame }: { label: string; value: string; hint?: string; to?: string; flame?: boolean }) {
   const body = (
     <div className="min-w-0 rounded-2xl border border-gold/40 bg-teal-soft p-4">
       <p className="text-[10px] leading-snug tracking-wide text-gold-deep uppercase">{label}</p>
-      <p className="serif mt-2 text-2xl">{value}</p>
+      <div className="mt-1 flex items-center gap-1.5">
+        <p className="serif text-2xl">{value}</p>
+        {flame ? <StreakFlame /> : null}
+      </div>
       {hint ? <p className="text-xs text-ink/55">{hint}</p> : null}
     </div>
   )

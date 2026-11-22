@@ -142,6 +142,23 @@ label,
   animation: sky-twinkle 4.8s ease-in-out infinite;
 }
 
+@keyframes streak-flame {
+  0%,
+  100% { transform: scale(1) rotate(-4deg); }
+  50% { transform: scale(1.16) rotate(5deg); }
+}
+
+.streak-flame {
+  transform-origin: 50% 88%;
+  animation: streak-flame 1.15s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .streak-flame {
+    animation: none;
+  }
+}
+
 .serif {
   font-family: var(--font-sans);
   font-weight: 600;
