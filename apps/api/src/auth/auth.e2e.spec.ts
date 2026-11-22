@@ -5,7 +5,7 @@ import ExcelJS from 'exceljs'
 import request from 'supertest'
 import { DB, type Db } from '../db/database.module'
 import { auditLogs, users } from '../db/schema'
-import { ADMIN, client, createTestApp, login } from '../test/test-app'
+import { ADMIN, client, cookieOf, createTestApp, login } from '../test/test-app'
 
 describe('Auth, RBAC & account management (e2e on PGlite)', () => {
   let app: INestApplication
@@ -374,11 +374,6 @@ describe('Auth, RBAC & account management (e2e on PGlite)', () => {
   })
 
   describe('session refresh & logout', () => {
-    const cookieOf = (res: request.Response, name: string) => {
-      const raw = (res.headers['set-cookie'] as unknown as string[]).find((c) => c.startsWith(`${name}=`))!
-      return raw.split(';')[0]
-    }
-
     it('rotates the refresh token and revokes the session if an old token is replayed', async () => {
       const first = await request(app.getHttpServer())
         .post('/api/v1/auth/login')

@@ -1,5 +1,6 @@
 import { useAuth } from '@/app/AuthContext'
 import { Button } from '@/components/ui/Button'
+import { AccountAvatar } from '@/components/ui/AccountAvatar'
 import { Card } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { ApiError, api } from '@/lib/api'
@@ -127,7 +128,9 @@ export function ViewAsPage() {
             return (
               <li key={user.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{user.fullName}</p>
+                  <p className="flex items-center gap-2 text-sm font-semibold">
+                    <AccountAvatar name={user.fullName} url={user.avatarUrl} /><span className="truncate">{user.fullName}</span>
+                  </p>
                   <p className="mt-0.5 text-xs text-ink/55">
                     {role === 'STUDENT' ? `Mã HV: ${user.studentCode ?? user.username}${user.className ? ` · Lớp ${user.className}` : ''}` : user.username}
                   </p>

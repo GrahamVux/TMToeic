@@ -1,4 +1,5 @@
 import { cn } from '@/lib/cn'
+import { AccountAvatar } from '@/components/ui/AccountAvatar'
 import { Bell, ChevronDown, LogOut, Target, UserRound } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -6,7 +7,7 @@ import { Link } from 'react-router-dom'
 type Props = {
   name: string
   code: string
-  initials: string
+  avatarUrl?: string | null
   settingsPath?: string
   onSignOut: () => void
 }
@@ -15,7 +16,7 @@ type Props = {
  * Menu tài khoản: mở bằng click (ổn định trên cả touch) và cũng mở khi hover.
  * Có "cầu nối" (pt-2) giữa nút và popup để con trỏ không bị mất hover khi di chuột xuống.
  */
-export function UserMenu({ name, code, initials, settingsPath = '/settings', onSignOut }: Props) {
+export function UserMenu({ name, code, avatarUrl, settingsPath = '/settings', onSignOut }: Props) {
   const [hovered, setHovered] = useState(false)
   const [pinned, setPinned] = useState(false)
   const open = hovered || pinned
@@ -64,10 +65,11 @@ export function UserMenu({ name, code, initials, settingsPath = '/settings', onS
   ]
 
   return (
-    <div ref={wrapRef} className="relative hidden shrink-0 sm:block" onMouseEnter={hoverOpen} onMouseLeave={hoverClose}>
+    <div ref={wrapRef} className="relative shrink-0" onMouseEnter={hoverOpen} onMouseLeave={hoverClose}>
       <button
         type="button"
         aria-haspopup="menu"
+        aria-label={`Tài khoản ${name}`}
         aria-expanded={open}
         onClick={onToggleClick}
         className={cn(
@@ -75,10 +77,8 @@ export function UserMenu({ name, code, initials, settingsPath = '/settings', onS
           open ? 'border-gold-deep shadow-sm' : 'border-gold/35 hover:border-gold-deep/60',
         )}
       >
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-teal-soft text-[11px] font-bold text-gold-deep">
-          {initials}
-        </span>
-        <span className="text-left leading-none">
+        <AccountAvatar name={name} url={avatarUrl} className="size-7 text-[11px]" />
+        <span className="hidden text-left leading-none sm:block">
           <span className="block whitespace-nowrap text-[12px] font-semibold text-ink">{name}</span>
           <span className="mt-0.5 block whitespace-nowrap text-[10px] text-gold-deep">Mã HV: {code}</span>
         </span>
@@ -89,12 +89,10 @@ export function UserMenu({ name, code, initials, settingsPath = '/settings', onS
         <div className="absolute top-full right-0 z-40 w-64 pt-2" role="menu">
           <div className="overflow-hidden rounded-2xl border border-gold/30 bg-white shadow-[0_12px_32px_rgba(30,51,60,0.14)]">
             <div className="flex items-center gap-3 border-b border-gold/20 bg-teal-soft/60 px-4 py-3">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold text-gold-deep">
-                {initials}
-              </span>
+              <AccountAvatar name={name} url={avatarUrl} className="size-10 text-sm" />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-ink">{name}</p>
-                <p className="text-[11px] text-ink/55">Mã HV: {code} • Lớp K42</p>
+                <p className="text-[11px] text-ink/55">Mã HV: {code}</p>
               </div>
             </div>
 

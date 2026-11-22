@@ -1,4 +1,5 @@
 import { useAuth } from '@/app/AuthContext'
+import { AccountAvatar } from '@/components/ui/AccountAvatar'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Badge, Card, Input } from '@/components/ui/Primitives'
@@ -9,12 +10,6 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AddStudentActions } from './StudentDialogs'
 import { useAssignClass, useClasses, useCreateClass, useDeleteClass, useSetClassClosed, useSetClassTeachers, useStudents, useTeachers } from './users.queries'
-
-function initialsOf(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  const letters = parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : (parts[0]?.slice(0, 2) ?? '?')
-  return letters.toUpperCase()
-}
 
 export function CreateClassButton() {
   const create = useCreateClass()
@@ -216,7 +211,7 @@ function ClassWorkspace({ room }: { room: ClassSummaryDto }) {
           const account = roster.find((item) => item.id === teacher.id)
           return (
             <div key={teacher.id} className="flex items-center gap-3 rounded-2xl border border-gold/40 bg-white px-3 py-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-teal-soft text-sm font-bold text-gold-deep">{initialsOf(teacher.fullName)}</span>
+              <AccountAvatar name={teacher.fullName} url={teacher.avatarUrl} className="size-10 text-sm" />
               <div className="min-w-0">
                 <p className="truncate font-semibold">{teacher.fullName}</p>
                 <p className="truncate text-xs text-ink/50">{account?.username ?? 'Giáo viên của lớp'}</p>
@@ -280,7 +275,7 @@ function ClassRoster({ classId, memberCount }: { classId: string; memberCount: n
           {items.map((student) => (
             <li key={student.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
               <div className="flex min-w-0 items-center gap-3">
-                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-teal-soft text-xs font-bold text-gold-deep">{initialsOf(student.fullName)}</span>
+                <AccountAvatar name={student.fullName} url={student.avatarUrl} className="size-9 text-xs" />
                 <div className="min-w-0">
                   <p className="truncate font-semibold">{student.fullName}</p>
                   <p className="truncate text-xs text-ink/50">{accountLine(student)}</p>

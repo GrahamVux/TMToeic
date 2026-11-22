@@ -49,6 +49,14 @@ export function client(app: INestApplication) {
 
 export type TestClient = ReturnType<typeof client>
 
+/** Replay the issued cookie over Supertest's local HTTP transport when testing Secure cookies. */
+export function cookieOf(res: request.Response, name: string) {
+  const headers = res.get('Set-Cookie') ?? []
+  const cookie = headers.find((value) => value.startsWith(`${name}=`))
+  if (!cookie) throw new Error(`Missing ${name} cookie in test response`)
+  return cookie.split(';')[0]
+}
+
 export async function login(app: INestApplication, identifier: string, password: string) {
   const c = client(app)
   const res = await c.post('/auth/login').send({ identifier, password })

@@ -1,6 +1,6 @@
 import type { INestApplication } from '@nestjs/common'
 import type { NestExpressApplication } from '@nestjs/platform-express'
-import { CSRF_HEADER, VIEW_AS_HEADER } from '@toeic/shared'
+import { AVATAR_MAX_BYTES, CSRF_HEADER, VIEW_AS_HEADER } from '@toeic/shared'
 import cookieParser from 'cookie-parser'
 import express, { type NextFunction, type Request, type Response } from 'express'
 import helmet from 'helmet'
@@ -24,6 +24,7 @@ export function configureApp(app: INestApplication) {
   http.disable('x-powered-by')
 
   app.setGlobalPrefix(API_PREFIX)
+  http.use(`/${API_PREFIX}/me/avatar`, express.raw({ type: () => true, limit: AVATAR_MAX_BYTES }))
   // Gemini's Listening JSON is a few hundred kilobytes; the photographed PDF beside it is several megabytes.
   http.use((req: Request, res: Response, next: NextFunction) => {
     const path = req.path.split('?')[0] ?? req.path

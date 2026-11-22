@@ -20,6 +20,11 @@ export function resolveApiBase(raw: string | undefined, hostname?: string): stri
 
 const BASE = resolveApiBase(import.meta.env.VITE_API_URL as string | undefined)
 
+/** Managed thumbnails follow the same API origin as profile requests. Preserve older image URLs. */
+export function accountImageSrc(url: string) {
+  return url.startsWith('/api/v1/avatars/') ? BASE + url.slice('/api/v1'.length) : url
+}
+
 export class ApiError extends Error {
   readonly status: number
   readonly code: ErrorCode | 'NETWORK'

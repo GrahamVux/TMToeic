@@ -3,6 +3,7 @@ import { cn } from '@/lib/cn'
 import { HeaderSearch } from '@/components/layout/HeaderSearch'
 import { NotificationBell } from '@/components/layout/NotificationBell'
 import { UserMenu } from '@/components/layout/UserMenu'
+import { AccountAvatar } from '@/components/ui/AccountAvatar'
 import { useSite } from '@/features/site/SiteSettingsProvider'
 import { BugReportWidget } from '@/features/bugs/BugReportWidget'
 import { useBugReportSummary } from '@/features/bugs/bugs.queries'
@@ -63,11 +64,6 @@ const studentNav = [
   { to: '/progress', label: 'Tiến Độ' },
 ]
 
-function initialsOf(name: string) {
-  const parts = name.trim().split(/\s+/)
-  return ((parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : parts[0].slice(0, 2)) || '?').toUpperCase()
-}
-
 export function StudentShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -124,7 +120,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
             <UserMenu
               name={user?.fullName ?? ''}
               code={user?.studentCode ?? user?.username ?? ''}
-              initials={initialsOf(user?.fullName ?? '?')}
+              avatarUrl={user?.avatarUrl}
               onSignOut={() => void signOut()}
             />
 
@@ -314,10 +310,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
             ) : null}
           </nav>
           <div className="ml-auto flex shrink-0 items-center gap-2">
-            <div className="hidden leading-none text-right md:block">
-              <p className="max-w-[160px] truncate text-[13px] font-semibold">{user?.fullName}</p>
-              <p className="mt-0.5 text-[10px] text-gold-deep">{roleLabel}</p>
-            </div>
+            <Link to="/admin/profile" aria-label="Tài khoản cá nhân" className="flex items-center gap-2 rounded-full p-1 hover:bg-paper">
+              <AccountAvatar name={user?.fullName ?? ''} url={user?.avatarUrl} />
+              <span className="hidden leading-none text-left md:block">
+                <span className="block max-w-[160px] truncate text-[13px] font-semibold">{user?.fullName}</span>
+                <span className="mt-0.5 block text-[10px] text-gold-deep">{roleLabel}</span>
+              </span>
+            </Link>
             <button
               className="hidden items-center gap-1.5 whitespace-nowrap rounded-full bg-red-600 px-3 py-1.5 text-[12px] font-semibold text-white shadow-sm transition hover:bg-red-700 lg:flex"
               type="button"

@@ -11,6 +11,7 @@ import { useNotifyPrefs, type NotifyKind } from '@/lib/notify-prefs'
 import { GOAL_TRACK_BOUNDS, GOAL_TRACKS, formatGoal, remainingToGoal, type GoalDto, type GoalTrack } from '@toeic/shared'
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
+import { AvatarSettings } from './AvatarSettings'
 
 function Toggle({ checked, onChange, label, hint, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; hint: string; disabled?: boolean }) {
   return (
@@ -132,6 +133,7 @@ export function SettingsPage() {
         <p className="mt-1 text-sm text-ink/60">Quản lý thông tin, mục tiêu điểm số và nhắc học của bạn.</p>
       </header>
 
+      <AvatarSettings />
       <Card className="scroll-mt-24 p-6">
         <h2 className="text-base font-semibold">Thông tin cá nhân</h2>
         <p className="mt-1 text-xs text-ink/55">Bạn có thể tự cập nhật họ tên, email và số điện thoại. Mã học viên do lớp cấp, không đổi được.</p>

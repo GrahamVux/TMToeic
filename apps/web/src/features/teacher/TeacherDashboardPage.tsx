@@ -1,4 +1,5 @@
 import { useAuth } from '@/app/AuthContext'
+import { AccountAvatar } from '@/components/ui/AccountAvatar'
 import { Button } from '@/components/ui/Button'
 import { Badge, Card, Input } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
@@ -24,12 +25,6 @@ function useDebounced<T>(value: T, ms = 300) {
 }
 
 const dateFmt = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
-
-function initialsOf(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  const letters = parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : (parts[0]?.slice(0, 2) ?? '?')
-  return letters.toUpperCase()
-}
 
 export function TeacherDashboardPage() {
   const { user } = useAuth()
@@ -150,7 +145,7 @@ export function TeacherDashboardPage() {
                 <tr key={u.id} className="border-t border-gold/25">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-teal-soft text-xs font-bold text-gold-deep">{initialsOf(u.fullName)}</span>
+                      <AccountAvatar name={u.fullName} url={u.avatarUrl} className="size-9 text-xs" />
                       <div>
                         <p className="font-semibold">{u.fullName}</p>
                         <p className="text-xs text-ink/50">{u.studentCode}{u.email ? ` • ${u.email}` : ''}</p>

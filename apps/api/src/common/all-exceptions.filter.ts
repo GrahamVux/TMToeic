@@ -1,5 +1,5 @@
 import { ArgumentsHost, Catch, type ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common'
-import { ERROR_CODES, type ApiErrorBody, type ErrorCode } from '@toeic/shared'
+import { AVATAR_MAX_BYTES, ERROR_CODES, type ApiErrorBody, type ErrorCode } from '@toeic/shared'
 import type { Response } from 'express'
 import { ThrottlerException } from '@nestjs/throttler'
 import { AppException } from './app-exception'
@@ -33,7 +33,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
     } else if (exception instanceof Error && (exception as { type?: string }).type === 'entity.too.large') {
       status = HttpStatus.PAYLOAD_TOO_LARGE
       code = ERROR_CODES.VALIDATION_FAILED
-      message = 'File nghe quá lớn (tối đa 80MB)'
+      message = (exception as { limit?: number }).limit === AVATAR_MAX_BYTES
+        ? 'Ảnh đại diện tối đa 4 MB.'
+        : 'File nghe quá lớn (tối đa 80MB)'
     } else {
       this.logger.error(exception instanceof Error ? exception.stack : String(exception))
     }

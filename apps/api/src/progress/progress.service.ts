@@ -18,6 +18,7 @@ import {
   type SkillStatDto,
   HONOR_BOARD_SIZE,
   XP_PER_CORRECT,
+  assignCenterPlaces,
   rankFromXp,
   type HonorBoardDto,
   type HonorCenterEntry,
@@ -50,7 +51,7 @@ type HonorSnapshot = {
   weekStart: string
   year: number
   xpByUser: Map<string, { name: string; weeklyXp: number; yearlyXp: number; classXp: number }>
-  members: Array<{ userId: string; classId: string; className: string }>
+  members: Array<{ userId: string; classId: string; className: string; avatarUrl: string | null }>
   resets: Map<string, string | null>
 }
 
@@ -614,8 +615,9 @@ export class ProgressService {
   /**
    * Yearly EXP boards. Both the class board and the center board count EXP since 1 January.
    * An admin reset moves one class board's start to that moment; the center board stays on the calendar year.
-   * Each correct answer is worth XP_PER_CORRECT. A piece of work counts its best finished sitting in the window.
-   * Rank uses the EXP shown on that board; 100 EXP is one rank.
+   * A sentence pattern awards XP_PER_CORRECT the first time it is answered correctly inside the board's window.
+   * Rank uses the EXP shown on that board; 300 EXP is one rank.
+   * On the center board, 1st place needs 2000 EXP and 2nd and 3rd need 1500. Later places have no minimum.
    */
   private async honorBoard(userId: string, now: Date, weekStart: string): Promise<HonorBoardDto> {
     const snap = await this.honorSnapshot(now, weekStart)
@@ -701,13 +703,14 @@ export class ProgressService {
       .filter((row) => row.classId === classId)
       .map((row) => {
         const xp = snap.xpByUser.get(row.userId) ?? { name: '', weeklyXp: 0, yearlyXp: 0, classXp: 0 }
-        return { id: row.userId, name: xp.name, weeklyXp: xp.weeklyXp, yearlyXp: xp.classXp }
+        return { id: row.userId, name: xp.name, avatarUrl: row.avatarUrl, weeklyXp: xp.weeklyXp, yearlyXp: xp.classXp }
       })
       .filter((row) => row.yearlyXp > 0)
       .sort((a, b) => b.yearlyXp - a.yearlyXp || a.name.localeCompare(b.name, 'vi'))
       .map((row, index) => ({
         place: index + 1,
         name: row.name,
+        avatarUrl: row.avatarUrl,
         weeklyXp: row.weeklyXp,
         yearlyXp: row.yearlyXp,
         rank: rankFromXp(row.yearlyXp),
@@ -715,25 +718,25 @@ export class ProgressService {
       }))
   }
 
-  /** Students from every class, ordered by EXP since 1 January. The list is empty again on 1 January. */
+  /** Students from every class. Podium places need the center EXP floors; later places are open. The list is empty again on 1 January. */
   private centerStudents(snap: HonorSnapshot, viewerId: string | null, yours: Set<string>): HonorCenterEntry[] {
-    return snap.members
+    const rows = snap.members
       .map((row) => {
         const xp = snap.xpByUser.get(row.userId) ?? { name: '', weeklyXp: 0, yearlyXp: 0, classXp: 0 }
-        return { id: row.userId, name: xp.name, classId: row.classId, className: row.className, weeklyXp: xp.weeklyXp, yearlyXp: xp.yearlyXp }
+        return { id: row.userId, name: xp.name, avatarUrl: row.avatarUrl, classId: row.classId, className: row.className, weeklyXp: xp.weeklyXp, yearlyXp: xp.yearlyXp }
       })
       .filter((row) => row.yearlyXp > 0)
-      .sort((a, b) => b.yearlyXp - a.yearlyXp || a.name.localeCompare(b.name, 'vi'))
-      .map((row, index) => ({
-        place: index + 1,
-        name: row.name,
-        className: row.className,
-        weeklyXp: row.weeklyXp,
-        yearlyXp: row.yearlyXp,
-        rank: rankFromXp(row.yearlyXp),
-        you: row.id === viewerId,
-        yours: yours.has(row.classId),
-      }))
+    return assignCenterPlaces(rows).map((row) => ({
+      place: row.place,
+      name: row.name,
+      avatarUrl: row.avatarUrl,
+      className: row.className,
+      weeklyXp: row.weeklyXp,
+      yearlyXp: row.yearlyXp,
+      rank: rankFromXp(row.yearlyXp),
+      you: row.id === viewerId,
+      yours: yours.has(row.classId),
+    }))
   }
 
   /** Finished-work EXP and class membership used by both the student board and the staff board. */
@@ -754,52 +757,71 @@ export class ProgressService {
             (date_trunc('week', ${iso}::timestamptz at time zone ${TZ_SQL}) at time zone ${TZ_SQL}) as week_start,
             (date_trunc('year', ${iso}::timestamptz at time zone ${TZ_SQL}) at time zone ${TZ_SQL}) as year_start
         ),
-        scored as (
-          select a.user_id, a.submitted_at,
-                 coalesce(a.assignment_id::text, a.id::text) as piece,
-                 coalesce(a.correct_count, 0) * ${XP_PER_CORRECT_SQL} as xp
-          from attempts a, bounds b
-          where a.status in ('SUBMITTED', 'EXPIRED')
+        correct as (
+          select a.user_id, aa.question_id, a.submitted_at
+          from attempt_answers aa
+          join attempts a on a.id = aa.attempt_id
+          cross join bounds b
+          where aa.is_correct = true
+            and a.status in ('SUBMITTED', 'EXPIRED')
             and a.submitted_at is not null
             and a.submitted_at <= ${iso}::timestamptz
             and a.submitted_at >= b.year_start
         ),
-        year_best as (
-          select distinct on (user_id, piece) user_id, xp
-          from scored
-          order by user_id, piece, xp desc, submitted_at desc
+        first_correct as (
+          select user_id, question_id, min(submitted_at) as first_at
+          from correct
+          group by user_id, question_id
         ),
-        week_best as (
-          select distinct on (s.user_id, s.piece) s.user_id, s.xp
-          from scored s, bounds b
-          where s.submitted_at >= b.week_start
-          order by s.user_id, s.piece, s.xp desc, s.submitted_at desc
-        ),
-        class_best as (
-          select distinct on (s.user_id, s.piece) s.user_id, s.xp
-          from scored s
-          join class_members cm on cm.user_id = s.user_id
+        class_correct as (
+          select a.user_id, aa.question_id, a.submitted_at
+          from attempt_answers aa
+          join attempts a on a.id = aa.attempt_id
+          join class_members cm on cm.user_id = a.user_id
           join classes c on c.id = cm.class_id
-          where c.honor_reset_at is null or s.submitted_at >= c.honor_reset_at
-          order by s.user_id, s.piece, s.xp desc, s.submitted_at desc
+          cross join bounds b
+          where aa.is_correct = true
+            and a.status in ('SUBMITTED', 'EXPIRED')
+            and a.submitted_at is not null
+            and a.submitted_at <= ${iso}::timestamptz
+            and a.submitted_at >= b.year_start
+            and (c.honor_reset_at is null or a.submitted_at >= c.honor_reset_at)
+        ),
+        class_first as (
+          select user_id, question_id
+          from class_correct
+          group by user_id, question_id
         )
         select u.id as id, u.full_name as name,
                coalesce(w.xp, 0)::int as weekly_xp,
                coalesce(y.xp, 0)::int as yearly_xp,
                coalesce(cx.xp, 0)::int as class_xp
         from users u
-        left join (select user_id, sum(xp)::int as xp from week_best group by user_id) w on w.user_id = u.id
-        left join (select user_id, sum(xp)::int as xp from year_best group by user_id) y on y.user_id = u.id
-        left join (select user_id, sum(xp)::int as xp from class_best group by user_id) cx on cx.user_id = u.id
+        left join (
+          select f.user_id, (count(*) * ${XP_PER_CORRECT_SQL})::int as xp
+          from first_correct f, bounds b
+          where f.first_at >= b.week_start
+          group by f.user_id
+        ) w on w.user_id = u.id
+        left join (
+          select user_id, (count(*) * ${XP_PER_CORRECT_SQL})::int as xp
+          from first_correct
+          group by user_id
+        ) y on y.user_id = u.id
+        left join (
+          select user_id, (count(*) * ${XP_PER_CORRECT_SQL})::int as xp
+          from class_first
+          group by user_id
+        ) cx on cx.user_id = u.id
         where u.role = 'STUDENT' and u.status = 'ACTIVE'
       `) as unknown as Promise<Rows<{ id: string; name: string; weekly_xp: number; yearly_xp: number; class_xp: number }>>,
       this.db.execute(sql`
-        select cm.user_id as user_id, c.id as class_id, c.name as class_name
+        select cm.user_id as user_id, c.id as class_id, c.name as class_name, u.avatar_url
         from class_members cm
         join classes c on c.id = cm.class_id
         join users u on u.id = cm.user_id
         where u.role = 'STUDENT' and u.status = 'ACTIVE'
-      `) as unknown as Promise<Rows<{ user_id: string; class_id: string; class_name: string }>>,
+      `) as unknown as Promise<Rows<{ user_id: string; class_id: string; class_name: string; avatar_url: string | null }>>,
       this.db.execute(sql`
         select id as id, honor_reset_at as reset_at from classes
       `) as unknown as Promise<Rows<{ id: string; reset_at: Date | string | null }>>,
@@ -810,7 +832,7 @@ export class ProgressService {
       weekStart,
       year,
       xpByUser: new Map(xpRows.rows.map((row) => [row.id, { name: row.name, weeklyXp: Number(row.weekly_xp), yearlyXp: Number(row.yearly_xp), classXp: Number(row.class_xp) }])),
-      members: memberRows.rows.map((row) => ({ userId: row.user_id, classId: row.class_id, className: row.class_name })),
+      members: memberRows.rows.map((row) => ({ userId: row.user_id, classId: row.class_id, className: row.class_name, avatarUrl: row.avatar_url })),
       resets: new Map(resetRows.rows.map((row) => [row.id, row.reset_at ? new Date(row.reset_at).toISOString() : null])),
     }
   }

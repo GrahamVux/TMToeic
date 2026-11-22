@@ -659,11 +659,17 @@ const bytea = customType<{ data: Buffer; driverData: Buffer }>({
     return value
   },
   fromDriver(value: unknown) {
-    return pdfBuffer(value)
+    return binaryBuffer(value)
   },
 })
 
-function pdfBuffer(value: unknown): Buffer {
+export const accountAvatars = pgTable('account_avatars', {
+  userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  version: uuid('version').notNull().unique(),
+  thumbnail: bytea('thumbnail').notNull(),
+}).enableRLS()
+
+function binaryBuffer(value: unknown): Buffer {
   if (Buffer.isBuffer(value)) return value
   if (value instanceof Uint8Array) return Buffer.from(value)
   if (typeof value === 'string') {
