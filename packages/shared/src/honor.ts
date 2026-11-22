@@ -1,14 +1,44 @@
 import { z } from 'zod'
 
-/** EXP from one finished piece of work, and the rank ladder that EXP climbs. */
+/** EXP from the first time a sentence pattern is answered correctly, and the rank ladder that EXP climbs. */
 
-export const XP_PER_CORRECT = 5
-export const XP_PER_RANK = 100
+export const XP_PER_CORRECT = 1
+export const XP_PER_RANK = 300
+/** Yearly EXP required before a student can hold 1st place on the center board. */
+export const CENTER_TOP1_XP = 2000
+/** Yearly EXP required before a student can hold 2nd or 3rd place on the center board. */
+export const CENTER_PODIUM_XP = 1500
 export const HONOR_BOARD_SIZE = 5
 
-/** EXP for one finished piece of work: a fixed amount for each correct answer. */
+/** EXP for a set of sentence patterns that were correct for the first time. */
 export function xpForCorrect(correct: number): number {
   return Math.max(0, Math.floor(correct)) * XP_PER_CORRECT
+}
+
+/**
+ * Center-board places. 1st place needs CENTER_TOP1_XP. 2nd and 3rd need CENTER_PODIUM_XP.
+ * Later places are open at any EXP. Empty podium slots stay empty, so the next place number can skip ahead.
+ */
+export function assignCenterPlaces<T extends { yearlyXp: number; name: string }>(rows: readonly T[]): Array<T & { place: number }> {
+  const sorted = [...rows].sort((a, b) => b.yearlyXp - a.yearlyXp || a.name.localeCompare(b.name, 'vi'))
+  const used = new Set<number>()
+  const placed: Array<T & { place: number }> = []
+  const take = (place: number, minXp: number) => {
+    const index = sorted.findIndex((row, i) => !used.has(i) && row.yearlyXp >= minXp)
+    if (index < 0) return
+    used.add(index)
+    placed.push({ ...sorted[index]!, place })
+  }
+  take(1, CENTER_TOP1_XP)
+  take(2, CENTER_PODIUM_XP)
+  take(3, CENTER_PODIUM_XP)
+  let place = 4
+  sorted.forEach((row, index) => {
+    if (used.has(index)) return
+    placed.push({ ...row, place })
+    place += 1
+  })
+  return placed.sort((a, b) => a.place - b.place)
 }
 
 type RankDef = { tier: string; division: string | null; color: string; ink: string }
@@ -71,6 +101,7 @@ export function rankFromXp(xp: number): HonorRankDto {
 export type HonorStudentEntry = {
   place: number
   name: string
+  avatarUrl: string | null
   weeklyXp: number
   yearlyXp: number
   rank: HonorRankDto
@@ -81,6 +112,7 @@ export type HonorStudentEntry = {
 export type HonorCenterEntry = {
   place: number
   name: string
+  avatarUrl: string | null
   className: string
   weeklyXp: number
   yearlyXp: number
@@ -148,6 +180,7 @@ export type SetClassClosedInput = z.infer<typeof setClassClosedSchema>
 export type ClassTeacherDto = {
   id: string
   fullName: string
+  avatarUrl: string | null
 }
 
 export type ClassSummaryDto = {

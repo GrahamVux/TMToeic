@@ -119,14 +119,14 @@ export class ClassesService {
       .groupBy(classes.id, classes.name, classes.closedAt, classes.createdAt)
       .orderBy(asc(classes.createdAt))
     const teacherRows = await this.db
-      .select({ classId: classTeachers.classId, id: users.id, fullName: users.fullName })
+      .select({ classId: classTeachers.classId, id: users.id, fullName: users.fullName, avatarUrl: users.avatarUrl })
       .from(classTeachers)
       .innerJoin(users, eq(users.id, classTeachers.userId))
       .orderBy(asc(users.fullName))
     const byClass = new Map<string, ClassTeacherDto[]>()
     for (const teacher of teacherRows) {
       const list = byClass.get(teacher.classId) ?? []
-      list.push({ id: teacher.id, fullName: teacher.fullName })
+      list.push({ id: teacher.id, fullName: teacher.fullName, avatarUrl: teacher.avatarUrl })
       byClass.set(teacher.classId, list)
     }
     return rows.map((row) => ({ ...row, closedAt: row.closedAt?.toISOString() ?? null, teachers: byClass.get(row.id) ?? [] }))
@@ -134,7 +134,7 @@ export class ClassesService {
 
   private async teachersOf(classId: string): Promise<ClassTeacherDto[]> {
     return this.db
-      .select({ id: users.id, fullName: users.fullName })
+      .select({ id: users.id, fullName: users.fullName, avatarUrl: users.avatarUrl })
       .from(classTeachers)
       .innerJoin(users, eq(users.id, classTeachers.userId))
       .where(eq(classTeachers.classId, classId))

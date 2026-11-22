@@ -59,8 +59,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-paper text-ink">
-      <div className="pointer-events-none absolute inset-0 site-wash" />
+    <div className="relative min-h-screen overflow-x-hidden text-ink">
       <div className="relative mx-auto grid min-h-screen max-w-6xl items-center gap-10 px-4 py-10 sm:px-6 sm:py-12 lg:grid-cols-2">
         <div className="min-w-0">
           <BrandMark />

@@ -4,8 +4,8 @@ import { useSite } from '@/features/site/SiteSettingsProvider'
 export function LoadingScreen({ message = 'Đang mở cổng học viên…' }: { message?: string }) {
   const site = useSite()
   return (
-    <div className="relative grid min-h-screen place-items-center overflow-hidden bg-paper text-ink" role="status" aria-live="polite">
-      <div className="pointer-events-none absolute inset-0 site-wash" />
+    <div className={`relative grid min-h-screen place-items-center overflow-hidden text-ink ${site.backgroundMode === 'sky' ? '' : 'bg-paper'}`} role="status" aria-live="polite">
+      {site.backgroundMode === 'sky' ? null : <div className="pointer-events-none absolute inset-0 site-wash" />}
       <div className="relative flex flex-col items-center px-6 text-center">
         <div className="relative grid size-24 place-items-center">
           <span className="absolute inset-0 animate-spin rounded-full border-2 border-gold border-t-gold-deep" style={{ animationDuration: '1.1s' }} />

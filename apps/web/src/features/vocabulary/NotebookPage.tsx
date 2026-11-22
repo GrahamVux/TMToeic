@@ -50,7 +50,7 @@ export function NotebookPage() {
             ['missing', `Chưa có nghĩa (${data.missingMeaning})`],
           ] as const
         ).map(([id, label]) => (
-          <button key={id} type="button" className={`rounded-full px-4 py-2 text-sm font-semibold ${filter === id ? 'bg-gold-deep text-white' : 'bg-paper-2'}`} onClick={() => setFilter(id)}>
+          <button key={id} type="button" className={`rounded-full px-4 py-2 text-sm font-semibold ${filter === id ? 'bg-button text-button-ink' : 'bg-paper-2'}`} onClick={() => setFilter(id)}>
             {label}
           </button>
         ))}

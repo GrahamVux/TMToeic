@@ -11,6 +11,7 @@ import { useNotifyPrefs, type NotifyKind } from '@/lib/notify-prefs'
 import { GOAL_TRACK_BOUNDS, GOAL_TRACKS, formatGoal, remainingToGoal, type GoalDto, type GoalTrack } from '@toeic/shared'
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
+import { AvatarSettings } from './AvatarSettings'
 
 function Toggle({ checked, onChange, label, hint, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; hint: string; disabled?: boolean }) {
   return (
@@ -26,7 +27,7 @@ function Toggle({ checked, onChange, label, hint, disabled }: { checked: boolean
         aria-label={label}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={cn('relative h-6 w-11 shrink-0 rounded-full transition-colors', checked ? 'bg-gold-deep' : 'bg-ink/15')}
+        className={cn('relative h-6 w-11 shrink-0 rounded-full transition-colors', checked ? 'bg-button' : 'bg-ink/15')}
       >
         <span className={cn('absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow transition-transform', checked && 'translate-x-5')} />
       </button>
@@ -35,7 +36,7 @@ function Toggle({ checked, onChange, label, hint, disabled }: { checked: boolean
 }
 
 const fieldCls =
-  'mt-1 h-10 w-full rounded-xl border border-gold/40 bg-white px-3 text-sm text-ink outline-none focus:border-gold-deep focus:ring-2 focus:ring-gold-deep/20'
+  'mt-1 h-10 w-full rounded-xl border border-gold/40 bg-white px-3 text-sm text-ink outline-none focus:border-button focus:ring-2 focus:ring-button/30'
 
 function scoreFor(track: GoalTrack, saved: GoalDto) {
   if (saved?.track === track) return saved.score
@@ -132,6 +133,7 @@ export function SettingsPage() {
         <p className="mt-1 text-sm text-ink/60">Quản lý thông tin, mục tiêu điểm số và nhắc học của bạn.</p>
       </header>
 
+      <AvatarSettings />
       <Card className="scroll-mt-24 p-6">
         <h2 className="text-base font-semibold">Thông tin cá nhân</h2>
         <p className="mt-1 text-xs text-ink/55">Bạn có thể tự cập nhật họ tên, email và số điện thoại. Mã học viên do lớp cấp, không đổi được.</p>

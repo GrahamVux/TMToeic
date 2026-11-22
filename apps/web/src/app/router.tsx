@@ -15,6 +15,7 @@ import { PracticePage } from '@/features/practice/PracticePage'
 import { ReadingDrillsPage } from '@/features/practice/ReadingDrillsPage'
 import { ProgressPage } from '@/features/progress/ProgressPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
+import { StaffProfilePage } from '@/features/settings/AvatarSettings'
 import { FlashcardPage } from '@/features/study/FlashcardPage'
 import { GrammarLessonPage } from '@/features/study/GrammarLessonPage'
 import { StudyPage } from '@/features/study/StudyPage'
@@ -31,6 +32,7 @@ import { NotebookPage } from '@/features/vocabulary/NotebookPage'
 import { SiteSettingsProvider } from '@/features/site/SiteSettingsProvider'
 import { LoadingScreen } from '@/components/ui/LoadingScreen'
 import { ApiError } from '@/lib/api'
+import { avatarListKeys } from '@/lib/account-avatars'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { homePathForRole } from '@toeic/shared'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
@@ -102,6 +104,7 @@ function AppRoutes() {
       </Route>
       <Route element={<RequireAuth audience="staff" />}>
         <Route path="/admin" element={<TeacherDashboardPage />} />
+        <Route path="/admin/profile" element={<StaffProfilePage />} />
         <Route path="/admin/honor" element={<StaffHonorPage />} />
         <Route element={<StaffGrant need="progress" />}>
           <Route path="/admin/students/:studentId" element={<StudentDetailPage />} />
@@ -137,6 +140,10 @@ const queryClient = new QueryClient({
     },
   },
 })
+
+for (const queryKey of avatarListKeys) {
+  queryClient.setQueryDefaults(queryKey, { refetchOnWindowFocus: 'always' })
+}
 
 export function App() {
   return (

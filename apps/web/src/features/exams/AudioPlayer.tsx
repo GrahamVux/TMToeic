@@ -134,7 +134,7 @@ function TrackAudio({
               onClick={toggle}
               disabled={failed}
               aria-label={playing ? 'Tạm dừng' : 'Phát audio'}
-              className="grid size-10 shrink-0 place-items-center rounded-full bg-gold-deep text-white disabled:opacity-40"
+              className="grid size-10 shrink-0 place-items-center rounded-full bg-button text-button-ink disabled:opacity-40"
             >
               {playing ? <Pause className="size-5" /> : <Play className="size-5" />}
             </button>

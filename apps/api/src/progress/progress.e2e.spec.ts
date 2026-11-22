@@ -1,19 +1,44 @@
 import type { INestApplication } from '@nestjs/common'
-import { rankFromXp, type StudentDashboardDto } from '@toeic/shared'
+import sharp from 'sharp'
+import { assignCenterPlaces, rankFromXp, type StudentDashboardDto } from '@toeic/shared'
 import { ADMIN, createTestApp, login, type TestClient } from '../test/test-app'
 import { computeStreak } from './progress.service'
 
 describe('rankFromXp', () => {
-  it('climbs one rank every 100 EXP and stops at Thách Đấu', () => {
+  it('climbs one rank every 300 EXP and stops at Thách Đấu', () => {
     expect(rankFromXp(0).label).toBe('Đồng III')
-    expect(rankFromXp(99).label).toBe('Đồng III')
-    expect(rankFromXp(100).label).toBe('Đồng II')
-    expect(rankFromXp(200).label).toBe('Đồng I')
-    expect(rankFromXp(300).label).toBe('Bạc III')
-    expect(rankFromXp(2100).label).toBe('Thách Đấu')
-    expect(rankFromXp(5000).label).toBe('Thách Đấu')
-    expect(rankFromXp(5000).toNext).toBeNull()
-    expect(rankFromXp(150).toNext).toBe(50)
+    expect(rankFromXp(299).label).toBe('Đồng III')
+    expect(rankFromXp(300).label).toBe('Đồng II')
+    expect(rankFromXp(600).label).toBe('Đồng I')
+    expect(rankFromXp(900).label).toBe('Bạc III')
+    expect(rankFromXp(6300).label).toBe('Thách Đấu')
+    expect(rankFromXp(9000).label).toBe('Thách Đấu')
+    expect(rankFromXp(9000).toNext).toBeNull()
+    expect(rankFromXp(150).toNext).toBe(150)
+  })
+
+  it('reserves center podium places for the EXP floors and leaves later places open', () => {
+    const placed = assignCenterPlaces([
+      { name: 'Thấp', yearlyXp: 400 },
+      { name: 'Đủ Nhì', yearlyXp: 1600 },
+      { name: 'Đủ Nhất', yearlyXp: 2100 },
+      { name: 'Vừa', yearlyXp: 1400 },
+    ])
+    expect(placed.map((row) => [row.place, row.name])).toEqual([
+      [1, 'Đủ Nhất'],
+      [2, 'Đủ Nhì'],
+      [4, 'Vừa'],
+      [5, 'Thấp'],
+    ])
+
+    const noChampion = assignCenterPlaces([
+      { name: 'Gần Nhất', yearlyXp: 1800 },
+      { name: 'Mới', yearlyXp: 20 },
+    ])
+    expect(noChampion.map((row) => [row.place, row.name])).toEqual([
+      [2, 'Gần Nhất'],
+      [4, 'Mới'],
+    ])
   })
 })
 
@@ -189,6 +214,8 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
   it('practising starts a streak and puts the student on the weekly leaderboard', async () => {
     const examId = await publishedExam(SMALL as typeof FULL)
     const s = await newStudent('Chăm Chỉ')
+    const image = await sharp({ create: { width: 8, height: 8, channels: 3, background: '#356464' } }).png().toBuffer()
+    const photo = await s.post('/me/avatar').set('Content-Type', 'image/png').send(image).expect(200)
     const id = await practice(s, examId, 2, true)
     expect(id).toBeTruthy()
 
@@ -198,12 +225,12 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     expect(d.latestScore).toBeNull() // partial practice has no 990-scale score
     expect(d.skills.find((k) => k.skill === 'READING')).toMatchObject({ attempts: 1, answered: 2, correct: 2, accuracy: 100 })
     expect(d.skills.find((k) => k.skill === 'LISTENING')).toMatchObject({ attempts: 0, accuracy: null })
-    expect(d.honor.classBoard.you).toMatchObject({ name: 'Chăm Chỉ', weeklyXp: 10, you: true }) // 2 correct × 5 EXP
+    expect(d.honor.classBoard.you).toMatchObject({ name: 'Chăm Chỉ', avatarUrl: photo.body.avatarUrl, weeklyXp: 2, you: true }) // 2 patterns, 1 EXP the first time each is correct
     expect(d.honor.me.rank.label).toBe('Đồng III')
-    expect(d.honor.centerBoard.some((row) => row.name === 'Chăm Chỉ' && row.className === 'Lớp K42' && row.you)).toBe(true)
+    expect(d.honor.centerBoard.find((row) => row.you)).toMatchObject({ name: 'Chăm Chỉ', className: 'Lớp K42', avatarUrl: photo.body.avatarUrl })
   })
 
-  it('ranks classmates by weekly questions, limits to top 5, still shows you beyond the top, and shares only names', async () => {
+  it('ranks classmates, limits to top 5 and only exposes their name, avatar and rank details', async () => {
     const examId = await publishedExam(SMALL as typeof FULL)
     const names = ['Hạng A', 'Hạng B', 'Hạng C', 'Hạng D', 'Hạng E', 'Hạng F']
     const clients: TestClient[] = []
@@ -221,7 +248,7 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     expect(last.honor.classBoard.you).toMatchObject({ name: 'Hạng F', you: true })
     expect(last.honor.classBoard.you!.place).toBeGreaterThan(5)
     expect(last.honor.classBoard.participants).toBeGreaterThanOrEqual(7)
-    for (const e of last.honor.classBoard.entries) expect(Object.keys(e).sort()).toEqual(['name', 'place', 'rank', 'weeklyXp', 'yearlyXp', 'you'])
+    for (const e of last.honor.classBoard.entries) expect(Object.keys(e).sort()).toEqual(['avatarUrl', 'name', 'place', 'rank', 'weeklyXp', 'yearlyXp', 'you'])
     expect(last.honor.classBoard.entries.every((e) => e.rank.label.length > 0)).toBe(true)
     expect(last.honor.centerBoard.every((row) => row.className === 'Lớp K42' && row.name.length > 0)).toBe(true)
 
@@ -256,15 +283,15 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     const board = await dash(recent)
     const earlyRow = board.honor.centerBoard.find((row) => row.name === 'Đầu Năm')
     const recentRow = board.honor.centerBoard.find((row) => row.name === 'Tuần Này')
-    expect(earlyRow).toMatchObject({ yearlyXp: 15, className: 'Lớp K42' })
-    expect(recentRow).toMatchObject({ weeklyXp: 5, yearlyXp: 5 })
+    expect(earlyRow).toMatchObject({ yearlyXp: 3, className: 'Lớp K42' })
+    expect(recentRow).toMatchObject({ weeklyXp: 1, yearlyXp: 1 })
     expect(earlyRow!.place).toBeLessThan(recentRow!.place)
     expect(board.honor.centerBoard.some((row) => row.name === 'Năm Trước')).toBe(false)
     expect(board.honor.centerBoard.every((row, i, arr) => i === 0 || arr[i - 1].yearlyXp >= row.yearlyXp)).toBe(true)
     if (weekStart.getTime() > yearStart.getTime()) {
       expect(earlyRow!.weeklyXp).toBe(0)
       const earlyBoard = await dash(early)
-      expect(earlyBoard.honor.classBoard.you).toMatchObject({ name: 'Đầu Năm', yearlyXp: 15, weeklyXp: 0 })
+      expect(earlyBoard.honor.classBoard.you).toMatchObject({ name: 'Đầu Năm', yearlyXp: 3, weeklyXp: 0 })
     }
     expect(recentId).toBeTruthy()
   })
@@ -599,8 +626,8 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     await practice(pupil, examId, 3, true)
 
     const before = await dash(pupil)
-    expect(before.honor.classBoard.you).toMatchObject({ name: 'Reset Riêng', yearlyXp: 15 })
-    expect(before.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 15, className: room.body.name })
+    expect(before.honor.classBoard.you).toMatchObject({ name: 'Reset Riêng', yearlyXp: 3 })
+    expect(before.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 3, className: room.body.name })
 
     expect((await pupil.post(`/classes/${room.body.id}/honor-reset`)).status).toBe(403)
     const username = `teacher.reset.${seq}`
@@ -617,13 +644,13 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     const cleared = await dash(pupil)
     expect(cleared.honor.classBoard.resetAt).toBe(reset.body.resetAt)
     expect(cleared.honor.classBoard.you).toBeNull()
-    expect(cleared.honor.me.yearlyXp).toBe(15)
-    expect(cleared.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 15 })
+    expect(cleared.honor.me.yearlyXp).toBe(3)
+    expect(cleared.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 3 })
 
     await practice(pupil, examId, 1, true)
     const again = await dash(pupil)
-    expect(again.honor.classBoard.you).toMatchObject({ yearlyXp: 5 })
-    expect(again.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 20 })
+    expect(again.honor.classBoard.you).toMatchObject({ yearlyXp: 1 })
+    expect(again.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 3 })
 
     const staffBoard = (await admin.get('/reports/honor')).body as import('@toeic/shared').StaffHonorDto
     const listed = staffBoard.classes.find((row) => row.classId === room.body.id)

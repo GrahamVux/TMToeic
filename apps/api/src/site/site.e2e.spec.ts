@@ -33,6 +33,7 @@ describe('Site settings (e2e on PGlite)', () => {
       slogan: DEFAULT_SITE_SETTINGS.slogan,
       phone: DEFAULT_SITE_SETTINGS.phone,
       theme: DEFAULT_SITE_SETTINGS.theme,
+      backgroundMode: 'fixed',
       logoUrl: null,
     })
   })
@@ -47,6 +48,7 @@ describe('Site settings (e2e on PGlite)', () => {
       address: '12 Nguyễn Huệ, Q.1',
       footerAbout: 'Cổng học mới.',
       theme: { primary: '#0f766e', primarySoft: '#99f6e4', paper: '#f0fdfa' },
+      backgroundMode: 'sky',
       logoUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
     })
     expect(res.status).toBe(200)
@@ -57,13 +59,24 @@ describe('Site settings (e2e on PGlite)', () => {
       address: '12 Nguyễn Huệ, Q.1',
       footerAbout: 'Cổng học mới.',
       theme: { primary: '#0f766e', primarySoft: '#99f6e4', paper: '#f0fdfa' },
+      backgroundMode: 'sky',
     })
     expect(res.body.logoUrl).toMatch(/^data:image\/png;base64,/)
+    expect(res.body.theme.button).toBe('#1f7a8c')
+
+    const colored = await put(admin, '/site-settings', {
+      theme: { primary: '#0f766e', primarySoft: '#99f6e4', paper: '#f0fdfa', button: '#123456' },
+    })
+    expect(colored.status).toBe(200)
+    expect(colored.body.theme.button).toBe('#123456')
 
     const again = await client(app).get('/site-settings')
     expect(again.body.slogan).toBe('Lớp 900+')
     expect(again.body.logoUrl).toBe(res.body.logoUrl)
 
     expect((await put(admin, '/site-settings', { theme: { primary: 'teal', primarySoft: '#99f6e4', paper: '#f0fdfa' } })).status).toBe(400)
+    expect((await put(admin, '/site-settings', { theme: { primary: '#0f766e', primarySoft: '#99f6e4', paper: '#f0fdfa', button: 'blue' } })).status).toBe(400)
+    expect((await put(admin, '/site-settings', { backgroundMode: 'sunset' })).status).toBe(400)
+    expect((await put(admin, '/site-settings', { backgroundMode: 'fixed' })).status).toBe(200)
   })
 })

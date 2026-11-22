@@ -3,7 +3,8 @@ import { ERROR_CODES } from '@toeic/shared'
 import { and, eq, isNull } from 'drizzle-orm'
 import { DB, type Db } from '../db/database.module'
 import { attemptFocusLeaves, attempts } from '../db/schema'
-import { ADMIN, client, createTestApp, login, type TestClient } from '../test/test-app'
+import { ADMIN, client, cookieOf, createTestApp, login, type TestClient } from '../test/test-app'
+import { ACCESS_COOKIE } from '../auth/auth.cookies'
 import { scaledSectionScore } from './scoring'
 
 type Q = { id: string; number: number; partCode: string; options: Array<{ key: string }>; selectedKey: string | null }
@@ -465,16 +466,27 @@ describe('Exam engine (e2e on PGlite)', () => {
     }
 
     it('rejects anonymous import and accepts a logged-in admin', async () => {
-      const prodApp = await createTestApp({}, { config: { isProd: true } })
+      const prodApp = await createTestApp({}, {
+        config: {
+          isProd: true,
+          r2: { accountId: 'test', accessKeyId: 'test', secretAccessKey: 'test', bucket: 'test-drafts' },
+        },
+      })
       try {
         const denied = await client(prodApp).post('/exams/import-draft').send(draft)
         expect(denied.status).toBe(401)
 
-        const { c } = await login(prodApp, ADMIN.username, ADMIN.password)
-        await c.post('/auth/change-password').send({ currentPassword: ADMIN.password, newPassword: 'AdminPass123' })
-        const authed = await c.post('/exams/import-draft').send(draft)
-        expect(authed.status).toBe(400)
-        expect(authed.body.error.message).toMatch(/Object storage is not configured/)
+        const { c, res } = await login(prodApp, ADMIN.username, ADMIN.password)
+        expect(res.status).toBe(200)
+        const changed = await c.post('/auth/change-password')
+          .set('Cookie', cookieOf(res, ACCESS_COOKIE))
+          .send({ currentPassword: ADMIN.password, newPassword: 'AdminPass123' })
+          .expect(200)
+        const authed = await c.post('/exams/import-draft')
+          .set('Cookie', cookieOf(changed, ACCESS_COOKIE))
+          .send(draft)
+          .expect(201)
+        expect(authed.body).toMatchObject({ code: draft.exam.code, status: 'PENDING_REVIEW' })
       } finally {
         await prodApp.close()
       }

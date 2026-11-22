@@ -272,7 +272,7 @@ export function SelectableText({
                     className="h-9 min-w-0 flex-1 rounded-lg bg-white px-3 text-sm text-ink"
                     autoFocus
                   />
-                  <button type="submit" className="rounded-lg bg-gold-deep px-3 text-sm font-semibold">
+                  <button type="submit" className="rounded-lg bg-button px-3 text-sm font-semibold text-button-ink">
                     Lưu
                   </button>
                 </form>
@@ -287,7 +287,7 @@ export function SelectableText({
             <button
               ref={barRef as unknown as Ref<HTMLButtonElement>}
               type="button"
-              className="fixed z-[80] rounded-full bg-gold-deep px-3 py-1.5 text-sm font-semibold text-white shadow-lg"
+              className="fixed z-[80] rounded-full bg-button px-3 py-1.5 text-sm font-semibold text-button-ink shadow-lg"
               style={{ top: picked.top, left: Math.max(8, Math.min(picked.left, window.innerWidth - 220)) }}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => void addToDictionary()}

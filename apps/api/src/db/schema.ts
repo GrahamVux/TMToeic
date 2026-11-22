@@ -500,6 +500,8 @@ export const siteSettings = pgTable('site_settings', {
   themePrimary: text('theme_primary').notNull(),
   themePrimarySoft: text('theme_primary_soft').notNull(),
   themePaper: text('theme_paper').notNull(),
+  themeButton: text('theme_button').notNull().default('#1f7a8c'),
+  backgroundMode: text('background_mode').notNull().default('fixed'),
   honorBoardEnabled: boolean('honor_board_enabled').notNull().default(true),
   ...timestamps,
 }).enableRLS()
@@ -657,11 +659,17 @@ const bytea = customType<{ data: Buffer; driverData: Buffer }>({
     return value
   },
   fromDriver(value: unknown) {
-    return pdfBuffer(value)
+    return binaryBuffer(value)
   },
 })
 
-function pdfBuffer(value: unknown): Buffer {
+export const accountAvatars = pgTable('account_avatars', {
+  userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  version: uuid('version').notNull().unique(),
+  thumbnail: bytea('thumbnail').notNull(),
+}).enableRLS()
+
+function binaryBuffer(value: unknown): Buffer {
   if (Buffer.isBuffer(value)) return value
   if (value instanceof Uint8Array) return Buffer.from(value)
   if (typeof value === 'string') {

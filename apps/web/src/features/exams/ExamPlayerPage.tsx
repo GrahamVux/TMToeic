@@ -8,7 +8,7 @@ import { cn } from '@/lib/cn'
 import { CSRF_HEADER, CSRF_HEADER_VALUE, FILL_QUESTION_TYPE, type AttemptPlayerDto } from '@toeic/shared'
 import { getViewAsId } from '@/lib/view-as'
 import { AlertTriangle, Headphones } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { trackForPart } from './audio'
 import { AudioPlayer } from './AudioPlayer'
@@ -30,6 +30,10 @@ const MODE_LABEL: Record<string, string> = {
 }
 
 export function ExamPlayerPage() {
+  useLayoutEffect(() => {
+    document.documentElement.classList.add('exam-plain')
+    return () => document.documentElement.classList.remove('exam-plain')
+  }, [])
   const { attemptId } = useParams()
   const { data, isPending, error } = useAttemptPlayer(attemptId)
 
@@ -346,7 +350,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
                   onClick={() => setIndex(firstIndex)}
                   className={cn(
                     'rounded-xl px-2 py-2 text-left',
-                    question.partCode === code ? 'bg-gold-deep text-white' : 'bg-paper text-ink',
+                    question.partCode === code ? 'bg-button text-button-ink' : 'bg-paper text-ink',
                   )}
                 >
                   <span className="block text-xs font-semibold">{label}</span>
@@ -374,7 +378,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
                       : `Câu ${item.number}${answered ? ', đã chọn' : ', chưa làm'}`}
                     className={cn(
                       'h-9 min-w-9 rounded-lg px-1 text-sm font-semibold',
-                      onScreen && answered ? 'bg-gold text-ink ring-2 ring-gold-deep' : onScreen ? 'bg-gold-deep text-white' : answered ? 'bg-gold text-ink' : 'bg-paper',
+                      onScreen && answered ? 'bg-gold text-ink ring-2 ring-gold-deep' : onScreen ? 'bg-button text-button-ink' : answered ? 'bg-gold text-ink' : 'bg-paper',
                     )}
                   >
                     {item.number}

@@ -143,10 +143,10 @@ export function TeacherAssignmentsPage() {
 
       {canManage ? (
         <div className="flex flex-wrap gap-2">
-          <button type="button" className={composer === 'bank' ? 'rounded-full bg-gold-deep px-4 py-2 text-sm font-semibold text-white' : 'rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink/70 ring-1 ring-ink/10'} onClick={() => setComposer('bank')}>
+          <button type="button" className={composer === 'bank' ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink/70 ring-1 ring-ink/10'} onClick={() => setComposer('bank')}>
             Từ bộ đề
           </button>
-          <button type="button" className={composer === 'fill' ? 'rounded-full bg-gold-deep px-4 py-2 text-sm font-semibold text-white' : 'rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink/70 ring-1 ring-ink/10'} onClick={() => setComposer('fill')}>
+          <button type="button" className={composer === 'fill' ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink/70 ring-1 ring-ink/10'} onClick={() => setComposer('fill')}>
             Điền từ
           </button>
         </div>
@@ -519,7 +519,7 @@ function ExamPick({
             <button
               key={p.code}
               type="button"
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${on ? 'bg-gold-deep text-white' : 'bg-paper-2 text-ink/70'}`}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${on ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/70'}`}
               onClick={() => {
                 if (!selected) {
                   onSelect(exam.id)

@@ -40,7 +40,9 @@ export class SiteService {
       patch.themePrimary = input.theme.primary
       patch.themePrimarySoft = input.theme.primarySoft
       patch.themePaper = input.theme.paper
+      if (input.theme.button) patch.themeButton = input.theme.button
     }
+    if (input.backgroundMode !== undefined) patch.backgroundMode = input.backgroundMode
     if (input.logoUrl !== undefined) patch.logoDataUrl = input.logoUrl
     if (input.faviconUrl !== undefined) patch.faviconDataUrl = input.faviconUrl
     if (input.honorBoardEnabled !== undefined) patch.honorBoardEnabled = input.honorBoardEnabled
@@ -75,6 +77,8 @@ export class SiteService {
         themePrimary: d.theme.primary,
         themePrimarySoft: d.theme.primarySoft,
         themePaper: d.theme.paper,
+        themeButton: d.theme.button ?? '#1f7a8c',
+        backgroundMode: d.backgroundMode,
         honorBoardEnabled: d.honorBoardEnabled,
       })
       .returning()
@@ -97,7 +101,8 @@ export class SiteService {
       channelDetail: row.channelDetail,
       legalNote: row.legalNote,
       copyright: row.copyright,
-      theme: { primary: row.themePrimary, primarySoft: row.themePrimarySoft, paper: row.themePaper },
+      theme: { primary: row.themePrimary, primarySoft: row.themePrimarySoft, paper: row.themePaper, button: row.themeButton },
+      backgroundMode: row.backgroundMode === 'sky' ? 'sky' : 'fixed',
       logoUrl: row.logoDataUrl,
       faviconUrl: row.faviconDataUrl,
       honorBoardEnabled: row.honorBoardEnabled,

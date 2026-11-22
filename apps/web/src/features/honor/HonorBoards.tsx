@@ -1,6 +1,7 @@
 import { Card } from '@/components/ui/Primitives'
+import { AccountAvatar } from '@/components/ui/AccountAvatar'
 import { Button } from '@/components/ui/Button'
-import { XP_PER_CORRECT, XP_PER_RANK, type HonorBoardDto, type HonorCenterEntry, type HonorStudentEntry, type StaffHonorDto } from '@toeic/shared'
+import { CENTER_PODIUM_XP, CENTER_TOP1_XP, XP_PER_CORRECT, XP_PER_RANK, type HonorBoardDto, type HonorCenterEntry, type HonorStudentEntry, type StaffHonorDto } from '@toeic/shared'
 import type { ReactNode } from 'react'
 import { PodiumMark, RankBadge } from './RankBadge'
 
@@ -10,7 +11,7 @@ export function HonorBoards({ honor }: { honor: HonorBoardDto }) {
   return (
     <section className="space-y-4">
       <header>
-        <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">Mỗi câu đúng +{XP_PER_CORRECT} EXP • mỗi {XP_PER_RANK} EXP lên một hạng</p>
+        <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">Mỗi mẫu câu đúng lần đầu +{XP_PER_CORRECT} EXP • mỗi {XP_PER_RANK} EXP lên một hạng</p>
         <h2 className="serif mt-1 text-2xl">Bảng vinh danh năm</h2>
         <p className="mt-1 text-sm text-ink/60">
           Cả bảng lớp và bảng trung tâm tính theo năm {honor.year}, về 0 vào ngày 1 tháng 1.
@@ -47,7 +48,7 @@ export function HonorBoards({ honor }: { honor: HonorBoardDto }) {
           </ul>
         </Board>
 
-        <Board title="Vinh danh trong trung tâm" hint={`Xếp học viên của mọi lớp theo EXP năm ${honor.year}.`}>
+        <Board title="Vinh danh trong trung tâm" hint={centerHint(honor.year)}>
           {honor.centerBoard.length === 0 ? <Empty text="Năm nay chưa có học viên nào hoàn thành bài." /> : null}
           <ul className="space-y-3">
             {honor.centerBoard.map((row) => (
@@ -81,9 +82,10 @@ function Empty({ text }: { text: string }) {
 
 function StudentRow({ row, xpLabel = 'trong năm' }: { row: HonorStudentEntry; xpLabel?: string }) {
   return (
-    <li className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-3 ${row.you ? 'bg-gold/15' : 'bg-paper'}`}>
+    <li className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-3 ${row.you ? 'bg-button-soft' : 'bg-paper'}`}>
       <div className="flex min-w-0 items-center gap-3">
         {row.place <= 3 ? <PodiumMark place={row.place} /> : <span className="w-8 text-center text-sm font-semibold text-ink/45">{row.place}</span>}
+        <AccountAvatar name={row.name} url={row.avatarUrl} />
         <div className="min-w-0">
           <p className="truncate font-semibold">{row.name}{row.you ? ' (Bạn)' : ''}</p>
           <p className="text-xs text-ink/55">{row.yearlyXp} EXP {xpLabel} • {row.rank.label}</p>
@@ -98,6 +100,10 @@ function classHint(className: string | null, year: number, resetAt: string | nul
   if (!className) return 'Chưa có lớp'
   if (resetAt) return `Chỉ học viên ${className}. EXP tính từ lần reset ${resetWhen(resetAt)}.`
   return `Chỉ học viên ${className}. Xếp theo EXP năm ${year}.`
+}
+
+function centerHint(year: number) {
+  return `Top 1 cần ${CENTER_TOP1_XP} EXP. Top 2 và top 3 cần ${CENTER_PODIUM_XP} EXP. Hạng sau vào được với mọi mức EXP trong năm ${year}.`
 }
 
 function classEmpty(resetAt: string | null) {
@@ -125,7 +131,7 @@ export function StaffHonorBoards({
   return (
     <section className="space-y-4">
       <header>
-        <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">Mỗi câu đúng +{XP_PER_CORRECT} EXP • mỗi {XP_PER_RANK} EXP lên một hạng</p>
+        <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">Mỗi mẫu câu đúng lần đầu +{XP_PER_CORRECT} EXP • mỗi {XP_PER_RANK} EXP lên một hạng</p>
         <h2 className="serif mt-1 text-2xl">Bảng xếp hạng năm</h2>
         <p className="mt-1 text-sm text-ink/60">
           Mọi bảng tính theo năm {honor.year} và về 0 vào ngày 1 tháng 1.
@@ -157,7 +163,7 @@ export function StaffHonorBoards({
             </Board>
           ))
         )}
-        <Board title="Bảng xếp hạng tổng" hint={`Xếp học viên của mọi lớp theo EXP năm ${honor.year}.`}>
+        <Board title="Bảng xếp hạng tổng" hint={centerHint(honor.year)}>
           {honor.centerBoard.length === 0 ? <Empty text="Năm nay chưa có học viên nào hoàn thành bài." /> : null}
           <ul className="space-y-3">
             {honor.centerBoard.map((row) => (
@@ -172,9 +178,10 @@ export function StaffHonorBoards({
 
 function CenterRow({ row }: { row: HonorCenterEntry }) {
   return (
-    <li className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-3 ${row.you || row.yours ? 'bg-gold/15' : 'bg-paper'}`}>
+    <li className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-3 ${row.you || row.yours ? 'bg-button-soft' : 'bg-paper'}`}>
       <div className="flex min-w-0 items-center gap-3">
         {row.place <= 3 ? <PodiumMark place={row.place} /> : <span className="w-8 text-center text-sm font-semibold text-ink/45">{row.place}</span>}
+        <AccountAvatar name={row.name} url={row.avatarUrl} />
         <div className="min-w-0">
           <p className="truncate font-semibold">{row.name}{row.you ? ' (Bạn)' : ''}</p>
           <p className="text-xs text-ink/55">{row.className} • {row.yearlyXp} EXP trong năm • {row.rank.label}</p>

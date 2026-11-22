@@ -87,7 +87,7 @@ export function PracticePage() {
           </label>
           <button
             type="button"
-            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-gold-deep disabled:opacity-50"
+            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-button px-4 text-sm font-semibold text-button-ink hover:bg-button-hover disabled:opacity-50"
             disabled={start.isPending || visible.length === 0}
             onClick={startNewest}
           >

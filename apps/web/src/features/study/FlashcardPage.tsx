@@ -130,5 +130,5 @@ export function FlashcardPage() {
 }
 
 function tab(active: boolean) {
-  return active ? 'rounded-full bg-gold-deep px-4 py-2 text-sm font-semibold text-white' : 'rounded-full bg-paper-2 px-4 py-2 text-sm font-semibold text-ink'
+  return active ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-paper-2 px-4 py-2 text-sm font-semibold text-ink'
 }

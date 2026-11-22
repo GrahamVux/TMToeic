@@ -1,8 +1,9 @@
-import type { ChangePasswordInput, LoginInput, RecoverAdminPasswordInput, SessionDto, UserDto } from '@toeic/shared'
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import type { AccountAvatarDto, ChangePasswordInput, LoginInput, RecoverAdminPasswordInput, SessionDto, UserDto } from '@toeic/shared'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { api, onSessionLost } from '@/lib/api'
+import { avatarListKeys } from '@/lib/account-avatars'
 import { getViewAsId, setViewAsId } from '@/lib/view-as'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 type Status = 'loading' | 'authenticated' | 'anonymous'
 
@@ -19,6 +20,7 @@ type AuthState = {
   changePassword: (input: ChangePasswordInput) => Promise<UserDto>
   /** Replace the cached user after the server returned a fresh copy (e.g. goal changed). */
   updateUser: (user: UserDto) => void
+  avatarChanged: (avatar: AccountAvatarDto) => void
   /** Admin only: show the app exactly as this teacher or student sees it, read-only. */
   startViewAs: (userId: string) => Promise<UserDto>
   /** Leave the preview and return to the admin's own screens. */
@@ -32,6 +34,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [viewing, setViewing] = useState<{ admin: UserDto } | null>(null)
   const [status, setStatus] = useState<Status>('loading')
   const queryClient = useQueryClient()
+  const channel = useRef<BroadcastChannel | null>(null)
+  const avatar = useQuery({
+    queryKey: ['account-avatar', user?.id],
+    enabled: !!user,
+    initialData: user?.avatarUrl,
+    refetchOnWindowFocus: 'always',
+    queryFn: async () => {
+      const session = await api<SessionDto>('/auth/me')
+      return session.user.id === user?.id ? session.user.avatarUrl : null
+    },
+  })
+  const currentUser = useMemo(() => user && avatar.data !== undefined ? { ...user, avatarUrl: avatar.data } : user, [user, avatar.data])
+
+  const refreshAvatarLists = useCallback(() => {
+    for (const key of avatarListKeys) {
+      void queryClient.invalidateQueries({ queryKey: key })
+    }
+  }, [queryClient])
+
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return
+    const updates = new BroadcastChannel('toeic-avatar')
+    channel.current = updates
+    updates.onmessage = () => {
+      void queryClient.invalidateQueries({ queryKey: ['account-avatar'] })
+      refreshAvatarLists()
+    }
+    return () => {
+      updates.close()
+      channel.current = null
+    }
+  }, [queryClient, refreshAvatarLists])
+
+  const avatarChanged = useCallback(({ id, avatarUrl }: AccountAvatarDto) => {
+    const queryKey = ['account-avatar', id]
+    void queryClient.cancelQueries({ queryKey })
+    queryClient.setQueryData(queryKey, avatarUrl)
+    setUser((old) => old?.id === id ? { ...old, avatarUrl } : old)
+    refreshAvatarLists()
+    channel.current?.postMessage(id)
+  }, [queryClient, refreshAvatarLists])
 
   const apply = useCallback((s: SessionDto) => {
     // The server only honours a preview for an admin. Forget a stored id that it ignored.
@@ -138,8 +181,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [queryClient])
 
   const value = useMemo<AuthState>(
-    () => ({ status, user, viewing, login, recoverAdmin, logout, changePassword, updateUser, startViewAs, stopViewAs }),
-    [status, user, viewing, login, recoverAdmin, logout, changePassword, updateUser, startViewAs, stopViewAs],
+    () => ({ status, user: currentUser, viewing, login, recoverAdmin, logout, changePassword, updateUser, avatarChanged, startViewAs, stopViewAs }),
+    [status, currentUser, viewing, login, recoverAdmin, logout, changePassword, updateUser, avatarChanged, startViewAs, stopViewAs],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

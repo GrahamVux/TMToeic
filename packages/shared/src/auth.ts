@@ -43,6 +43,10 @@ export type ViewAsInput = z.infer<typeof viewAsSchema>
 
 export const PASSWORD_MIN_LENGTH = 10
 
+export const AVATAR_MAX_BYTES = 4 * 1024 * 1024
+export const AVATAR_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
+export type AccountAvatarDto = Pick<UserDto, 'id' | 'avatarUrl'>
+
 /** Password given to every account created by an admin or teacher. The user must change it at first login. */
 export const DEFAULT_NEW_ACCOUNT_PASSWORD = '123456'
 

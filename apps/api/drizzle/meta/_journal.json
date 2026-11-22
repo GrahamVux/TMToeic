@@ -176,6 +176,27 @@
       "when": 1793500000000,
       "tag": "0024_vocab_units",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793700000000,
+      "tag": "0026_site_background",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1793800000000,
+      "tag": "0027_theme_button",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1793900000000,
+      "tag": "0028_account_avatars",
+      "breakpoints": true
     }
   ]
 }

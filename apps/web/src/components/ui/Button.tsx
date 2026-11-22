@@ -4,7 +4,7 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react'
 type Variant = 'gold' | 'navy' | 'ghost' | 'paper' | 'danger' | 'teal'
 
 const styles: Record<Variant, string> = {
-  gold: 'bg-gold-deep text-white hover:bg-navy',
+  gold: 'bg-button text-button-ink hover:bg-button-hover',
   navy: 'border border-ink/12 bg-white text-ink hover:bg-paper-2',
   ghost: 'bg-transparent text-ink border border-ink/12 hover:bg-paper-2',
   paper: 'bg-paper-2 text-ink border border-gold/40 hover:bg-gold/50',

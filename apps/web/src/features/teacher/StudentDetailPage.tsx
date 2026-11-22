@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/Button'
+import { AccountAvatar } from '@/components/ui/AccountAvatar'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Badge, Card } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
@@ -38,7 +39,10 @@ export function StudentDetailPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Hồ sơ học viên nội bộ</p>
-          <h1 className="serif mt-2 text-4xl">{user.fullName}</h1>
+          <h1 className="serif mt-2 flex items-center gap-3 text-4xl">
+            <AccountAvatar name={user.fullName} url={user.avatarUrl} className="size-12 font-sans text-base" />
+            {user.fullName}
+          </h1>
           <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink/60">
             <span>{user.studentCode ?? user.username}</span>
             {user.status === 'DISABLED' ? <Badge tone="danger">Đã khóa</Badge> : user.mustChangePassword ? <Badge tone="warn">Chờ đăng nhập lần đầu</Badge> : <Badge tone="olive">Hoạt động</Badge>}
