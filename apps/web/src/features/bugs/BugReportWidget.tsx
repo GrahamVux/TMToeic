@@ -72,7 +72,7 @@ export function BugReportWidget() {
             <label className="block text-xs font-medium text-ink/60">
               Nhóm sự cố
               <select
-                className="mt-1 h-10 w-full rounded-xl border border-gold/40 bg-white px-3 text-sm text-ink outline-none focus:border-gold-deep"
+                className="mt-1 h-10 w-full rounded-xl border border-gold/40 bg-white px-3 text-sm text-ink outline-none focus:border-button"
                 value={category}
                 onChange={(e) => setCategory(e.target.value as BugReportCategory)}
               >
@@ -86,7 +86,7 @@ export function BugReportWidget() {
             <label className="block text-xs font-medium text-ink/60">
               Mô tả
               <textarea
-                className="mt-1 min-h-24 w-full rounded-xl border border-gold/40 bg-white px-3 py-2 text-sm text-ink outline-none focus:border-gold-deep focus:ring-2 focus:ring-gold-deep/20"
+                className="mt-1 min-h-24 w-full rounded-xl border border-gold/40 bg-white px-3 py-2 text-sm text-ink outline-none focus:border-button focus:ring-2 focus:ring-button/30"
                 value={message}
                 maxLength={2000}
                 placeholder="Ví dụ: Không nghe được audio Part 3 trên trang luyện tập…"
@@ -128,7 +128,7 @@ export function BugReportWidget() {
       <button
         type="button"
         className={cn(
-          'pointer-events-auto flex items-center gap-2 rounded-full bg-gold-deep px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_28px_rgba(43,138,156,0.35)] transition hover:bg-navy',
+          'pointer-events-auto flex items-center gap-2 rounded-full bg-button px-4 py-3 text-sm font-semibold text-button-ink shadow-[0_10px_28px_rgba(31,122,140,0.35)] transition hover:bg-button-hover',
           open && 'ring-2 ring-white/70',
         )}
         aria-expanded={open}

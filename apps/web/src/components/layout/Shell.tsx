@@ -102,7 +102,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
                   cn(
                     'flex shrink-0 items-center whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors',
                     isActive
-                      ? 'bg-gold-deep text-white'
+                      ? 'bg-button text-button-ink'
                       : 'text-ink/65 hover:bg-teal-soft hover:text-ink',
                   )
                 }
@@ -151,7 +151,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
                 className={({ isActive }) =>
                   cn(
                     'flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium',
-                    isActive ? 'bg-gold-deep text-white' : 'text-ink/75 hover:bg-paper',
+                    isActive ? 'bg-button text-button-ink' : 'text-ink/75 hover:bg-paper',
                   )
                 }
               >
@@ -265,7 +265,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 className={({ isActive }) =>
                   cn(
                     'whitespace-nowrap rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors',
-                    isActive ? 'bg-gold-deep text-white' : 'text-ink/65 hover:bg-teal-soft hover:text-ink',
+                    isActive ? 'bg-button text-button-ink' : 'text-ink/65 hover:bg-teal-soft hover:text-ink',
                   )
                 }
               >
@@ -279,7 +279,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   aria-expanded={deskMoreOpen}
                   className={cn(
                     'flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors',
-                    desktopMoreActive || deskMoreOpen ? 'bg-gold-deep text-white' : 'text-ink/65 hover:bg-teal-soft hover:text-ink',
+                    desktopMoreActive || deskMoreOpen ? 'bg-button text-button-ink' : 'text-ink/65 hover:bg-teal-soft hover:text-ink',
                   )}
                   onClick={() => setDeskMoreOpen(!deskMoreOpen)}
                 >
@@ -299,7 +299,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                           className={({ isActive }) =>
                             cn(
                               'flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-medium',
-                              isActive ? 'bg-gold-deep text-white' : 'text-ink/75 hover:bg-paper',
+                              isActive ? 'bg-button text-button-ink' : 'text-ink/75 hover:bg-paper',
                             )
                           }
                         >
@@ -352,7 +352,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 className={({ isActive }) =>
                   cn(
                     'flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium',
-                    isActive ? 'bg-gold-deep text-white' : 'text-ink/75 hover:bg-paper',
+                    isActive ? 'bg-button text-button-ink' : 'text-ink/75 hover:bg-paper',
                   )
                 }
               >
@@ -393,7 +393,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 className={({ isActive }) =>
                   cn(
                     'flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold',
-                    isActive ? 'bg-gold-deep text-white' : 'text-ink/75 hover:bg-paper',
+                    isActive ? 'bg-button text-button-ink' : 'text-ink/75 hover:bg-paper',
                   )
                 }
               >

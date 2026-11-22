@@ -500,6 +500,8 @@ export const siteSettings = pgTable('site_settings', {
   themePrimary: text('theme_primary').notNull(),
   themePrimarySoft: text('theme_primary_soft').notNull(),
   themePaper: text('theme_paper').notNull(),
+  themeButton: text('theme_button').notNull().default('#1f7a8c'),
+  backgroundMode: text('background_mode').notNull().default('fixed'),
   honorBoardEnabled: boolean('honor_board_enabled').notNull().default(true),
   ...timestamps,
 }).enableRLS()

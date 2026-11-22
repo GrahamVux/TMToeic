@@ -26,7 +26,7 @@ function Toggle({ checked, onChange, label, hint, disabled }: { checked: boolean
         aria-label={label}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={cn('relative h-6 w-11 shrink-0 rounded-full transition-colors', checked ? 'bg-gold-deep' : 'bg-ink/15')}
+        className={cn('relative h-6 w-11 shrink-0 rounded-full transition-colors', checked ? 'bg-button' : 'bg-ink/15')}
       >
         <span className={cn('absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow transition-transform', checked && 'translate-x-5')} />
       </button>
@@ -35,7 +35,7 @@ function Toggle({ checked, onChange, label, hint, disabled }: { checked: boolean
 }
 
 const fieldCls =
-  'mt-1 h-10 w-full rounded-xl border border-gold/40 bg-white px-3 text-sm text-ink outline-none focus:border-gold-deep focus:ring-2 focus:ring-gold-deep/20'
+  'mt-1 h-10 w-full rounded-xl border border-gold/40 bg-white px-3 text-sm text-ink outline-none focus:border-button focus:ring-2 focus:ring-button/30'
 
 function scoreFor(track: GoalTrack, saved: GoalDto) {
   if (saved?.track === track) return saved.score

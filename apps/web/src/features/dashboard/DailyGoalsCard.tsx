@@ -189,7 +189,7 @@ function GoalReminder({ next }: { next: (typeof KINDS)[DailyGoalKind] & { done: 
 
 function RemainCount({ value, unit }: { value: number; unit: string }) {
   return (
-    <span className="mx-0.5 inline-flex items-baseline gap-1 rounded-lg bg-gold-deep px-2 py-0.5 align-middle text-white shadow-[0_6px_14px_rgba(43,138,156,0.28)]">
+    <span className="mx-0.5 inline-flex items-baseline gap-1 rounded-lg bg-button px-2 py-0.5 align-middle text-button-ink shadow-[0_6px_14px_color-mix(in_srgb,var(--color-button)_35%,transparent)]">
       <span className="text-lg leading-none font-bold tabular-nums">{value}</span>
       <span className="text-xs font-semibold">{unit}</span>
     </span>
@@ -279,7 +279,7 @@ function GoalForm({ data, onClose, onSaved }: { data: DailyGoalsDto; onClose: ()
                   aria-label={field}
                   value={targets[kind]}
                   onChange={(e) => setKind(kind, Number(e.target.value))}
-                  className="h-9 w-16 rounded-xl border border-gold/60 bg-white text-center text-sm font-semibold tabular-nums outline-none focus:border-gold-deep focus:ring-2 focus:ring-gold-deep/20"
+                  className="h-9 w-16 rounded-xl border border-gold/60 bg-white text-center text-sm font-semibold tabular-nums outline-none focus:border-button focus:ring-2 focus:ring-button/30"
                 />
                 <button type="button" className={stepCls} aria-label={`Tăng ${field}`} disabled={targets[kind] >= max} onClick={() => setKind(kind, targets[kind] + step)}>
                   <Plus className="size-4" />

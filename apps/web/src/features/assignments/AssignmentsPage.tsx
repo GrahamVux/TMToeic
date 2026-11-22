@@ -78,7 +78,7 @@ export function AssignmentsPage() {
         {TABS.map((t) => (
           <button
             key={t.id}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${tab === t.id ? 'bg-gold-deep text-white' : 'bg-paper-2'}`}
+            className={`rounded-full px-4 py-2 text-sm font-semibold ${tab === t.id ? 'bg-button text-button-ink' : 'bg-paper-2'}`}
             onClick={() => setTab(t.id)}
           >
             {t.label}

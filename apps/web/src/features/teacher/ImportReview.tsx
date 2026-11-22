@@ -75,7 +75,7 @@ function ReviewDock({
           type="button"
           className={cn(
             'rounded-xl px-2 py-1.5 text-left text-xs font-semibold sm:text-sm',
-            active === code ? 'bg-gold-deep text-white' : 'text-ink/75 hover:bg-teal-soft',
+            active === code ? 'bg-button text-button-ink' : 'text-ink/75 hover:bg-teal-soft',
           )}
           onClick={() => onJump(code)}
         >

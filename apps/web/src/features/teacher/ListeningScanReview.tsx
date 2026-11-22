@@ -80,7 +80,7 @@ function ReviewDock({
           type="button"
           className={cn(
             'rounded-xl px-2 py-1.5 text-left text-xs font-semibold sm:text-sm',
-            active === code ? 'bg-gold-deep text-white' : 'text-ink/75 hover:bg-teal-soft',
+            active === code ? 'bg-button text-button-ink' : 'text-ink/75 hover:bg-teal-soft',
           )}
           onClick={() => onJump(code)}
         >
@@ -189,7 +189,7 @@ function PageCropper({ pageImage, box, onBox }: { pageImage: string; box: Box; o
     >
       <img src={`data:image/jpeg;base64,${pageImage}`} alt="Trang PDF" draggable={false} className="block h-auto w-full select-none" />
       <div
-        className="absolute border-2 border-gold-deep bg-gold/20"
+        className="absolute border-2 border-button bg-button/25"
         style={{ top: `${ymin / 10}%`, left: `${xmin / 10}%`, width: `${(xmax - xmin) / 10}%`, height: `${(ymax - ymin) / 10}%` }}
         onPointerDown={(event) => begin(event, 'move')}
       >
@@ -197,7 +197,7 @@ function PageCropper({ pageImage, box, onBox }: { pageImage: string; box: Box; o
           <span
             key={edge}
             className={cn(
-              'absolute bg-gold-deep',
+              'absolute bg-button',
               edge === 'n' && 'inset-x-0 top-0 h-2 cursor-ns-resize',
               edge === 's' && 'inset-x-0 bottom-0 h-2 cursor-ns-resize',
               edge === 'w' && 'inset-y-0 left-0 w-2 cursor-ew-resize',

@@ -11,11 +11,11 @@ export function Badge({
   className?: string
 }) {
   const tones = {
-    gold: 'bg-teal-soft text-gold-deep border-gold/50',
+    gold: 'bg-button-soft text-ink border-button/40',
     teal: 'bg-teal-soft text-teal border-teal/20',
     warn: 'bg-[#f8e7c9] text-warn border-warn/20',
     danger: 'bg-[#f8dcd8] text-coral border-coral/20',
-    ink: 'bg-gold-deep text-white border-gold-deep',
+    ink: 'bg-button text-button-ink border-gold-deep',
     olive: 'bg-[#e4efd8] text-olive border-olive/20',
     paper: 'bg-paper-2 text-ink/70 border-ink/10',
   }
@@ -42,7 +42,7 @@ export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElem
   return (
     <input
       className={cn(
-        'h-10 w-full rounded-xl border border-ink/12 bg-white px-3 text-base outline-none ring-gold/40 placeholder:text-ink/40 focus:ring-2',
+        'h-10 w-full rounded-xl border border-ink/12 bg-white px-3 text-base outline-none ring-button/40 placeholder:text-ink/40 focus:ring-2',
         className,
       )}
       {...props}

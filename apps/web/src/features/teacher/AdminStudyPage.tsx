@@ -53,10 +53,10 @@ export function AdminStudyPage() {
         <h2 className="serif text-2xl">Nhập từ vựng từ Excel</h2>
         <p className="mt-2 text-sm text-ink/60">File mẫu ghi tên bộ ở dòng Bộ đề và đánh số Unit. Tải file đó lên là hệ thống tự tạo bộ và các unit. File chỉ có ba cột Từ vựng, Loại từ, Nghĩa thì chọn tạo bộ mới hoặc thêm unit bên dưới.</p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <button type="button" className={mode === 'new' ? 'rounded-full bg-gold-deep px-4 py-2 text-sm font-semibold text-white' : 'rounded-full bg-paper-2 px-4 py-2 text-sm font-semibold text-ink'} onClick={() => setMode('new')}>
+          <button type="button" className={mode === 'new' ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-paper-2 px-4 py-2 text-sm font-semibold text-ink'} onClick={() => setMode('new')}>
             Tạo bộ mới
           </button>
-          <button type="button" className={mode === 'unit' ? 'rounded-full bg-gold-deep px-4 py-2 text-sm font-semibold text-white' : 'rounded-full bg-paper-2 px-4 py-2 text-sm font-semibold text-ink'} onClick={() => setMode('unit')}>
+          <button type="button" className={mode === 'unit' ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-paper-2 px-4 py-2 text-sm font-semibold text-ink'} onClick={() => setMode('unit')}>
             Thêm unit vào bộ có sẵn
           </button>
         </div>

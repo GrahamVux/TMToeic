@@ -81,7 +81,11 @@ export function ClassSwitcher({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <ClassPill active={!selected} label="Xem tất cả" onClick={() => pick('')} />
-          {selected ? <span className="truncate text-sm font-semibold text-ink">{selected.closedAt ? `${selected.name} · đã đóng` : selected.name}</span> : null}
+          {selected ? (
+            <span className="inline-flex min-w-0 max-w-[18rem] items-center rounded-full border border-button bg-button-soft px-3 py-1.5 text-sm font-semibold text-ink">
+              <span className="truncate">{selected.closedAt ? `${selected.name} · đã đóng` : selected.name}</span>
+            </span>
+          ) : null}
         </div>
         <div className="w-full sm:w-72">
           <Input className="h-9" value={query} placeholder="Tìm lớp" aria-label="Tìm lớp" onChange={(e) => setQuery(e.target.value)} />
@@ -116,7 +120,7 @@ function ClassPill({ active, label, count, onClick }: { active: boolean; label: 
       type="button"
       className={cn(
         'flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold whitespace-nowrap',
-        active ? 'border-gold-deep bg-gold-deep text-white' : 'border-ink/10 bg-white text-ink/75 hover:border-gold-deep',
+        active ? 'border-gold-deep bg-button text-button-ink' : 'border-ink/10 bg-white text-ink/75 hover:border-gold-deep',
       )}
       onClick={onClick}
     >

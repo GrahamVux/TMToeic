@@ -2,14 +2,16 @@ import { useAuth } from '@/app/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { CornerNotice, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { Badge, Card, Input } from '@/components/ui/Primitives'
-import { applySiteTheme, useSiteSettings, useUpdateSiteSettings } from '@/features/site/site.queries'
+import { SkyBackdrop } from '@/features/site/SkyBackdrop'
+import { skyClockLabel } from '@/features/site/sky'
+import { applySiteTheme, buttonColors, useSiteSettings, useUpdateSiteSettings } from '@/features/site/site.queries'
 import { useSite } from '@/features/site/SiteSettingsProvider'
 import { cn } from '@/lib/cn'
-import type { UpdateSiteSettingsInput } from '@toeic/shared'
+import { DEFAULT_SITE_THEME, type SiteThemeDto, type UpdateSiteSettingsInput } from '@toeic/shared'
 import { useEffect, useRef, useState } from 'react'
 
-const field = 'mt-1 h-10 w-full rounded-xl border border-gold/40 bg-white px-3 text-sm outline-none focus:border-gold-deep focus:ring-2 focus:ring-gold-deep/20'
-const area = 'mt-1 min-h-24 w-full rounded-xl border border-gold/40 bg-white px-3 py-2 text-sm outline-none focus:border-gold-deep focus:ring-2 focus:ring-gold-deep/20'
+const field = 'mt-1 h-10 w-full rounded-xl border border-gold/40 bg-white px-3 text-sm outline-none focus:border-button focus:ring-2 focus:ring-button/30'
+const area = 'mt-1 min-h-24 w-full rounded-xl border border-gold/40 bg-white px-3 py-2 text-sm outline-none focus:border-button focus:ring-2 focus:ring-button/30'
 
 type Section = 'honor' | 'brand' | 'login' | 'contact' | 'theme'
 
@@ -18,7 +20,7 @@ const SECTION_KEYS: Record<Section, (keyof UpdateSiteSettingsInput)[]> = {
   brand: ['brandName', 'slogan', 'logoUrl', 'faviconUrl'],
   login: ['loginHeadline', 'loginIntro'],
   contact: ['phone', 'hours', 'address', 'footerAbout', 'supportHeading', 'supportDetail', 'channelHeading', 'channelDetail', 'legalNote', 'copyright'],
-  theme: ['theme'],
+  theme: ['theme', 'backgroundMode'],
 }
 
 const SAVED: Record<Section, string> = {
@@ -68,6 +70,7 @@ export function SiteSettingsPage() {
       legalNote: remote.data.legalNote,
       copyright: remote.data.copyright,
       theme: { ...remote.data.theme },
+      backgroundMode: remote.data.backgroundMode,
       honorBoardEnabled: remote.data.honorBoardEnabled,
     })
   }, [remote.data])
@@ -117,6 +120,13 @@ export function SiteSettingsPage() {
 
   const previewLogo = (form.logoUrl === undefined ? site.logoUrl : form.logoUrl) || '/logo.png'
   const theme = form.theme ?? site.theme
+  const backgroundMode = form.backgroundMode ?? site.backgroundMode
+  const buttonLook = buttonColors(theme.button ?? DEFAULT_SITE_THEME.button!)
+
+  function paintTheme(next: SiteThemeDto) {
+    set('theme', next)
+    applySiteTheme({ ...site, theme: next, backgroundMode })
+  }
 
   return (
     <div className="space-y-6">
@@ -251,15 +261,36 @@ export function SiteSettingsPage() {
 
       <Card className="p-6">
         <h2 className="serif text-2xl">Màu theme</h2>
-        <p className="mt-1 text-sm text-ink/55">Màu chủ đạo áp dụng nút, menu đang chọn, thanh tiến độ trên toàn cổng.</p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          <ColorField label="Màu chủ đạo" value={theme.primary} onChange={(primary) => set('theme', { ...theme, primary })} />
-          <ColorField label="Màu nhấn nhạt" value={theme.primarySoft} onChange={(primarySoft) => set('theme', { ...theme, primarySoft })} />
-          <ColorField label="Nền trang" value={theme.paper} onChange={(paper) => set('theme', { ...theme, paper })} />
+        <p className="mt-1 text-sm text-ink/55">Màu chủ đạo áp dụng liên kết, banner và thanh tiến độ. Màu nút áp dụng nút chính, mục đang chọn và điểm nhấn.</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {([['fixed', 'Màu cố định'], ['sky', 'Theo thời gian']] as const).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => set('backgroundMode', id)}
+              className={cn('rounded-full px-4 py-2 text-sm font-semibold', backgroundMode === id ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/70')}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="mt-3 text-sm text-ink/60">
+          {backgroundMode === 'sky'
+            ? `Mặt trời đi sát mép trái, mặt trăng đi sát mép phải, đối nhau theo giờ Việt Nam, hiện ${skyClockLabel()}. Nửa trái là nắng vàng nhẹ, nửa phải là ánh trăng.`
+            : 'Toàn trang dùng một màu nền. Đổi màu ở ô Màu nền cố định.'}
+        </p>
+        <div className="relative mt-3 h-64 overflow-hidden rounded-2xl border border-gold/30">
+          {backgroundMode === 'sky' ? <SkyBackdrop embedded /> : <div className="absolute inset-0" style={{ background: theme.paper }} />}
+        </div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <ColorField label="Màu chủ đạo" value={theme.primary} onChange={(primary) => paintTheme({ ...theme, primary })} />
+          <ColorField label="Màu nhấn nhạt" value={theme.primarySoft} onChange={(primarySoft) => paintTheme({ ...theme, primarySoft })} />
+          <ColorField label="Màu nền cố định" value={theme.paper} onChange={(paper) => paintTheme({ ...theme, paper })} />
+          <ColorField label="Màu nút chính" value={theme.button ?? DEFAULT_SITE_THEME.button!} onChange={(button) => paintTheme({ ...theme, button })} />
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <Badge>Xem thử</Badge>
-          <span className="rounded-full bg-gold-deep px-3 py-1 text-xs font-semibold text-white">Nút chính</span>
+          <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: buttonLook.background, color: buttonLook.ink }}>Nút chính</span>
           <span className="rounded-full bg-teal-soft px-3 py-1 text-xs font-semibold text-gold-deep">Nhấn nhạt</span>
         </div>
         <SectionSave section="theme" saving={saving} error={err} onSave={saveSection} />

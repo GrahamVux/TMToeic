@@ -83,7 +83,7 @@ export function ViewAsPage() {
               role === t.role ? 'border-gold-deep bg-teal-soft shadow-sm' : 'border-gold/30 bg-white hover:border-gold-deep/60',
             )}
           >
-            <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-full', role === t.role ? 'bg-gold-deep text-white' : 'bg-teal-soft text-gold-deep')}>
+            <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-full', role === t.role ? 'bg-button text-button-ink' : 'bg-teal-soft text-gold-deep')}>
               <t.icon className="size-5" />
             </span>
             <span>

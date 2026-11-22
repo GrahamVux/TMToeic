@@ -77,7 +77,7 @@ export function TeacherDashboardPage() {
             </Button>
           ) : null}
           {canAssign ? <Link to="/admin/assignments"><Button variant="paper">Giao bài tập</Button></Link> : null}
-          {canAssign ? <Link to="/admin/exams"><Button variant="ghost">Import đề</Button></Link> : null}
+          {canAssign ? <Link to="/admin/exams"><Button variant="navy">Import đề</Button></Link> : null}
         </div>
       </div>
 
@@ -101,7 +101,7 @@ export function TeacherDashboardPage() {
           {chips.map((c) => (
             <button
               key={c.id || 'all'}
-              className={`rounded-full px-4 py-2 text-sm ${status === c.id ? 'bg-gold-deep text-white' : 'bg-paper-2 text-ink/70'}`}
+              className={`rounded-full px-4 py-2 text-sm ${status === c.id ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/70'}`}
               onClick={() => {
                 setStatus(c.id)
                 setPage(1)
@@ -194,7 +194,7 @@ export function TeacherDashboardPage() {
                   .map((n, index, list) => (
                     <span key={n} className="flex items-center gap-1">
                       {index > 0 && list[index - 1] !== n - 1 ? <span className="px-1">…</span> : null}
-                      <button type="button" className={`grid size-8 place-items-center rounded-full text-xs font-semibold ${n === page ? 'bg-gold-deep text-white' : 'bg-paper-2 text-ink/70'}`} onClick={() => setPage(n)}>
+                      <button type="button" className={`grid size-8 place-items-center rounded-full text-xs font-semibold ${n === page ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/70'}`} onClick={() => setPage(n)}>
                         {n}
                       </button>
                     </span>

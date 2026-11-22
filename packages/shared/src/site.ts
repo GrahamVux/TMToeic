@@ -17,13 +17,20 @@ export const siteThemeSchema = z.object({
   primary: hexColor,
   primarySoft: hexColor,
   paper: hexColor,
+  /** Primary buttons. Omitted on older saves, which keep the stored color. */
+  button: hexColor.optional(),
 })
 export type SiteThemeDto = z.infer<typeof siteThemeSchema>
+
+/** `fixed` paints the page with the theme paper color. `sky` follows the clock with a sun and moon. */
+export const backgroundModeSchema = z.enum(['fixed', 'sky'])
+export type BackgroundMode = z.infer<typeof backgroundModeSchema>
 
 export const DEFAULT_SITE_THEME: SiteThemeDto = {
   primary: '#2b8a9c',
   primarySoft: '#b9e4ec',
   paper: '#f7fbfd',
+  button: '#1f7a8c',
 }
 
 export const DEFAULT_SITE_SETTINGS = {
@@ -44,6 +51,7 @@ export const DEFAULT_SITE_SETTINGS = {
   legalNote: 'Mã bảo mật lớp: TM-K42-INTERNAL • Hệ thống phân tích chuẩn ETS',
   copyright: '© 2026 MR. MINH TOEIC Academy • Cổng học viên nội bộ lớp học.',
   theme: DEFAULT_SITE_THEME,
+  backgroundMode: 'fixed' as BackgroundMode,
   logoUrl: null as string | null,
   faviconUrl: null as string | null,
   /** Weekly honor boards on the student home. Admin can hide the whole block. */
@@ -70,6 +78,7 @@ export const updateSiteSettingsSchema = z.object({
   legalNote: text(0, 200).optional(),
   copyright: text(2, 200).optional(),
   theme: siteThemeSchema.optional(),
+  backgroundMode: backgroundModeSchema.optional(),
   /** data URL to replace; null clears back to the default logo. */
   logoUrl: z.union([dataUrl, z.null()]).optional(),
   faviconUrl: z.union([dataUrl, z.null()]).optional(),

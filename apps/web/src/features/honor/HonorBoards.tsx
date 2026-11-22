@@ -172,7 +172,7 @@ export function StaffHonorBoards({
 
 function CenterRow({ row }: { row: HonorCenterEntry }) {
   return (
-    <li className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-3 ${row.you || row.yours ? 'bg-gold/15' : 'bg-paper'}`}>
+    <li className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-3 ${row.you || row.yours ? 'bg-button-soft' : 'bg-paper'}`}>
       <div className="flex min-w-0 items-center gap-3">
         {row.place <= 3 ? <PodiumMark place={row.place} /> : <span className="w-8 text-center text-sm font-semibold text-ink/45">{row.place}</span>}
         <div className="min-w-0">

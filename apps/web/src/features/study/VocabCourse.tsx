@@ -20,7 +20,7 @@ export function VocabNav({ current }: { current: 'learn' | 'progress' | 'mine' |
   return (
     <div className="flex flex-wrap gap-2">
       {items.map((item) => (
-        <Link key={item.id} to={item.to} className={item.id === current ? 'rounded-full bg-gold-deep px-4 py-2 text-sm font-semibold text-white' : 'rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink shadow-[0_1px_0_rgba(30,51,60,0.04)]'}>
+        <Link key={item.id} to={item.to} className={item.id === current ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink shadow-[0_1px_0_rgba(30,51,60,0.04)]'}>
           {item.label}
         </Link>
       ))}

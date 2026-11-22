@@ -77,7 +77,7 @@ export function BugReportsPage() {
             }}
             className={
               status === c.id
-                ? 'rounded-full bg-gold-deep px-3 py-1.5 text-xs font-semibold text-white'
+                ? 'rounded-full bg-button px-3 py-1.5 text-xs font-semibold text-button-ink'
                 : 'rounded-full border border-gold/40 bg-white px-3 py-1.5 text-xs font-semibold text-ink/70 hover:bg-teal-soft'
             }
           >
@@ -129,7 +129,7 @@ export function BugReportsPage() {
               <label className="mt-4 block text-xs font-medium text-ink/60">
                 Ghi chú phản hồi (học viên sẽ thấy)
                 <textarea
-                  className="mt-1 min-h-16 w-full rounded-xl border border-gold/40 bg-white px-3 py-2 text-sm outline-none focus:border-gold-deep"
+                  className="mt-1 min-h-16 w-full rounded-xl border border-gold/40 bg-white px-3 py-2 text-sm outline-none focus:border-button"
                   value={notes[item.id] ?? item.adminNote ?? ''}
                   onChange={(e) => setNotes((n) => ({ ...n, [item.id]: e.target.value }))}
                   placeholder="Đã sửa / cần thêm thông tin…"

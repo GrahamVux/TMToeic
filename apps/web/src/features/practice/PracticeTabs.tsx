@@ -19,7 +19,7 @@ export function PracticeTabs() {
           className={({ isActive }) =>
             cn(
               'min-w-[11.5rem] shrink-0 rounded-2xl px-4 py-3 text-left',
-              isActive ? 'bg-gold-deep text-white shadow-[0_8px_20px_rgba(43,138,156,0.25)]' : 'border border-ink/10 bg-white text-ink hover:border-gold-deep',
+              isActive ? 'bg-button text-button-ink shadow-[0_8px_20px_color-mix(in_srgb,var(--color-button)_35%,transparent)]' : 'border border-ink/10 bg-white text-ink hover:border-button',
             )
           }
         >
@@ -37,7 +37,7 @@ export function FilterChip({ active, children, onClick }: { active: boolean; chi
       type="button"
       className={cn(
         'rounded-full px-3 py-1.5 text-sm font-semibold',
-        active ? 'bg-gold-deep text-white' : 'border border-ink/10 bg-white text-ink/75 hover:border-gold-deep',
+        active ? 'bg-button text-button-ink' : 'border border-ink/10 bg-white text-ink/75 hover:border-gold-deep',
       )}
       aria-pressed={active}
       onClick={onClick}
