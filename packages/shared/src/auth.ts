@@ -46,6 +46,7 @@ export const PASSWORD_MIN_LENGTH = 10
 export const AVATAR_MAX_BYTES = 4 * 1024 * 1024
 export const AVATAR_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
 export type AccountAvatarDto = Pick<UserDto, 'id' | 'avatarUrl'>
+export type AccountFrameDto = Pick<UserDto, 'id' | 'avatarFrame'>
 
 /** Password given to every account created by an admin or teacher. The user must change it at first login. */
 export const DEFAULT_NEW_ACCOUNT_PASSWORD = '123456'
@@ -161,6 +162,8 @@ export type UserDto = {
   role: Role
   status: UserStatus
   avatarUrl: string | null
+  avatarFrame: string
+  rewardPoints: number
   targetScore: number | null
   /** 2-skill or 4-skill band the student chose; null when no goal is set. */
   goal: GoalDto

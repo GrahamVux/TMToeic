@@ -54,11 +54,15 @@ export const saveReadingMarkSchema = z
   .refine((value) => Boolean(value.color) || Boolean(value.note?.trim()), 'Chọn màu hoặc ghi chú')
 export type SaveReadingMarkInput = z.infer<typeof saveReadingMarkSchema>
 
+export const NOTEBOOK_CARD_COLORS = ['default', 'rose', 'amber', 'emerald', 'sky', 'violet'] as const
+export type NotebookCardColor = (typeof NOTEBOOK_CARD_COLORS)[number]
+
 export type VocabEntryDto = {
   id: string
   word: string
   partOfSpeech: string
   meaning: string
+  example: string
   set: { topic: string; title: string; unit: number } | null
 }
 
@@ -76,6 +80,83 @@ export type VocabListDto = {
   total: number
   items: VocabEntryDto[]
 }
+
+export type VocabUnitWordDto = {
+  id: string
+  word: string
+  partOfSpeech: string
+  meaning: string
+  example: string
+  displayOrder: number
+  savedInNotebook: boolean
+}
+
+export type VocabUnitDetailDto = {
+  setId: string
+  topic: string
+  title: string
+  unit: number
+  items: VocabUnitWordDto[]
+}
+
+export type VocabPreviewRowDto = {
+  unit: number
+  word: string
+  partOfSpeech: string
+  meaning: string
+  example: string
+  status: 'NEW' | 'UPDATE'
+}
+
+export type VocabPreviewDto = {
+  suggestedTitle: string | null
+  suggestedTopic: string | null
+  structured: boolean
+  skipped: number
+  rows: VocabPreviewRowDto[]
+}
+
+export const vocabStageRowSchema = z.object({
+  unit: z.number().int().min(1).max(500),
+  word: z.string().trim().min(1, 'Nhập từ vựng').max(80),
+  partOfSpeech: z.string().trim().min(1, 'Nhập loại từ').max(40),
+  meaning: z.string().trim().min(1, 'Nhập nghĩa').max(500),
+  example: z.string().trim().max(600).optional(),
+})
+export type VocabStageRowInput = z.infer<typeof vocabStageRowSchema>
+
+export const commitVocabSchema = z.discriminatedUnion('mode', [
+  z.object({
+    mode: z.literal('new'),
+    topic: vocabTopic,
+    title: vocabTitle,
+    rows: z.array(vocabStageRowSchema).min(1, 'Cần ít nhất 1 từ vựng').max(2000),
+  }),
+  z.object({
+    mode: z.literal('existing'),
+    setId: z.uuid('Hãy chọn một bộ từ'),
+    rows: z.array(vocabStageRowSchema).min(1, 'Cần ít nhất 1 từ vựng').max(2000),
+  }),
+])
+export type CommitVocabInput = z.infer<typeof commitVocabSchema>
+
+export const updateVocabEntrySchema = z.object({
+  word: z.string().trim().min(1, 'Nhập từ vựng').max(80),
+  partOfSpeech: z.string().trim().min(1, 'Nhập loại từ').max(40),
+  meaning: z.string().trim().min(1, 'Nhập nghĩa').max(500),
+  example: z.string().trim().max(600).optional(),
+  unit: z.number().int().min(1).max(500).optional(),
+})
+export type UpdateVocabEntryInput = z.infer<typeof updateVocabEntrySchema>
+
+export const createVocabEntrySchema = z.object({
+  unit: z.number().int().min(1).max(500),
+  word: z.string().trim().min(1, 'Nhập từ vựng').max(80),
+  partOfSpeech: z.string().trim().min(1, 'Nhập loại từ').max(40),
+  meaning: z.string().trim().min(1, 'Nhập nghĩa').max(500),
+  example: z.string().trim().max(600).optional(),
+})
+export type CreateVocabEntryInput = z.infer<typeof createVocabEntrySchema>
 
 /** One uploaded file is split into units of this many words, in file order. */
 export const VOCAB_UNIT_SIZE = 30
@@ -122,6 +203,11 @@ export type NotebookEntryDto = {
   word: string
   partOfSpeech: string | null
   meaning: string | null
+  example: string | null
+  topic: string
+  unit: number | null
+  color: NotebookCardColor
+  vocabEntryId: string | null
   source: 'CATALOG' | 'EXAM' | 'MANUAL'
   /** True when this card is due for review. Cards without a meaning are never due. */
   due: boolean
@@ -141,12 +227,21 @@ export type SaveNotebookResult = {
   entries: NotebookEntryDto[]
 }
 
+export type BatchSaveNotebookResult = {
+  added: number
+  alreadySaved: number
+}
+
 export type FlashcardDto = {
   kind: 'CATALOG' | 'NOTEBOOK'
   id: string
   word: string
   partOfSpeech: string
   meaning: string
+  example: string
+  topic?: string | null
+  unit?: number | null
+  savedInNotebook?: boolean
 }
 
 export type FlashcardDeckDto = {
@@ -189,16 +284,42 @@ export const saveNotebookSchema = z
     vocabEntryId: z.uuid().optional(),
     partOfSpeech: z.string().trim().max(40).optional(),
     meaning: z.string().trim().max(500).optional(),
+    example: z.string().trim().max(600).optional(),
+    topic: z.string().trim().max(80).optional(),
+    unit: z.number().int().min(1).max(500).nullable().optional(),
+    color: z.enum(NOTEBOOK_CARD_COLORS).optional(),
     /** Student typed this card themselves, with their own word type and meaning. */
     manual: z.boolean().optional(),
   })
   .refine((value) => Boolean(value.word || value.vocabEntryId), 'Chọn một từ')
 export type SaveNotebookInput = z.infer<typeof saveNotebookSchema>
 
-export const updateNotebookSchema = z.object({
-  partOfSpeech: z.string().trim().min(1, 'Nhập loại từ').max(40),
-  meaning: z.string().trim().min(1, 'Nhập nghĩa').max(500),
+export const batchSaveNotebookSchema = z.object({
+  vocabEntryIds: z.array(z.uuid()).min(1).max(200),
 })
+export type BatchSaveNotebookInput = z.infer<typeof batchSaveNotebookSchema>
+
+export const updateNotebookSchema = z
+  .object({
+    word: z.string().trim().min(1, 'Nhập từ vựng').max(80).optional(),
+    partOfSpeech: z.string().trim().max(40).optional(),
+    meaning: z.string().trim().max(500).optional(),
+    example: z.string().trim().max(600).optional(),
+    topic: z.string().trim().max(80).optional(),
+    unit: z.number().int().min(1).max(500).nullable().optional(),
+    color: z.enum(NOTEBOOK_CARD_COLORS).optional(),
+  })
+  .refine(
+    (value) =>
+      value.word !== undefined ||
+      value.partOfSpeech !== undefined ||
+      value.meaning !== undefined ||
+      value.example !== undefined ||
+      value.topic !== undefined ||
+      value.unit !== undefined ||
+      value.color !== undefined,
+    'Cần ít nhất một thông tin để cập nhật',
+  )
 export type UpdateNotebookInput = z.infer<typeof updateNotebookSchema>
 
 export const reviewCardSchema = z.object({
@@ -207,6 +328,49 @@ export const reviewCardSchema = z.object({
   result: z.enum(['AGAIN', 'GOOD']),
 })
 export type ReviewCardInput = z.infer<typeof reviewCardSchema>
+
+export const VOCAB_GAME_DAILY_XP_CAP = 40
+export const VOCAB_GAME_KINDS = ['MATCH', 'QUIZ', 'SPELL'] as const
+export type VocabGameKind = (typeof VOCAB_GAME_KINDS)[number]
+
+export const completeVocabGameSchema = z.object({
+  gameKind: z.enum(VOCAB_GAME_KINDS),
+  deckLabel: z.string().trim().min(1).max(160),
+  score: z.number().int().min(0).max(500),
+  totalItems: z.number().int().min(1).max(100),
+  reviewedCards: z
+    .array(
+      z.object({
+        kind: z.enum(['CATALOG', 'NOTEBOOK']),
+        id: z.uuid(),
+        result: z.enum(['AGAIN', 'GOOD']),
+      }),
+    )
+    .max(60)
+    .default([]),
+})
+export type CompleteVocabGameInput = z.infer<typeof completeVocabGameSchema>
+
+export type CompleteVocabGameResultDto = {
+  xpAwarded: number
+  todayGameXp: number
+  dailyCap: number
+  reviewedCount: number
+}
+
+export type VocabGameStatusDto = {
+  todayGameXp: number
+  dailyCap: number
+  recent: Array<{
+    id: string
+    gameKind: VocabGameKind
+    deckLabel: string
+    score: number
+    totalItems: number
+    xpAwarded: number
+    playedAt: string
+  }>
+}
 
 export const grammarLessonSchema = z.object({
   title: z.string().trim().min(3, 'Tiêu đề quá ngắn').max(200),

@@ -1,23 +1,54 @@
 import { z } from 'zod'
+import { AVATAR_FRAME_IDS } from './frames'
 
-/** EXP from the first time a sentence pattern is answered correctly, and the rank ladder that EXP climbs. */
+/** EXP from the first time a sentence pattern is answered correctly, plus Streak bonus and reward cycles. */
 
 export const XP_PER_CORRECT = 1
 export const XP_PER_RANK = 300
-/** Yearly EXP required before a student can hold 1st place on the center board. */
+/** Yearly EXP constants kept for legacy callers. */
 export const CENTER_TOP1_XP = 2000
-/** Yearly EXP required before a student can hold 2nd or 3rd place on the center board. */
 export const CENTER_PODIUM_XP = 1500
-export const HONOR_BOARD_SIZE = 5
+export const HONOR_TOP_SIZE = 10
+export const HONOR_BOARD_SIZE = HONOR_TOP_SIZE
+
+export const HONOR_PERIODS = ['week', 'month', 'year'] as const
+export type HonorPeriod = (typeof HONOR_PERIODS)[number]
+
+export const HONOR_SCOPES = ['class', 'center'] as const
+export type HonorScope = (typeof HONOR_SCOPES)[number]
+
+export const CENTER_MIN_XP: Record<HonorPeriod, number> = {
+  week: 50,
+  month: 200,
+  year: 1000,
+}
+
+export const STREAK_MILESTONES = [
+  { days: 7, frameId: 'streak-7', points: 30 },
+  { days: 30, frameId: 'streak-30', points: 100 },
+  { days: 100, frameId: 'streak-100', points: 300 },
+] as const
 
 /** EXP for a set of sentence patterns that were correct for the first time. */
 export function xpForCorrect(correct: number): number {
   return Math.max(0, Math.floor(correct)) * XP_PER_CORRECT
 }
 
+/** Bonus EXP from the student's active learning streak for the given leaderboard cycle. */
+export function streakBonusXp(streakDays: number, period: HonorPeriod): number {
+  const safe = Math.max(0, Math.floor(Number.isFinite(streakDays) ? streakDays : 0))
+  if (safe <= 0) return 0
+  if (period === 'week') {
+    return Math.min(safe, 7) * 5 + (safe >= 7 ? 20 : 0)
+  }
+  if (period === 'month') {
+    return Math.min(safe, 30) * 5 + (safe >= 7 ? 20 : 0) + (safe >= 30 ? 50 : 0)
+  }
+  return Math.min(safe, 100) * 5 + (safe >= 7 ? 20 : 0) + (safe >= 30 ? 50 : 0) + (safe >= 100 ? 150 : 0)
+}
+
 /**
- * Center-board places. 1st place needs CENTER_TOP1_XP. 2nd and 3rd need CENTER_PODIUM_XP.
- * Later places are open at any EXP. Empty podium slots stay empty, so the next place number can skip ahead.
+ * Legacy helper kept for backward compatibility.
  */
 export function assignCenterPlaces<T extends { yearlyXp: number; name: string }>(rows: readonly T[]): Array<T & { place: number }> {
   const sorted = [...rows].sort((a, b) => b.yearlyXp - a.yearlyXp || a.name.localeCompare(b.name, 'vi'))
@@ -32,6 +63,31 @@ export function assignCenterPlaces<T extends { yearlyXp: number; name: string }>
   take(1, CENTER_TOP1_XP)
   take(2, CENTER_PODIUM_XP)
   take(3, CENTER_PODIUM_XP)
+  let place = 4
+  sorted.forEach((row, index) => {
+    if (used.has(index)) return
+    placed.push({ ...row, place })
+    place += 1
+  })
+  return placed.sort((a, b) => a.place - b.place)
+}
+
+/**
+ * Assigns leaderboard ranks where Top 1-3 require `minPodiumXp` (empty podium spots stay open; remaining students start at #4).
+ */
+export function assignPodiumPlaces<T extends { periodXp: number; name: string }>(
+  rows: readonly T[],
+  minPodiumXp: number,
+): Array<T & { place: number }> {
+  const sorted = [...rows].sort((a, b) => b.periodXp - a.periodXp || a.name.localeCompare(b.name, 'vi'))
+  const used = new Set<number>()
+  const placed: Array<T & { place: number }> = []
+  for (const place of [1, 2, 3] as const) {
+    const index = sorted.findIndex((row, i) => !used.has(i) && row.periodXp >= minPodiumXp)
+    if (index < 0) continue
+    used.add(index)
+    placed.push({ ...sorted[index]!, place })
+  }
   let place = 4
   sorted.forEach((row, index) => {
     if (used.has(index)) return
@@ -98,57 +154,221 @@ export function rankFromXp(xp: number): HonorRankDto {
   }
 }
 
-export type HonorStudentEntry = {
-  place: number
-  name: string
-  avatarUrl: string | null
-  weeklyXp: number
-  yearlyXp: number
-  rank: HonorRankDto
-  you: boolean
+export type RewardTierConfig = {
+  place: 1 | 2 | 3
+  points: number
+  frameId: (typeof AVATAR_FRAME_IDS)[number]
 }
 
-/** One student on the center-wide board, ranked by EXP since 1 January against students from every class. */
-export type HonorCenterEntry = {
+export type HonorRewardConfig = Record<HonorScope, Record<HonorPeriod, RewardTierConfig[]>>
+
+export const DEFAULT_HONOR_REWARD_CONFIG: HonorRewardConfig = {
+  class: {
+    week: [
+      { place: 1, points: 100, frameId: 'class-top1' },
+      { place: 2, points: 60, frameId: 'class-top2' },
+      { place: 3, points: 40, frameId: 'class-top3' },
+    ],
+    month: [
+      { place: 1, points: 300, frameId: 'class-top1' },
+      { place: 2, points: 200, frameId: 'class-top2' },
+      { place: 3, points: 120, frameId: 'class-top3' },
+    ],
+    year: [
+      { place: 1, points: 1000, frameId: 'class-top1' },
+      { place: 2, points: 600, frameId: 'class-top2' },
+      { place: 3, points: 400, frameId: 'class-top3' },
+    ],
+  },
+  center: {
+    week: [
+      { place: 1, points: 250, frameId: 'center-top1' },
+      { place: 2, points: 150, frameId: 'center-top2' },
+      { place: 3, points: 100, frameId: 'center-top3' },
+    ],
+    month: [
+      { place: 1, points: 800, frameId: 'center-top1' },
+      { place: 2, points: 500, frameId: 'center-top2' },
+      { place: 3, points: 300, frameId: 'center-top3' },
+    ],
+    year: [
+      { place: 1, points: 2500, frameId: 'center-top1' },
+      { place: 2, points: 1500, frameId: 'center-top2' },
+      { place: 3, points: 1000, frameId: 'center-top3' },
+    ],
+  },
+}
+
+const tierConfigSchema = z.object({
+  place: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  points: z.number().int().min(0).max(100_000),
+  frameId: z.enum(AVATAR_FRAME_IDS),
+})
+
+const periodConfigSchema = z.array(tierConfigSchema).length(3)
+
+export const honorRewardConfigSchema = z.object({
+  class: z.object({ week: periodConfigSchema, month: periodConfigSchema, year: periodConfigSchema.optional() }),
+  center: z.object({ week: periodConfigSchema, month: periodConfigSchema, year: periodConfigSchema.optional() }),
+})
+
+function cloneDefaultConfig(): HonorRewardConfig {
+  return {
+    class: {
+      week: DEFAULT_HONOR_REWARD_CONFIG.class.week.map((t) => ({ ...t })),
+      month: DEFAULT_HONOR_REWARD_CONFIG.class.month.map((t) => ({ ...t })),
+      year: DEFAULT_HONOR_REWARD_CONFIG.class.year.map((t) => ({ ...t })),
+    },
+    center: {
+      week: DEFAULT_HONOR_REWARD_CONFIG.center.week.map((t) => ({ ...t })),
+      month: DEFAULT_HONOR_REWARD_CONFIG.center.month.map((t) => ({ ...t })),
+      year: DEFAULT_HONOR_REWARD_CONFIG.center.year.map((t) => ({ ...t })),
+    },
+  }
+}
+
+/** Merges stored JSONB config safely with defaults so legacy null/partial (2-period) rows never break. */
+export function normalizeHonorRewardConfig(raw: unknown): HonorRewardConfig {
+  const parsed = honorRewardConfigSchema.safeParse(raw)
+  if (!parsed.success) {
+    return cloneDefaultConfig()
+  }
+  const sortTiers = (list: RewardTierConfig[]) => [1, 2, 3].map((p) => ({ ...(list.find((t) => t.place === p) ?? list[p - 1]!) }))
+  return {
+    class: {
+      week: sortTiers(parsed.data.class.week),
+      month: sortTiers(parsed.data.class.month),
+      year: sortTiers(parsed.data.class.year ?? DEFAULT_HONOR_REWARD_CONFIG.class.year),
+    },
+    center: {
+      week: sortTiers(parsed.data.center.week),
+      month: sortTiers(parsed.data.center.month),
+      year: sortTiers(parsed.data.center.year ?? DEFAULT_HONOR_REWARD_CONFIG.center.year),
+    },
+  }
+}
+
+export const adjustUserPointsSchema = z.object({
+  userId: z.string().uuid(),
+  delta: z.number().int().min(-100_000).max(100_000).refine((v) => v !== 0, 'Số điểm thay đổi phải khác 0'),
+  reason: z.string().trim().min(2, 'Nhập lý do tối thiểu 2 ký tự').max(200),
+})
+export type AdjustUserPointsInput = z.infer<typeof adjustUserPointsSchema>
+
+export const earlySettleHonorSchema = z.object({
+  scope: z.enum(HONOR_SCOPES),
+  period: z.enum(HONOR_PERIODS),
+  classId: z.string().uuid().optional(),
+})
+export type EarlySettleHonorInput = z.infer<typeof earlySettleHonorSchema>
+
+export type HonorEntryDto = {
   place: number
   name: string
   avatarUrl: string | null
+  avatarFrame: string
   className: string
-  weeklyXp: number
-  yearlyXp: number
+  periodXp: number
+  questionXp: number
+  streakDays: number
+  streakBonusXp: number
+  lifetimeXp: number
   rank: HonorRankDto
   you: boolean
-  /** True when this student sits in a class the viewer manages. */
   yours: boolean
+}
+
+export type HonorScopedPeriodDto = {
+  entries: HonorEntryDto[]
+  you: HonorEntryDto | null
+  rivals: HonorEntryDto[]
+  participants: number
+  minPodiumXp: number
+  endsAt: string
 }
 
 export type HonorBoardDto = {
   enabled: boolean
   weekStart: string
-  year: number
+  monthKey: string
+  yearKey: string
   className: string | null
-  me: { weeklyXp: number; yearlyXp: number; rank: HonorRankDto }
-  classBoard: { entries: HonorStudentEntry[]; you: HonorStudentEntry | null; participants: number; resetAt: string | null }
-  centerBoard: HonorCenterEntry[]
+  me: {
+    weeklyXp: number
+    monthlyXp: number
+    yearlyXp: number
+    lifetimeXp: number
+    streakDays: number
+    rank: HonorRankDto
+    rewardPoints: number
+    avatarFrame: string
+  }
+  boards: {
+    class: Record<HonorPeriod, HonorScopedPeriodDto>
+    center: Record<HonorPeriod, HonorScopedPeriodDto>
+  }
+  rewardConfig: HonorRewardConfig
 }
 
-/** One class roster on the staff honor page. Student names stay inside this class. */
 export type StaffClassBoardDto = {
   classId: string
   className: string
-  entries: HonorStudentEntry[]
-  participants: number
-  /** ISO time of the last admin reset. Null means the board still starts on 1 January. */
-  resetAt: string | null
+  boards: Record<HonorPeriod, { entries: HonorEntryDto[]; participants: number; endsAt: string }>
 }
 
-/** Teachers receive only the classes they manage. Admins receive every class. Every board ranks by this year's EXP. An admin can restart one class board. */
+export type SettlementWinnerDto = {
+  place: 1 | 2 | 3
+  userId: string
+  name: string
+  periodXp: number
+  points: number
+  frameId: string
+}
+
+export type HonorSettlementDto = {
+  id: string
+  cycleKey: string
+  scopeKey: string
+  period: HonorPeriod
+  classId: string | null
+  className: string | null
+  winners: SettlementWinnerDto[]
+  triggeredBy: string | null
+  settledAt: string
+}
+
 export type StaffHonorDto = {
   enabled: boolean
   weekStart: string
-  year: number
+  monthKey: string
+  yearKey: string
   classes: StaffClassBoardDto[]
-  centerBoard: HonorCenterEntry[]
+  center: Record<HonorPeriod, { entries: HonorEntryDto[]; participants: number; minPodiumXp: number; endsAt: string }>
+  rewardConfig: HonorRewardConfig
+  settlements: HonorSettlementDto[]
+}
+
+export type UnlockedFrameDto = {
+  frameId: string
+  unlockedAt: string
+  expiresAt: string | null
+}
+
+export type PointLedgerSource = 'AUTO_WEEK' | 'AUTO_MONTH' | 'AUTO_YEAR' | 'STREAK' | 'ADMIN'
+
+export type PointLedgerEntryDto = {
+  id: string
+  delta: number
+  reason: string
+  source: PointLedgerSource
+  createdAt: string
+}
+
+export type AccountRewardsDto = {
+  rewardPoints: number
+  avatarFrame: string
+  unlockedFrames: UnlockedFrameDto[]
+  ledger: PointLedgerEntryDto[]
 }
 
 export const createClassBodySchema = z.object({
@@ -181,6 +401,7 @@ export type ClassTeacherDto = {
   id: string
   fullName: string
   avatarUrl: string | null
+  avatarFrame: string
 }
 
 export type ClassSummaryDto = {
