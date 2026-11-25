@@ -19,12 +19,14 @@ import { StaffProfilePage } from '@/features/settings/AvatarSettings'
 import { FlashcardPage } from '@/features/study/FlashcardPage'
 import { GrammarLessonPage } from '@/features/study/GrammarLessonPage'
 import { StudyPage } from '@/features/study/StudyPage'
+import { VocabGamesPage } from '@/features/study/VocabGamesPage'
 import { AdminStudyPage } from '@/features/teacher/AdminStudyPage'
 import { ExamBankPage } from '@/features/teacher/ExamBankPage'
 import { ReportsPage } from '@/features/teacher/ReportsPage'
 import { StudentDetailPage } from '@/features/teacher/StudentDetailPage'
 import { BugReportsPage } from '@/features/bugs/BugReportsPage'
 import { StaffHonorPage } from '@/features/honor/StaffHonorPage'
+import { StudentHonorPage } from '@/features/honor/StudentHonorPage'
 import { SiteSettingsPage } from '@/features/teacher/SiteSettingsPage'
 import { TeacherAssignmentsPage } from '@/features/teacher/TeacherAssignmentsPage'
 import { TeacherDashboardPage } from '@/features/teacher/TeacherDashboardPage'
@@ -91,11 +93,13 @@ function AppRoutes() {
         <Route path="/study" element={<StudyPage />} />
         <Route path="/study/notebook" element={<NotebookPage />} />
         <Route path="/study/flashcards" element={<FlashcardPage />} />
+        <Route path="/study/games" element={<VocabGamesPage />} />
         <Route path="/grammar/:topicId" element={<GrammarLessonPage />} />
         <Route path="/practice" element={<PracticePage />} />
         <Route path="/practice/listening" element={<ListeningDrillsPage />} />
         <Route path="/practice/reading" element={<ReadingDrillsPage />} />
         <Route path="/assignments" element={<AssignmentsPage />} />
+        <Route path="/honor" element={<StudentHonorPage />} />
         <Route path="/progress" element={<ProgressPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/attempts/:attemptId/play" element={<ExamPlayerPage />} />

@@ -21,6 +21,7 @@ type AuthState = {
   /** Replace the cached user after the server returned a fresh copy (e.g. goal changed). */
   updateUser: (user: UserDto) => void
   avatarChanged: (avatar: AccountAvatarDto) => void
+  frameChanged: (frameId: string) => void
   /** Admin only: show the app exactly as this teacher or student sees it, read-only. */
   startViewAs: (userId: string) => Promise<UserDto>
   /** Leave the preview and return to the admin's own screens. */
@@ -38,14 +39,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const avatar = useQuery({
     queryKey: ['account-avatar', user?.id],
     enabled: !!user,
-    initialData: user?.avatarUrl,
+    initialData: user ? { avatarUrl: user.avatarUrl, avatarFrame: user.avatarFrame, rewardPoints: user.rewardPoints } : undefined,
     refetchOnWindowFocus: 'always',
     queryFn: async () => {
       const session = await api<SessionDto>('/auth/me')
-      return session.user.id === user?.id ? session.user.avatarUrl : null
+      return session.user.id === user?.id
+        ? { avatarUrl: session.user.avatarUrl, avatarFrame: session.user.avatarFrame, rewardPoints: session.user.rewardPoints }
+        : null
     },
   })
-  const currentUser = useMemo(() => user && avatar.data !== undefined ? { ...user, avatarUrl: avatar.data } : user, [user, avatar.data])
+  const currentUser = useMemo(
+    () =>
+      user && avatar.data
+        ? { ...user, avatarUrl: avatar.data.avatarUrl, avatarFrame: avatar.data.avatarFrame, rewardPoints: avatar.data.rewardPoints }
+        : user,
+    [user, avatar.data],
+  )
 
   const refreshAvatarLists = useCallback(() => {
     for (const key of avatarListKeys) {
@@ -70,10 +79,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const avatarChanged = useCallback(({ id, avatarUrl }: AccountAvatarDto) => {
     const queryKey = ['account-avatar', id]
     void queryClient.cancelQueries({ queryKey })
-    queryClient.setQueryData(queryKey, avatarUrl)
+    queryClient.setQueryData(queryKey, (old: { avatarUrl: string | null; avatarFrame: string; rewardPoints: number } | undefined) => ({
+      avatarUrl,
+      avatarFrame: old?.avatarFrame ?? 'none',
+      rewardPoints: old?.rewardPoints ?? 0,
+    }))
     setUser((old) => old?.id === id ? { ...old, avatarUrl } : old)
     refreshAvatarLists()
     channel.current?.postMessage(id)
+  }, [queryClient, refreshAvatarLists])
+
+  const frameChanged = useCallback((avatarFrame: string) => {
+    setUser((old) => {
+      if (!old) return old
+      const queryKey = ['account-avatar', old.id]
+      void queryClient.cancelQueries({ queryKey })
+      queryClient.setQueryData(queryKey, (prev: { avatarUrl: string | null; avatarFrame: string; rewardPoints: number } | undefined) => ({
+        avatarUrl: prev?.avatarUrl ?? old.avatarUrl,
+        avatarFrame,
+        rewardPoints: prev?.rewardPoints ?? old.rewardPoints,
+      }))
+      channel.current?.postMessage(old.id)
+      return { ...old, avatarFrame }
+    })
+    refreshAvatarLists()
   }, [queryClient, refreshAvatarLists])
 
   const apply = useCallback((s: SessionDto) => {
@@ -181,8 +210,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [queryClient])
 
   const value = useMemo<AuthState>(
-    () => ({ status, user: currentUser, viewing, login, recoverAdmin, logout, changePassword, updateUser, avatarChanged, startViewAs, stopViewAs }),
-    [status, currentUser, viewing, login, recoverAdmin, logout, changePassword, updateUser, avatarChanged, startViewAs, stopViewAs],
+    () => ({ status, user: currentUser, viewing, login, recoverAdmin, logout, changePassword, updateUser, avatarChanged, frameChanged, startViewAs, stopViewAs }),
+    [status, currentUser, viewing, login, recoverAdmin, logout, changePassword, updateUser, avatarChanged, frameChanged, startViewAs, stopViewAs],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

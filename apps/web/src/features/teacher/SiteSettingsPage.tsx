@@ -1,13 +1,16 @@
 import { useAuth } from '@/app/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { CornerNotice, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
+import { DarkModeSwitch } from '@/components/ui/DarkModeSwitch'
+import { FilePick } from '@/components/ui/FilePick'
 import { Badge, Card, Input } from '@/components/ui/Primitives'
 import { SkyBackdrop } from '@/features/site/SkyBackdrop'
+import { ThemeBackdrop } from '@/features/site/ThemeBackdrop'
 import { skyClockLabel } from '@/features/site/sky'
 import { applySiteTheme, buttonColors, useSiteSettings, useUpdateSiteSettings } from '@/features/site/site.queries'
-import { useSite } from '@/features/site/SiteSettingsProvider'
+import { useColorMode, useSite } from '@/features/site/SiteSettingsProvider'
 import { cn } from '@/lib/cn'
-import { DEFAULT_SITE_THEME, type SiteThemeDto, type UpdateSiteSettingsInput } from '@toeic/shared'
+import { DEFAULT_SITE_THEME, resolveThemePreset, THEME_PRESETS, type SiteThemeDto, type ThemePresetId, type UpdateSiteSettingsInput } from '@toeic/shared'
 import { useEffect, useRef, useState } from 'react'
 
 const field = 'mt-1 h-10 w-full rounded-xl border border-gold/40 bg-white px-3 text-sm outline-none focus:border-button focus:ring-2 focus:ring-button/30'
@@ -20,7 +23,7 @@ const SECTION_KEYS: Record<Section, (keyof UpdateSiteSettingsInput)[]> = {
   brand: ['brandName', 'slogan', 'logoUrl', 'faviconUrl'],
   login: ['loginHeadline', 'loginIntro'],
   contact: ['phone', 'hours', 'address', 'footerAbout', 'supportHeading', 'supportDetail', 'channelHeading', 'channelDetail', 'legalNote', 'copyright'],
-  theme: ['theme', 'backgroundMode'],
+  theme: ['theme', 'backgroundMode', 'themePreset'],
 }
 
 const SAVED: Record<Section, string> = {
@@ -44,6 +47,7 @@ export function SiteSettingsPage() {
   const { user } = useAuth()
   const remote = useSiteSettings()
   const site = useSite()
+  const { colorMode, toggleColorMode } = useColorMode()
   const save = useUpdateSiteSettings()
   const [form, setForm] = useState<UpdateSiteSettingsInput>({})
   const [notice, setNotice] = useState<CornerNoticeState | null>(null)
@@ -71,6 +75,7 @@ export function SiteSettingsPage() {
       copyright: remote.data.copyright,
       theme: { ...remote.data.theme },
       backgroundMode: remote.data.backgroundMode,
+      themePreset: remote.data.themePreset,
       honorBoardEnabled: remote.data.honorBoardEnabled,
     })
   }, [remote.data])
@@ -109,7 +114,7 @@ export function SiteSettingsPage() {
     setSaving(section)
     try {
       const next = await save.mutateAsync(patch)
-      applySiteTheme(next)
+      applySiteTheme(next, colorMode)
       setNotice(flashNotice(SAVED[section]))
     } catch {
       setErr({ section, text: 'Không lưu được. Kiểm tra ảnh (định dạng/kích thước) và các ô bắt buộc.' })
@@ -121,11 +126,19 @@ export function SiteSettingsPage() {
   const previewLogo = (form.logoUrl === undefined ? site.logoUrl : form.logoUrl) || '/logo.png'
   const theme = form.theme ?? site.theme
   const backgroundMode = form.backgroundMode ?? site.backgroundMode
-  const buttonLook = buttonColors(theme.button ?? DEFAULT_SITE_THEME.button!)
+  const themePreset = (form.themePreset ?? site.themePreset ?? 'classic') as ThemePresetId
+  const resolvedPreset = resolveThemePreset(themePreset)
+  const buttonLook = buttonColors(
+    backgroundMode === 'gradient'
+      ? colorMode === 'dark'
+        ? resolvedPreset.darkAccent
+        : resolvedPreset.lightAccent
+      : (theme.button ?? DEFAULT_SITE_THEME.button!),
+  )
 
-  function paintTheme(next: SiteThemeDto) {
+  function paintTheme(next: SiteThemeDto, nextBg = backgroundMode, nextPreset = themePreset) {
     set('theme', next)
-    applySiteTheme({ ...site, theme: next, backgroundMode })
+    applySiteTheme({ ...site, theme: next, backgroundMode: nextBg, themePreset: nextPreset }, colorMode)
   }
 
   return (
@@ -165,31 +178,39 @@ export function SiteSettingsPage() {
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <p className="text-sm font-medium">Logo</p>
-            <div className="mt-2 flex items-center gap-3">
-              <img src={previewLogo} alt="" className="size-14 rounded-full bg-white object-contain shadow" />
-              <label className="inline-flex cursor-pointer rounded-full bg-paper-2 px-3 py-2 text-sm font-semibold">
-                Chọn ảnh
-                <input className="hidden" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,.ico" onChange={(e) => void onFile('logoUrl', e.target.files?.[0])} />
-              </label>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <img src={previewLogo} alt="" className="size-11 rounded-full bg-white object-contain shadow" />
+                <p className="text-sm font-medium">Logo thương hiệu</p>
+              </div>
               {form.logoUrl || site.logoUrl ? (
                 <Button variant="ghost" type="button" onClick={() => set('logoUrl', null)}>
                   Dùng logo mặc định
                 </Button>
               ) : null}
             </div>
+            <FilePick
+              label="Chọn hoặc kéo thả logo"
+              accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,.ico"
+              hint="PNG, JPEG, WEBP, GIF, SVG hoặc ICO dưới 1.5MB"
+              onFiles={(files) => void onFile('logoUrl', files[0])}
+            />
           </div>
           <div>
-            <p className="text-sm font-medium">Favicon (icon tab trình duyệt)</p>
-            <label className="mt-2 inline-flex cursor-pointer rounded-full bg-paper-2 px-3 py-2 text-sm font-semibold">
-              Chọn icon
-              <input className="hidden" type="file" accept="image/png,image/x-icon,image/vnd.microsoft.icon,image/jpeg,image/webp,.ico" onChange={(e) => void onFile('faviconUrl', e.target.files?.[0])} />
-            </label>
-            {form.faviconUrl || site.faviconUrl ? (
-              <Button className="ml-2" variant="ghost" type="button" onClick={() => set('faviconUrl', null)}>
-                Xóa
-              </Button>
-            ) : null}
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-sm font-medium">Favicon (icon tab trình duyệt)</p>
+              {form.faviconUrl || site.faviconUrl ? (
+                <Button variant="ghost" type="button" onClick={() => set('faviconUrl', null)}>
+                  Xóa
+                </Button>
+              ) : null}
+            </div>
+            <FilePick
+              label="Chọn hoặc kéo thả favicon"
+              accept="image/png,image/x-icon,image/vnd.microsoft.icon,image/jpeg,image/webp,.ico"
+              hint="PNG hoặc ICO kích thước nhỏ dưới 1.5MB"
+              onFiles={(files) => void onFile('faviconUrl', files[0])}
+            />
           </div>
         </div>
         <SectionSave section="brand" saving={saving} error={err} onSave={saveSection} />
@@ -260,30 +281,110 @@ export function SiteSettingsPage() {
       </Card>
 
       <Card className="p-6">
-        <h2 className="serif text-2xl">Màu theme</h2>
-        <p className="mt-1 text-sm text-ink/55">Màu chủ đạo áp dụng liên kết, banner và thanh tiến độ. Màu nút áp dụng nút chính, mục đang chọn và điểm nhấn.</p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <h2 className="serif text-2xl">Theme Background theo Chủ đề (Mùa & Lễ hội)</h2>
+            <p className="mt-1 text-sm text-ink/60">Admin chọn cảnh nền vẽ minh họa chung cho toàn trang; thẻ nội dung chuyển sang kính mờ trong suốt 70%. Học viên có nút Sáng/Tối riêng trên Header.</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-3 self-start sm:self-center">
+            <span className="w-36 whitespace-nowrap text-xs font-semibold text-ink/65 sm:text-right">{colorMode === 'dark' ? 'Đang xem chế độ Tối' : 'Đang xem chế độ Sáng'}</span>
+            <DarkModeSwitch checked={colorMode === 'dark'} onToggle={toggleColorMode} scale={0.72} />
+          </div>
+        </div>
+
         <div className="mt-4 flex flex-wrap gap-2">
-          {([['fixed', 'Màu cố định'], ['sky', 'Theo thời gian']] as const).map(([id, label]) => (
+          {(
+            [
+              ['gradient', 'Background theo Chủ đề'],
+              ['sky', 'Bầu trời theo giờ VN'],
+              ['fixed', 'Màu đơn sắc cố định'],
+            ] as const
+          ).map(([id, label]) => (
             <button
               key={id}
               type="button"
-              onClick={() => set('backgroundMode', id)}
-              className={cn('rounded-full px-4 py-2 text-sm font-semibold', backgroundMode === id ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/70')}
+              onClick={() => {
+                set('backgroundMode', id)
+                paintTheme(theme, id, themePreset)
+              }}
+              className={cn('rounded-full px-4 py-2 text-sm font-semibold transition', backgroundMode === id ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/70')}
             >
               {label}
             </button>
           ))}
         </div>
+
         <p className="mt-3 text-sm text-ink/60">
-          {backgroundMode === 'sky'
-            ? `Mặt trời đi sát mép trái, mặt trăng đi sát mép phải, đối nhau theo giờ Việt Nam, hiện ${skyClockLabel()}. Nửa trái là nắng vàng nhẹ, nửa phải là ánh trăng.`
-            : 'Toàn trang dùng một màu nền. Đổi màu ở ô Màu nền cố định.'}
+          {backgroundMode === 'gradient'
+            ? `Đang chọn: ${THEME_PRESETS.find((p) => p.id === themePreset)?.label ?? 'Ngọc Lam Chuẩn'}${themePreset === 'auto' ? ` (Hôm nay đang áp dụng: ${resolvedPreset.label})` : ''}. Gạt nút Sáng/Tối góc phải để xem biến thể ngày/đêm.`
+            : backgroundMode === 'sky'
+              ? `Mặt trời đi sát mép trái, mặt trăng đi sát mép phải, đối nhau theo giờ Việt Nam, hiện ${skyClockLabel()}.`
+              : 'Toàn trang dùng một màu nền cố định (tự chuyển nền tối khi người dùng gạt sang Dark Mode).'}
         </p>
-        <div className="relative mt-3 h-64 overflow-hidden rounded-2xl border border-gold/30">
-          {backgroundMode === 'sky' ? <SkyBackdrop embedded /> : <div className="absolute inset-0" style={{ background: theme.paper }} />}
+
+        <div className="relative mt-3 h-56 overflow-hidden rounded-2xl border border-gold/30 shadow-inner">
+          {backgroundMode === 'sky' ? (
+            <SkyBackdrop embedded />
+          ) : backgroundMode === 'gradient' ? (
+            <div className="absolute inset-0 flex items-center justify-center p-6">
+              <ThemeBackdrop embedded presetOverride={themePreset} />
+              <div className="relative z-10 rounded-2xl border border-gold/35 bg-cream px-6 py-4 text-center shadow-sm backdrop-blur-md">
+                <p className="text-2xl">{resolvedPreset.emoji}</p>
+                <p className="serif mt-1 text-lg text-ink">{resolvedPreset.label}</p>
+                <p className="text-xs text-ink/65">{resolvedPreset.subtitle}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="absolute inset-0" style={{ background: colorMode === 'dark' ? '#0b1218' : theme.paper }} />
+          )}
         </div>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <ColorField label="Màu chủ đạo" value={theme.primary} onChange={(primary) => paintTheme({ ...theme, primary })} />
+
+        {backgroundMode === 'gradient' ? (
+          <div className="mt-5 space-y-4">
+            {(
+              [
+                ['general', 'Chế độ chung'],
+                ['season', '4 Mùa trong năm'],
+                ['holiday', 'Ngày lễ & Sự kiện (Tết, 30/4, 2/9, Trung Thu, Halloween, Giáng Sinh)'],
+              ] as const
+            ).map(([groupId, groupLabel]) => (
+              <div key={groupId}>
+                <p className="mb-2 text-xs font-bold tracking-[0.14em] text-gold-deep uppercase">{groupLabel}</p>
+                <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                  {THEME_PRESETS.filter((p) => p.group === groupId).map((preset) => {
+                    const selected = themePreset === preset.id
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => {
+                          set('themePreset', preset.id)
+                          paintTheme(theme, 'gradient', preset.id)
+                        }}
+                        className={cn(
+                          'flex items-center gap-3 rounded-2xl border p-2.5 text-left transition',
+                          selected ? 'border-button bg-button-soft ring-2 ring-button/35' : 'border-gold/35 bg-paper hover:border-gold-deep/60',
+                        )}
+                      >
+                        <span className="relative h-12 w-16 shrink-0 overflow-hidden rounded-xl border border-black/15 shadow-xs">
+                          <ThemeBackdrop embedded presetOverride={preset.id} />
+                          <span className="absolute right-1 bottom-0.5 text-sm drop-shadow">{preset.emoji}</span>
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-semibold text-ink">{preset.label}</span>
+                          <span className="block truncate text-[11px] text-ink/55">{preset.subtitle}</span>
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <ColorField label="Màu chủ đạo (Fixed/Sky)" value={theme.primary} onChange={(primary) => paintTheme({ ...theme, primary })} />
           <ColorField label="Màu nhấn nhạt" value={theme.primarySoft} onChange={(primarySoft) => paintTheme({ ...theme, primarySoft })} />
           <ColorField label="Màu nền cố định" value={theme.paper} onChange={(paper) => paintTheme({ ...theme, paper })} />
           <ColorField label="Màu nút chính" value={theme.button ?? DEFAULT_SITE_THEME.button!} onChange={(button) => paintTheme({ ...theme, button })} />

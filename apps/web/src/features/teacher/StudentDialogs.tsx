@@ -255,7 +255,7 @@ export function TeacherAccessPanel() {
           <li key={teacher.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
             <div>
               <p className="flex items-center gap-2 font-semibold">
-                <AccountAvatar name={teacher.fullName} url={teacher.avatarUrl} />{teacher.fullName}
+                <AccountAvatar name={teacher.fullName} url={teacher.avatarUrl} frameId={teacher.avatarFrame} />{teacher.fullName}
               </p>
               <p className="text-xs text-ink/50">{teacher.username}</p>
             </div>

@@ -40,7 +40,7 @@ export function StudentDetailPage() {
         <div>
           <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Hồ sơ học viên nội bộ</p>
           <h1 className="serif mt-2 flex items-center gap-3 text-4xl">
-            <AccountAvatar name={user.fullName} url={user.avatarUrl} className="size-12 font-sans text-base" />
+            <AccountAvatar name={user.fullName} url={user.avatarUrl} frameId={user.avatarFrame} className="size-12 font-sans text-base" />
             {user.fullName}
           </h1>
           <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink/60">
@@ -57,6 +57,7 @@ export function StudentDetailPage() {
           <Info label="Email" value={user.email} />
           <Info label="Số điện thoại" value={user.phone} />
           <Info label="Điểm mục tiêu" value={formatGoal(target)} />
+          <Info label="Điểm thưởng tích lũy" value={`${user.rewardPoints.toLocaleString('vi-VN')} điểm`} />
           <Info label="Ngày tạo" value={dateFmt.format(new Date(user.createdAt))} />
           <Info label="Đăng nhập gần nhất" value={user.lastLoginAt ? dateFmt.format(new Date(user.lastLoginAt)) : 'Chưa đăng nhập'} />
           <Info label="Làm bài gần nhất" value={p ? (p.lastActivityAt ? dateFmt.format(new Date(p.lastActivityAt)) : 'Chưa làm bài') : undefined} />

@@ -211,7 +211,7 @@ function ClassWorkspace({ room }: { room: ClassSummaryDto }) {
           const account = roster.find((item) => item.id === teacher.id)
           return (
             <div key={teacher.id} className="flex items-center gap-3 rounded-2xl border border-gold/40 bg-white px-3 py-3">
-              <AccountAvatar name={teacher.fullName} url={teacher.avatarUrl} className="size-10 text-sm" />
+              <AccountAvatar name={teacher.fullName} url={teacher.avatarUrl} frameId={teacher.avatarFrame} className="size-10 text-sm" />
               <div className="min-w-0">
                 <p className="truncate font-semibold">{teacher.fullName}</p>
                 <p className="truncate text-xs text-ink/50">{account?.username ?? 'Giáo viên của lớp'}</p>
@@ -275,7 +275,7 @@ function ClassRoster({ classId, memberCount }: { classId: string; memberCount: n
           {items.map((student) => (
             <li key={student.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
               <div className="flex min-w-0 items-center gap-3">
-                <AccountAvatar name={student.fullName} url={student.avatarUrl} className="size-9 text-xs" />
+                <AccountAvatar name={student.fullName} url={student.avatarUrl} frameId={student.avatarFrame} className="size-9 text-xs" />
                 <div className="min-w-0">
                   <p className="truncate font-semibold">{student.fullName}</p>
                   <p className="truncate text-xs text-ink/50">{accountLine(student)}</p>

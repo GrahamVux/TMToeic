@@ -1,19 +1,30 @@
 import { api, apiUpload, ApiError } from '@/lib/api'
 import type {
+  BatchSaveNotebookResult,
+  CommitVocabInput,
+  CompleteVocabGameInput,
+  CompleteVocabGameResultDto,
+  CreateVocabEntryInput,
   FlashcardDeckDto,
   GrammarLessonDto,
   GrammarLessonInput,
+  NotebookCardColor,
   NotebookEntryDto,
   NotebookImportResult,
   NotebookListDto,
   ReadingMarkDto,
+  SaveNotebookInput,
   SaveNotebookResult,
   SaveReadingMarkInput,
   StudyOverviewDto,
   UpdateNotebookInput,
+  UpdateVocabEntryInput,
   VocabCourseDto,
+  VocabGameStatusDto,
   VocabImportResult,
   VocabListDto,
+  VocabPreviewDto,
+  VocabUnitDetailDto,
 } from '@toeic/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
@@ -21,8 +32,10 @@ export const studyKeys = {
   overview: ['study', 'overview'] as const,
   vocab: (q: string) => ['study', 'vocab', q] as const,
   course: ['study', 'vocab-course'] as const,
+  unit: (setId: string, unit: number) => ['study', 'vocab-unit', setId, unit] as const,
   notebook: ['study', 'notebook'] as const,
   deck: (deck: 'catalog' | 'notebook') => ['study', 'flashcards', deck] as const,
+  games: ['study', 'games', 'status'] as const,
   grammar: ['study', 'grammar'] as const,
   marks: (examId: string) => ['study', 'reading-marks', examId] as const,
   lesson: (id: string) => ['study', 'grammar', id] as const,
@@ -38,6 +51,14 @@ export function useStudyOverview() {
 
 export function useVocabCourse() {
   return useQuery({ queryKey: studyKeys.course, queryFn: () => api<VocabCourseDto>('/study/vocab/sets') })
+}
+
+export function useVocabUnitDetail(setId: string, unit: number, enabled = true) {
+  return useQuery({
+    queryKey: studyKeys.unit(setId, unit),
+    queryFn: () => api<VocabUnitDetailDto>(`/study/vocab/sets/${encodeURIComponent(setId)}/units/${unit}`),
+    enabled: enabled && Boolean(setId) && unit >= 1,
+  })
 }
 
 export function useVocabSearch(q: string) {
@@ -63,8 +84,15 @@ export function useImportNotebook() {
 export function useSaveNotebookWord() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (input: { word?: string; vocabEntryId?: string; partOfSpeech?: string; meaning?: string; manual?: boolean }) =>
-      api<SaveNotebookResult>('/study/notebook', { method: 'POST', body: input }),
+    mutationFn: (input: SaveNotebookInput) => api<SaveNotebookResult>('/study/notebook', { method: 'POST', body: input }),
+    onSuccess: () => refreshStudy(qc),
+  })
+}
+
+export function useBatchSaveNotebook() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (vocabEntryIds: string[]) => api<BatchSaveNotebookResult>('/study/notebook/batch', { method: 'POST', body: { vocabEntryIds } }),
     onSuccess: () => refreshStudy(qc),
   })
 }
@@ -96,8 +124,8 @@ export function useDeleteReadingMark(examId: string) {
 export function useUpdateNotebook() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (input: { id: string } & UpdateNotebookInput) =>
-      api<NotebookEntryDto>(`/study/notebook/${input.id}`, { method: 'PATCH', body: { partOfSpeech: input.partOfSpeech, meaning: input.meaning } }),
+    mutationFn: ({ id, ...body }: { id: string } & UpdateNotebookInput) =>
+      api<NotebookEntryDto>(`/study/notebook/${id}`, { method: 'PATCH', body }),
     onSuccess: () => refreshStudy(qc),
   })
 }
@@ -110,11 +138,24 @@ export function useDeleteNotebook() {
   })
 }
 
-export function useFlashcards(deck: 'catalog' | 'notebook', unit?: { setId: string; unit: number }) {
-  const scope = unit ? `&setId=${encodeURIComponent(unit.setId)}&unit=${unit.unit}` : ''
+export function useFlashcards(
+  deck: 'catalog' | 'notebook',
+  unit?: { setId: string; unit: number },
+  notebookFilter?: { topic?: string; unit?: number; color?: NotebookCardColor },
+) {
+  const query = new URLSearchParams({ deck })
+  if (unit) {
+    query.set('setId', unit.setId)
+    query.set('unit', String(unit.unit))
+  }
+  if (deck === 'notebook' && notebookFilter) {
+    if (notebookFilter.topic) query.set('topic', notebookFilter.topic)
+    if (notebookFilter.unit && notebookFilter.unit > 0) query.set('unit', String(notebookFilter.unit))
+    if (notebookFilter.color) query.set('color', notebookFilter.color)
+  }
   return useQuery({
-    queryKey: [...studyKeys.deck(deck), unit?.setId ?? '', unit?.unit ?? 0] as const,
-    queryFn: () => api<FlashcardDeckDto>(`/study/flashcards?deck=${deck}${scope}`),
+    queryKey: [...studyKeys.deck(deck), unit?.setId ?? '', unit?.unit ?? notebookFilter?.unit ?? 0, notebookFilter?.topic ?? '', notebookFilter?.color ?? ''] as const,
+    queryFn: () => api<FlashcardDeckDto>(`/study/flashcards?${query}`),
   })
 }
 
@@ -122,6 +163,25 @@ export function useReviewCard() {
   return useMutation({
     mutationFn: (input: { kind: 'CATALOG' | 'NOTEBOOK'; id: string; result: 'AGAIN' | 'GOOD' }) =>
       api('/study/flashcards/review', { method: 'POST', body: input }),
+  })
+}
+
+export function useVocabGameStatus() {
+  return useQuery({
+    queryKey: studyKeys.games,
+    queryFn: () => api<VocabGameStatusDto>('/study/games/status'),
+  })
+}
+
+export function useCompleteVocabGame() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CompleteVocabGameInput) => api<CompleteVocabGameResultDto>('/study/games/complete', { method: 'POST', body: input }),
+    onSuccess: () => {
+      refreshStudy(qc)
+      void qc.invalidateQueries({ queryKey: ['honor'] })
+      void qc.invalidateQueries({ queryKey: ['progress'] })
+    },
   })
 }
 
@@ -142,6 +202,41 @@ export function useGrammarProgress() {
   return useMutation({
     mutationFn: (input: { id: string; completed: boolean }) =>
       api<GrammarLessonDto>(`/study/grammar/${input.id}/progress`, { method: 'POST', body: { completed: input.completed } }),
+    onSuccess: () => refreshStudy(qc),
+  })
+}
+
+export function usePreviewVocab() {
+  return useMutation({
+    mutationFn: (file: File) => {
+      if (!file.name.toLowerCase().endsWith('.xlsx')) return Promise.reject(new ApiError(400, 'VALIDATION_FAILED', 'Hãy chọn file .xlsx.'))
+      if (file.size > 8 * 1024 * 1024) return Promise.reject(new ApiError(400, 'VALIDATION_FAILED', 'File Excel quá lớn (tối đa 8MB).'))
+      return apiUpload<VocabPreviewDto>('/study/vocab/preview', file, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    },
+  })
+}
+
+export function useCommitVocab() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CommitVocabInput) => api<VocabImportResult>('/study/vocab/commit', { method: 'POST', body: input }),
+    onSuccess: () => refreshStudy(qc),
+  })
+}
+
+export function useUpdateVocab() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string } & UpdateVocabEntryInput) => api(`/study/vocab/${id}`, { method: 'PATCH', body }),
+    onSuccess: () => refreshStudy(qc),
+  })
+}
+
+export function useCreateVocabEntry() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ setId, ...body }: { setId: string } & CreateVocabEntryInput) =>
+      api(`/study/vocab/sets/${setId}/entries`, { method: 'POST', body }),
     onSuccess: () => refreshStudy(qc),
   })
 }

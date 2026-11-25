@@ -1,6 +1,6 @@
 import { cn } from '@/lib/cn'
 import { AccountAvatar } from '@/components/ui/AccountAvatar'
-import { Bell, ChevronDown, LogOut, Target, UserRound } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, Sparkles, Target, UserRound } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -8,6 +8,7 @@ type Props = {
   name: string
   code: string
   avatarUrl?: string | null
+  avatarFrame?: string | null
   settingsPath?: string
   onSignOut: () => void
 }
@@ -16,7 +17,7 @@ type Props = {
  * Menu tài khoản: mở bằng click (ổn định trên cả touch) và cũng mở khi hover.
  * Có "cầu nối" (pt-2) giữa nút và popup để con trỏ không bị mất hover khi di chuột xuống.
  */
-export function UserMenu({ name, code, avatarUrl, settingsPath = '/settings', onSignOut }: Props) {
+export function UserMenu({ name, code, avatarUrl, avatarFrame, settingsPath = '/settings', onSignOut }: Props) {
   const [hovered, setHovered] = useState(false)
   const [pinned, setPinned] = useState(false)
   const open = hovered || pinned
@@ -60,6 +61,7 @@ export function UserMenu({ name, code, avatarUrl, settingsPath = '/settings', on
 
   const items = [
     { to: settingsPath, label: 'Thông tin cá nhân', icon: UserRound },
+    { to: `${settingsPath}#frames`, label: 'Kho khung viền & Điểm', icon: Sparkles },
     { to: `${settingsPath}#goal`, label: 'Mục tiêu điểm số', icon: Target },
     { to: `${settingsPath}#notify`, label: 'Thông báo & nhắc học', icon: Bell },
   ]
@@ -77,7 +79,7 @@ export function UserMenu({ name, code, avatarUrl, settingsPath = '/settings', on
           open ? 'border-gold-deep shadow-sm' : 'border-gold/35 hover:border-gold-deep/60',
         )}
       >
-        <AccountAvatar name={name} url={avatarUrl} className="size-7 text-[11px]" />
+        <AccountAvatar name={name} url={avatarUrl} frameId={avatarFrame} className="size-7 text-[11px]" />
         <span className="hidden text-left leading-none sm:block">
           <span className="block whitespace-nowrap text-[12px] font-semibold text-ink">{name}</span>
           <span className="mt-0.5 block whitespace-nowrap text-[10px] text-gold-deep">Mã HV: {code}</span>
@@ -89,7 +91,7 @@ export function UserMenu({ name, code, avatarUrl, settingsPath = '/settings', on
         <div className="absolute top-full right-0 z-40 w-64 pt-2" role="menu">
           <div className="overflow-hidden rounded-2xl border border-gold/30 bg-white shadow-[0_12px_32px_rgba(30,51,60,0.14)]">
             <div className="flex items-center gap-3 border-b border-gold/20 bg-teal-soft/60 px-4 py-3">
-              <AccountAvatar name={name} url={avatarUrl} className="size-10 text-sm" />
+              <AccountAvatar name={name} url={avatarUrl} frameId={avatarFrame} className="size-10 text-sm" />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-ink">{name}</p>
                 <p className="text-[11px] text-ink/55">Mã HV: {code}</p>

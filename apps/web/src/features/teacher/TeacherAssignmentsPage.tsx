@@ -1,5 +1,6 @@
 import { useAuth } from '@/app/AuthContext'
 import { Button } from '@/components/ui/Button'
+import { CalendarDateTimePicker } from '@/components/ui/CalendarDateTimePicker'
 import { CornerNotice, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { FilePick } from '@/components/ui/FilePick'
 import { Modal } from '@/components/ui/Modal'
@@ -203,7 +204,7 @@ export function TeacherAssignmentsPage() {
               <label className="block text-sm font-medium" htmlFor="asg-due">
                 Hạn nộp
               </label>
-              <Input id="asg-due" className="mt-1" type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
+              <CalendarDateTimePicker id="asg-due" className="mt-1" value={dueAt} onChange={setDueAt} />
             </div>
           </div>
           <p className="mt-3 text-sm text-ink/55">

@@ -4,9 +4,10 @@ import { Badge, Card } from '@/components/ui/Primitives'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { useAssignments } from '@/features/assignments/assignments.queries'
-import { HonorBoards } from '@/features/honor/HonorBoards'
+import { FrameWardrobeModal } from '@/features/honor/FrameWardrobeModal'
+import { DashboardHonorSummaryCard } from '@/features/honor/HonorBoards'
 import { formatGoal, type GoalDto, type SkillStatDto, type StudentDashboardDto } from '@toeic/shared'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Flame } from 'lucide-react'
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Link } from 'react-router-dom'
@@ -29,6 +30,7 @@ export function DashboardPage() {
   const { data, isPending, error } = useDashboard()
   const homework = useAssignments()
   const study = useStudyOverview()
+  const [wardrobeTab, setWardrobeTab] = useState<'frames' | 'wallet' | null>(null)
 
   if (isPending) return <PageLoading message="Đang tải tổng quan…" />
   if (error || !data) return <QueryErrorRedirect error={error} />
@@ -71,7 +73,8 @@ export function DashboardPage() {
       </section>
 
       <ScoreChart d={data} />
-      <HonorBoards honor={data.honor} />
+      <DashboardHonorSummaryCard honor={data.honor} onOpenWardrobe={(tab = 'frames') => setWardrobeTab(tab)} />
+      <FrameWardrobeModal open={wardrobeTab !== null} initialTab={wardrobeTab ?? 'frames'} onClose={() => setWardrobeTab(null)} />
 
       <section className="grid gap-6 lg:grid-cols-2">
         <SkillCard stat={data.skills.find((s) => s.skill === 'LISTENING')} kind="LISTENING" />

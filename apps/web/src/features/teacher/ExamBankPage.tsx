@@ -82,8 +82,6 @@ function AuthoredImport({ skill }: { skill: Skill }) {
   function reportError(message: string) {
     setNotice(flashError(message))
   }
-  const sampleHref = skill === 'LISTENING' ? '/mau-import-listening.json' : '/mau-import-reading.json'
-  const sampleName = skill === 'LISTENING' ? 'mau-de-listening.json' : 'mau-de-reading.json'
   const busy = importExam.isPending || uploadAudio.isPending || importScan.isPending || previewScan.isPending
 
   function addRow() {
@@ -290,11 +288,13 @@ function AuthoredImport({ skill }: { skill: Skill }) {
             ? 'File gồm Part 1–4. JSON có khung cắt thì chọn thêm PDF, xem ảnh và sửa câu trước khi lưu. File nghe chọn riêng bên dưới.'
             : 'File gồm Part 5–7. Mỗi đề chỉ thuộc một kỹ năng. Chọn file để xem lại câu hỏi, đáp án và lời giải trước khi lưu.'}
         </p>
-        <a className="mt-2 inline-block text-sm font-semibold text-gold-deep underline" href={sampleHref} download={sampleName}>
-          {skill === 'LISTENING' ? 'Tải file mẫu Listening' : 'Tải file mẫu Reading'}
-        </a>
+        {skill === 'READING' ? (
+          <a className="mt-2 inline-block text-sm font-semibold text-gold-deep underline" href="/mau-import-reading.json" download="mau-de-reading.json">
+            Tải file mẫu Reading
+          </a>
+        ) : null}
         {skill === 'LISTENING' && user?.role === 'ADMIN' ? (
-          <a className="mt-1 block text-sm font-semibold text-gold-deep underline" href="/ybm-lc-gemini-chat.json" download="ybm-lc-gemini-chat.json">
+          <a className="mt-2 block text-sm font-semibold text-gold-deep underline" href="/ybm-lc-gemini-chat.json" download="ybm-lc-gemini-chat.json">
             Tải hướng dẫn Gemini cho đề Listening PDF
           </a>
         ) : null}

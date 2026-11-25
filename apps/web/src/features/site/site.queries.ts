@@ -1,8 +1,26 @@
 import { api } from '@/lib/api'
-import { DEFAULT_SITE_THEME, type SiteSettingsDto, type UpdateSiteSettingsInput } from '@toeic/shared'
+import { DEFAULT_SITE_THEME, resolveThemePreset, type SiteSettingsDto, type UpdateSiteSettingsInput } from '@toeic/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 export const siteKey = ['site-settings'] as const
+export type ColorMode = 'light' | 'dark'
+const COLOR_MODE_KEY = 'tm_color_mode'
+
+export function getStoredColorMode(): ColorMode {
+  try {
+    return window.localStorage.getItem(COLOR_MODE_KEY) === 'dark' ? 'dark' : 'light'
+  } catch {
+    return 'light'
+  }
+}
+
+export function setStoredColorMode(mode: ColorMode) {
+  try {
+    window.localStorage.setItem(COLOR_MODE_KEY, mode)
+  } catch {
+    // ignore storage errors
+  }
+}
 
 export function useSiteSettings() {
   return useQuery({
@@ -58,24 +76,38 @@ export function buttonColors(hex: string) {
   return { background: fill, ink: text, hover: mixHex(fill, '#102830', 0.18), soft: mixHex(fill, '#ffffff', 0.86) }
 }
 
-export function applySiteTheme(s: SiteSettingsDto) {
+export function applySiteTheme(s: SiteSettingsDto, colorMode: ColorMode = getStoredColorMode()) {
   const root = document.documentElement
+  root.dataset.theme = colorMode
   root.classList.toggle('sky-mode', s.backgroundMode === 'sky')
-  const button = buttonColors(s.theme.button ?? DEFAULT_SITE_THEME.button!)
+  root.classList.toggle('gradient-mode', s.backgroundMode === 'gradient')
+
+  const isDark = colorMode === 'dark'
+  const preset = s.backgroundMode === 'gradient' ? resolveThemePreset(s.themePreset) : null
+  const primaryHex = preset ? (isDark ? preset.darkAccent : preset.lightAccent) : s.theme.primary
+  const buttonHex = preset ? (isDark ? preset.darkAccent : preset.lightAccent) : (s.theme.button ?? DEFAULT_SITE_THEME.button!)
+  const paperHex = preset ? (isDark ? preset.darkPaper : preset.lightPaper) : (isDark ? '#0b1218' : s.theme.paper)
+
+  const button = buttonColors(buttonHex)
   root.style.setProperty('--color-button', button.background)
   root.style.setProperty('--color-button-ink', button.ink)
   root.style.setProperty('--color-button-hover', button.hover)
-  root.style.setProperty('--color-button-soft', button.soft)
+  root.style.setProperty('--color-button-soft', isDark ? mixHex(button.background, '#0b1218', 0.78) : button.soft)
   root.style.setProperty('--color-amber', button.background)
   root.style.setProperty('--color-amber-deep', button.hover)
-  root.style.setProperty('--color-amber-soft', button.soft)
-  root.style.setProperty('--color-gold-deep', s.theme.primary)
-  root.style.setProperty('--color-teal', s.theme.primary)
-  root.style.setProperty('--color-navy', mixHex(s.theme.primary, '#1e333c', 0.35))
-  root.style.setProperty('--color-gold', s.theme.primarySoft)
-  root.style.setProperty('--color-paper', s.theme.paper)
-  root.style.setProperty('--color-paper-2', mixHex(s.theme.primary, '#ffffff', 0.9))
-  root.style.setProperty('--color-teal-soft', mixHex(s.theme.primary, '#ffffff', 0.88))
+  root.style.setProperty('--color-amber-soft', isDark ? mixHex(button.background, '#0b1218', 0.78) : button.soft)
+  root.style.setProperty('--color-gold-deep', primaryHex)
+  root.style.setProperty('--color-teal', primaryHex)
+  root.style.setProperty('--color-navy', isDark ? '#c6e8f0' : mixHex(primaryHex, '#1e333c', 0.35))
+  root.style.setProperty('--color-gold', isDark ? mixHex(primaryHex, '#1b2833', 0.65) : s.theme.primarySoft)
+  root.style.setProperty('--color-paper', paperHex)
+  root.style.setProperty('--color-paper-2', isDark ? mixHex(primaryHex, '#141d26', 0.85) : mixHex(primaryHex, '#ffffff', 0.9))
+  root.style.setProperty('--color-teal-soft', isDark ? mixHex(primaryHex, '#111b24', 0.82) : mixHex(primaryHex, '#ffffff', 0.88))
+  root.style.setProperty('--color-cream', isDark ? '#141b24' : '#ffffff')
+  root.style.setProperty('--color-ink', isDark ? '#f1f5f9' : '#1e333c')
+  root.style.setProperty('--color-ink-soft', isDark ? '#cbd5e1' : '#2c4a55')
+  root.style.setProperty('--ux-accent', button.background)
+
   document.title = `${s.brandName} — ${s.slogan}`
   const href = s.faviconUrl || s.logoUrl || '/logo.png'
   let link = document.querySelector<HTMLLinkElement>("link[rel='icon']")

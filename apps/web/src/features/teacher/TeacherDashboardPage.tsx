@@ -145,7 +145,7 @@ export function TeacherDashboardPage() {
                 <tr key={u.id} className="border-t border-gold/25">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <AccountAvatar name={u.fullName} url={u.avatarUrl} className="size-9 text-xs" />
+                      <AccountAvatar name={u.fullName} url={u.avatarUrl} frameId={u.avatarFrame} className="size-9 text-xs" />
                       <div>
                         <p className="font-semibold">{u.fullName}</p>
                         <p className="text-xs text-ink/50">{u.studentCode}{u.email ? ` • ${u.email}` : ''}</p>

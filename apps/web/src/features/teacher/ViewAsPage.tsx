@@ -129,7 +129,7 @@ export function ViewAsPage() {
               <li key={user.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                 <div className="min-w-0">
                   <p className="flex items-center gap-2 text-sm font-semibold">
-                    <AccountAvatar name={user.fullName} url={user.avatarUrl} /><span className="truncate">{user.fullName}</span>
+                    <AccountAvatar name={user.fullName} url={user.avatarUrl} frameId={user.avatarFrame} /><span className="truncate">{user.fullName}</span>
                   </p>
                   <p className="mt-0.5 text-xs text-ink/55">
                     {role === 'STUDENT' ? `Mã HV: ${user.studentCode ?? user.username}${user.className ? ` · Lớp ${user.className}` : ''}` : user.username}

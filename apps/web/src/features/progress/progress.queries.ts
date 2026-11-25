@@ -1,6 +1,6 @@
 import { api } from '@/lib/api'
 import type { AttemptSummaryDto, ClassReportDto, ExamReportDto, StaffHonorDto, StudentProgressDto } from '@toeic/shared'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 
 export function useMyProgress() {
   return useQuery({ queryKey: ['me', 'progress'], queryFn: () => api<StudentProgressDto>('/me/progress'), refetchOnMount: 'always' })
@@ -29,14 +29,4 @@ export function useExamReport() {
 
 export function useStaffHonor() {
   return useQuery({ queryKey: ['reports', 'honor'], queryFn: () => api<StaffHonorDto>('/reports/honor'), refetchOnMount: 'always' })
-}
-
-export function useResetClassHonor() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (classId: string) => api<{ resetAt: string }>(`/classes/${classId}/honor-reset`, { method: 'POST' }),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['reports', 'honor'] })
-    },
-  })
 }

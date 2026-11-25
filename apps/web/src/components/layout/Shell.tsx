@@ -4,10 +4,12 @@ import { HeaderSearch } from '@/components/layout/HeaderSearch'
 import { NotificationBell } from '@/components/layout/NotificationBell'
 import { UserMenu } from '@/components/layout/UserMenu'
 import { AccountAvatar } from '@/components/ui/AccountAvatar'
-import { useSite } from '@/features/site/SiteSettingsProvider'
+import { DarkModeSwitch } from '@/components/ui/DarkModeSwitch'
+import { FrameWardrobeModal } from '@/features/honor/FrameWardrobeModal'
+import { useColorMode, useSite } from '@/features/site/SiteSettingsProvider'
 import { BugReportWidget } from '@/features/bugs/BugReportWidget'
 import { useBugReportSummary } from '@/features/bugs/bugs.queries'
-import { BarChart3, BookOpen, Bug, ChevronDown, ClipboardList, Eye, Library, LogOut, Menu, MoreHorizontal, Settings, Trophy, Users, X } from 'lucide-react'
+import { BarChart3, BookOpen, Bug, ChevronDown, ClipboardList, Coins, Eye, Library, LogOut, Menu, MoreHorizontal, Settings, Trophy, Users, X } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 
@@ -61,13 +63,16 @@ const studentNav = [
   { to: '/study', label: 'Học Tập' },
   { to: '/practice', label: 'Luyện Tập ETS L&R' },
   { to: '/assignments', label: 'Bài Tập' },
+  { to: '/honor', label: 'Xếp Hạng' },
   { to: '/progress', label: 'Tiến Độ' },
 ]
 
 export function StudentShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth()
+  const { colorMode, toggleColorMode } = useColorMode()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const [wardrobeOpen, setWardrobeOpen] = useState(false)
 
   async function signOut() {
     await logout()
@@ -114,13 +119,26 @@ export function StudentShell({ children }: { children: ReactNode }) {
             {/* Search – thu nhỏ mặc định, bấm để kéo giãn */}
             <HeaderSearch />
 
+            <DarkModeSwitch checked={colorMode === 'dark'} onToggle={toggleColorMode} scale={0.44} />
+
             <NotificationBell />
+
+            <button
+              type="button"
+              onClick={() => setWardrobeOpen(true)}
+              className="hidden shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-300/80 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-900 transition hover:bg-amber-100 sm:inline-flex"
+              title="Ví điểm thưởng & Kho khung viền (Đổi quà sắp mở)"
+            >
+              <Coins className="size-3.5 text-amber-600" />
+              <span>{(user?.rewardPoints ?? 0).toLocaleString('vi-VN')} điểm</span>
+            </button>
 
             {/* Tài khoản: cài đặt + đăng xuất */}
             <UserMenu
               name={user?.fullName ?? ''}
               code={user?.studentCode ?? user?.username ?? ''}
               avatarUrl={user?.avatarUrl}
+              avatarFrame={user?.avatarFrame}
               onSignOut={() => void signOut()}
             />
 
@@ -176,6 +194,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">{children}</main>
       <SiteFooter />
       <BugReportWidget />
+      <FrameWardrobeModal open={wardrobeOpen} initialTab="wallet" onClose={() => setWardrobeOpen(false)} />
     </div>
   )
 }
@@ -190,6 +209,7 @@ const adminNav = [
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth()
+  const { colorMode, toggleColorMode } = useColorMode()
   const navigate = useNavigate()
   const location = useLocation()
   const [open, setOpen] = useState(false)
@@ -310,8 +330,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
             ) : null}
           </nav>
           <div className="ml-auto flex shrink-0 items-center gap-2">
+            <DarkModeSwitch checked={colorMode === 'dark'} onToggle={toggleColorMode} scale={0.44} />
             <Link to="/admin/profile" aria-label="Tài khoản cá nhân" className="flex items-center gap-2 rounded-full p-1 hover:bg-paper">
-              <AccountAvatar name={user?.fullName ?? ''} url={user?.avatarUrl} />
+              <AccountAvatar name={user?.fullName ?? ''} url={user?.avatarUrl} frameId={user?.avatarFrame} />
               <span className="hidden leading-none text-left md:block">
                 <span className="block max-w-[160px] truncate text-[13px] font-semibold">{user?.fullName}</span>
                 <span className="mt-0.5 block text-[10px] text-gold-deep">{roleLabel}</span>

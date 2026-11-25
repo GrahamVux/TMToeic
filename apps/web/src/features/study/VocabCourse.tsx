@@ -1,20 +1,24 @@
 import { Button } from '@/components/ui/Button'
+import { CornerNotice, flashError, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
+import { Modal } from '@/components/ui/Modal'
 import { Card, ProgressBar } from '@/components/ui/Primitives'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { ApiError } from '@/lib/api'
 import type { VocabSetCardDto, VocabUnitDto } from '@toeic/shared'
+import { Bookmark, BookmarkCheck, Gamepad2, ListChecks } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { notebookSavedMessage, useSaveNotebookWord, useVocabCourse, useVocabSearch } from './study.queries'
+import { notebookSavedMessage, useBatchSaveNotebook, useSaveNotebookWord, useVocabCourse, useVocabSearch, useVocabUnitDetail } from './study.queries'
 
 const PAGE_SIZE = 6
 
-export function VocabNav({ current }: { current: 'learn' | 'progress' | 'mine' | 'grammar' }) {
+export function VocabNav({ current }: { current: 'learn' | 'progress' | 'mine' | 'games' | 'grammar' }) {
   const items = [
     { id: 'learn', label: 'Học', to: '/study' },
     { id: 'progress', label: 'Tiến độ', to: '/study?view=progress' },
     { id: 'mine', label: 'Từ vựng của tôi', to: '/study/notebook' },
+    { id: 'games', label: 'Trò chơi từ vựng', to: '/study/games' },
     { id: 'grammar', label: 'Ngữ pháp', to: '/study?view=grammar' },
   ] as const
   return (
@@ -121,38 +125,133 @@ function SetCard({ set, index, active, onSelect }: { set: VocabSetCardDto; index
 }
 
 function UnitCard({ set, unit }: { set: VocabSetCardDto; unit: VocabUnitDto }) {
+  const [wordsOpen, setWordsOpen] = useState(false)
   const percent = unit.wordCount === 0 ? 0 : Math.round((unit.learnedCount / unit.wordCount) * 100)
   const status = unit.learnedCount === 0 ? 'Chưa học' : unit.learnedCount === unit.wordCount ? 'Đã học xong' : 'Đang học'
   const action = unit.learnedCount === 0 ? 'Bắt đầu học' : unit.learnedCount === unit.wordCount ? 'Ôn lại' : 'Học tiếp'
   return (
-    <Card className="overflow-hidden p-0">
-      <div className="relative h-28 bg-linear-to-br from-teal-soft to-paper px-4 py-4">
-        <p className="text-center text-xs font-semibold tracking-[0.14em] text-gold-deep uppercase">{set.title}</p>
-        <span className="absolute bottom-3 left-1/2 flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full bg-ink text-sm font-semibold text-white">
-          {String(unit.index).padStart(2, '0')}
-        </span>
-      </div>
-      <div className="px-4 pt-4 pb-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h3 className="font-semibold">Unit {unit.index}</h3>
-            <p className="text-sm text-ink/55">{unit.wordCount} từ</p>
-          </div>
-          <p className="text-right text-xs text-ink/45">
-            {status}
-            <span className="mt-0.5 block text-sm font-semibold text-ink/70">{percent}%</span>
-          </p>
+    <>
+      <Card className="overflow-hidden p-0">
+        <div className="relative h-28 bg-linear-to-br from-teal-soft to-paper px-4 py-4">
+          <p className="text-center text-xs font-semibold tracking-[0.14em] text-gold-deep uppercase">{set.title}</p>
+          <span className="absolute bottom-3 left-1/2 flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full bg-ink text-sm font-semibold text-white">
+            {String(unit.index).padStart(2, '0')}
+          </span>
         </div>
-        <ProgressBar className="mt-3" value={percent} />
-        <Link
-          to={`/study/flashcards?deck=catalog&set=${encodeURIComponent(set.id)}&unit=${unit.index}`}
-          className="mt-4 flex h-10 items-center justify-center rounded-full bg-olive text-sm font-semibold text-white"
-        >
-          {action}
-          <span aria-hidden> ›</span>
-        </Link>
+        <div className="px-4 pt-4 pb-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-semibold">Unit {unit.index}</h3>
+              <p className="text-sm text-ink/55">{unit.wordCount} từ</p>
+            </div>
+            <p className="text-right text-xs text-ink/45">
+              {status}
+              <span className="mt-0.5 block text-sm font-semibold text-ink/70">{percent}%</span>
+            </p>
+          </div>
+          <ProgressBar className="mt-3" value={percent} />
+          <Link
+            to={`/study/flashcards?deck=catalog&set=${encodeURIComponent(set.id)}&unit=${unit.index}`}
+            className="mt-4 flex h-10 items-center justify-center rounded-full bg-olive text-sm font-semibold text-white"
+          >
+            {action}
+            <span aria-hidden> ›</span>
+          </Link>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setWordsOpen(true)}
+              className="flex h-9 items-center justify-center gap-1 rounded-full bg-paper-2 px-2 text-xs font-semibold text-ink hover:bg-teal-soft"
+            >
+              <ListChecks className="size-3.5 text-gold-deep" /> Danh sách từ
+            </button>
+            <Link
+              to={`/study/games?source=catalog&set=${encodeURIComponent(set.id)}&unit=${unit.index}`}
+              className="flex h-9 items-center justify-center gap-1 rounded-full bg-teal-soft px-2 text-xs font-semibold text-gold-deep hover:opacity-90"
+            >
+              <Gamepad2 className="size-3.5" /> Chơi game
+            </Link>
+          </div>
+        </div>
+      </Card>
+      {wordsOpen ? <UnitWordListModal set={set} unit={unit.index} onClose={() => setWordsOpen(false)} /> : null}
+    </>
+  )
+}
+
+function UnitWordListModal({ set, unit, onClose }: { set: VocabSetCardDto; unit: number; onClose: () => void }) {
+  const detail = useVocabUnitDetail(set.id, unit, true)
+  const saveOne = useSaveNotebookWord()
+  const saveBatch = useBatchSaveNotebook()
+  const [notice, setNotice] = useState<CornerNoticeState | null>(null)
+  const items = detail.data?.items ?? []
+  const unsavedIds = items.filter((w) => !w.savedInNotebook).map((w) => w.id)
+
+  async function saveAll() {
+    if (unsavedIds.length === 0) return
+    try {
+      const res = await saveBatch.mutateAsync(unsavedIds)
+      setNotice(flashNotice(`Đã bỏ ${res.added} từ vào Sổ tay cá nhân (tự động gắn Chủ đề “${set.topic}” · Unit ${unit}).`))
+    } catch (err) {
+      setNotice(flashError(err instanceof ApiError ? err.message : 'Không lưu được cả Unit.'))
+    }
+  }
+
+  return (
+    <Modal title={`${set.title} · Unit ${unit}`} onClose={onClose}>
+      <CornerNotice notice={notice} />
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gold/25 pb-3">
+        <p className="text-xs text-ink/60">
+          Chủ đề: <strong className="text-gold-deep">{set.topic}</strong> • {items.length} từ
+        </p>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="paper"
+            className="px-3 py-1.5 text-xs"
+            disabled={saveBatch.isPending || unsavedIds.length === 0}
+            onClick={() => void saveAll()}
+          >
+            <Bookmark className="size-3.5 text-gold-deep" />
+            {unsavedIds.length === 0 ? 'Đã lưu cả Unit ✓' : `Lưu cả Unit (${unsavedIds.length}) vào sổ tay`}
+          </Button>
+        </div>
       </div>
-    </Card>
+
+      <div className="mt-3 max-h-[60vh] space-y-2.5 overflow-y-auto pr-1">
+        {detail.isPending ? (
+          <p className="py-6 text-center text-sm text-ink/55">Đang tải danh sách từ…</p>
+        ) : (
+          items.map((item) => (
+            <div key={item.id} className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-gold/25 bg-paper p-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-ink">
+                  {item.word} <span className="font-medium text-gold-deep">({item.partOfSpeech})</span>
+                </p>
+                <p className="mt-0.5 text-sm text-ink/80">{item.meaning}</p>
+                {item.example ? <p className="mt-1 text-xs italic text-ink/55">“{item.example}”</p> : null}
+              </div>
+              <button
+                type="button"
+                disabled={saveOne.isPending || item.savedInNotebook}
+                onClick={() => {
+                  void saveOne.mutateAsync({ vocabEntryId: item.id }).then(
+                    (res) => setNotice(flashNotice(notebookSavedMessage(res))),
+                    (err) => setNotice(flashError(err instanceof ApiError ? err.message : 'Không lưu được.')),
+                  )
+                }}
+                className={`inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                  item.savedInNotebook ? 'bg-emerald-100 text-emerald-800' : 'bg-button text-button-ink hover:opacity-90'
+                }`}
+              >
+                {item.savedInNotebook ? <BookmarkCheck className="size-3.5" /> : <Bookmark className="size-3.5" />}
+                {item.savedInNotebook ? 'Đã trong sổ tay' : 'Lưu vào sổ tay'}
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    </Modal>
   )
 }
 
