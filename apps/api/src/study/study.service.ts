@@ -1,17 +1,31 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
+  batchSaveNotebookSchema,
+  commitVocabSchema,
+  completeVocabGameSchema,
+  createVocabEntrySchema,
   grammarLessonSchema,
   grammarProgressSchema,
+  NOTEBOOK_CARD_COLORS,
   notebookPhrase,
   reviewCardSchema,
   saveNotebookSchema,
   saveReadingMarkSchema,
   UNASSIGNED_VOCAB_SET,
   updateNotebookSchema,
+  updateVocabEntrySchema,
+  VOCAB_GAME_DAILY_XP_CAP,
   VOCAB_UNIT_SIZE,
+  type BatchSaveNotebookResult,
+  type CompleteVocabGameResultDto,
+  type NotebookCardColor,
   type VocabCourseDto,
+  type VocabGameKind,
+  type VocabGameStatusDto,
   type VocabImportTarget,
+  type VocabPreviewDto,
   type VocabSetCardDto,
+  type VocabUnitDetailDto,
   type ReadingMarkDto,
   type FlashcardDeckDto,
   type FlashcardDto,
@@ -24,18 +38,25 @@ import {
   type VocabImportResult,
   type VocabListDto,
 } from '@toeic/shared'
-import { and, asc, eq, ilike, isNull, lte, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, inArray, isNull, lte, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { AuditService } from '../audit/audit.service'
 import { AppException } from '../common/app-exception'
 import { parse } from '../common/zod'
 import { DB, type Db } from '../db/database.module'
-import { attempts, cardReviews, grammarLessonFiles, grammarLessons, grammarProgress, notebookEntries, readingMarks, vocabEntries, vocabSets, vocabUnits } from '../db/schema'
+import { attempts, cardReviews, grammarLessonFiles, grammarLessons, grammarProgress, notebookEntries, readingMarks, vocabEntries, vocabGameLogs, vocabSets, vocabUnits } from '../db/schema'
 import { readVocabSheet, simpleVocabTemplate, vocabTemplate, VocabSheetError, type VocabSheet } from './vocab-sheet'
 
 type Actor = { id: string; ip?: string }
 const MAX_XLSX_BYTES = 8 * 1024 * 1024
 const MAX_PDF_BYTES = 15 * 1024 * 1024
+const COLOR_SET = new Set<string>(NOTEBOOK_CARD_COLORS)
+const dayFormat = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' })
+const localDay = (d: Date) => dayFormat.format(d)
+
+function normalizeColor(raw: string | null | undefined): NotebookCardColor {
+  return raw && COLOR_SET.has(raw) ? (raw as NotebookCardColor) : 'default'
+}
 
 function schedule(previous: { intervalDays: number; repetitions: number } | undefined, result: 'AGAIN' | 'GOOD') {
   if (result === 'AGAIN') return { intervalDays: 0, repetitions: 0, dueAt: new Date() }
@@ -95,6 +116,7 @@ export class StudyService {
         word: row.entry.word,
         partOfSpeech: row.entry.partOfSpeech,
         meaning: row.entry.meaning,
+        example: row.entry.example,
         set: row.topic && row.title ? { topic: row.topic, title: row.title, unit: row.position ?? 1 } : null,
       })),
     }
@@ -106,6 +128,151 @@ export class StudyService {
 
   notebookTemplate() {
     return simpleVocabTemplate()
+  }
+
+  async previewVocab(raw: unknown): Promise<VocabPreviewDto> {
+    if (!Buffer.isBuffer(raw) || raw.length === 0) throw AppException.badRequest('Hãy chọn một file .xlsx.')
+    if (raw.length > MAX_XLSX_BYTES) throw AppException.badRequest('File Excel quá lớn (tối đa 8MB).')
+    let parsed: Awaited<ReturnType<typeof readVocabSheet>>
+    try {
+      parsed = await readVocabSheet(raw)
+    } catch (error) {
+      if (error instanceof VocabSheetError) throw AppException.badRequest(error.message)
+      throw AppException.badRequest('Không đọc được file Excel. Hãy dùng định dạng .xlsx.')
+    }
+    const existing = await this.db.select({ wordKey: vocabEntries.wordKey, partOfSpeech: vocabEntries.partOfSpeech }).from(vocabEntries)
+    const known = new Set(existing.map((row) => `${row.wordKey}\0${row.partOfSpeech.toLowerCase()}`))
+    const rows = parsed.rows.map((row, index) => {
+      const unit = row.unit ?? Math.floor(index / VOCAB_UNIT_SIZE) + 1
+      const key = `${row.word.toLowerCase()}\0${row.partOfSpeech.toLowerCase()}`
+      return {
+        unit,
+        word: row.word,
+        partOfSpeech: row.partOfSpeech,
+        meaning: row.meaning,
+        example: row.example,
+        status: known.has(key) ? ('UPDATE' as const) : ('NEW' as const),
+      }
+    })
+    return {
+      suggestedTitle: parsed.title,
+      suggestedTopic: parsed.topic,
+      structured: parsed.structured,
+      skipped: parsed.skipped,
+      rows,
+    }
+  }
+
+  async commitVocab(actor: Actor, body: unknown): Promise<VocabImportResult> {
+    const input = parse(commitVocabSchema, body)
+    let setId: string
+    let createdSet = false
+    if (input.mode === 'new') {
+      const existingSet = await this.findVocabSet(input.topic, input.title)
+      if (existingSet) {
+        setId = existingSet
+      } else {
+        setId = await this.createVocabSet(actor, input.topic, input.title)
+        createdSet = true
+      }
+    } else {
+      setId = await this.requireVocabSet(input.setId)
+    }
+
+    const dedup = new Map<string, { unit: number; word: string; partOfSpeech: string; meaning: string; example: string }>()
+    let skipped = 0
+    for (const r of input.rows) {
+      const key = `${r.word.toLowerCase()}\0${r.partOfSpeech.toLowerCase()}`
+      if (dedup.has(key)) skipped++
+      dedup.set(key, {
+        unit: r.unit,
+        word: r.word,
+        partOfSpeech: r.partOfSpeech,
+        meaning: r.meaning,
+        example: r.example?.trim() ?? '',
+      })
+    }
+
+    const existing = await this.db.select({ id: vocabEntries.id, wordKey: vocabEntries.wordKey, partOfSpeech: vocabEntries.partOfSpeech }).from(vocabEntries)
+    const known = new Map(existing.map((row) => [`${row.wordKey}\0${row.partOfSpeech.toLowerCase()}`, row.id]))
+
+    const groups = new Map<number, Array<{ unit: number; word: string; partOfSpeech: string; meaning: string; example: string }>>()
+    for (const row of dedup.values()) {
+      groups.set(row.unit, [...(groups.get(row.unit) ?? []), row])
+    }
+
+    let imported = 0
+    let updated = 0
+    let units = 0
+    const unitCache = new Map<number, string>()
+
+    const ensureUnitId = async (position: number) => {
+      const cached = unitCache.get(position)
+      if (cached) return cached
+      const [found] = await this.db.select({ id: vocabUnits.id }).from(vocabUnits).where(and(eq(vocabUnits.setId, setId), eq(vocabUnits.position, position))).limit(1)
+      if (found) {
+        unitCache.set(position, found.id)
+        return found.id
+      }
+      const [created] = await this.db.insert(vocabUnits).values({ setId, position }).returning({ id: vocabUnits.id })
+      if (!created) throw new Error('Không tạo được unit.')
+      units++
+      unitCache.set(position, created.id)
+      return created.id
+    }
+
+    for (const [position, rows] of [...groups.entries()].sort((a, b) => a[0] - b[0])) {
+      const fresh: typeof rows = []
+      for (const row of rows) {
+        const key = `${row.word.toLowerCase()}\0${row.partOfSpeech.toLowerCase()}`
+        const existingId = known.get(key)
+        if (!existingId) {
+          fresh.push(row)
+          continue
+        }
+        updated++
+        const patch: Partial<typeof vocabEntries.$inferInsert> = {
+          word: row.word,
+          meaning: row.meaning,
+          updatedAt: new Date(),
+        }
+        if (row.example) patch.example = row.example
+        await this.db.update(vocabEntries).set(patch).where(eq(vocabEntries.id, existingId))
+      }
+      if (fresh.length === 0) continue
+      const unitId = await ensureUnitId(position)
+      const [last] = await this.db.select({ n: sql<number>`coalesce(max(${vocabEntries.displayOrder}), 0)::int` }).from(vocabEntries).where(eq(vocabEntries.unitId, unitId))
+      let order = last?.n ?? 0
+      for (const row of fresh) {
+        order++
+        const [inserted] = await this.db
+          .insert(vocabEntries)
+          .values({
+            setId,
+            unitId,
+            displayOrder: order,
+            word: row.word,
+            wordKey: row.word.toLowerCase(),
+            partOfSpeech: row.partOfSpeech,
+            meaning: row.meaning,
+            example: row.example,
+            createdBy: actor.id,
+          })
+          .returning({ id: vocabEntries.id })
+        if (inserted) known.set(`${row.word.toLowerCase()}\0${row.partOfSpeech.toLowerCase()}`, inserted.id)
+        imported++
+      }
+    }
+
+    if (createdSet && imported === 0) await this.db.delete(vocabSets).where(eq(vocabSets.id, setId))
+    await this.audit.log({
+      action: 'VOCAB_IMPORTED',
+      actorId: actor.id,
+      entityType: 'vocab',
+      metadata: { imported, updated, skipped, units, mode: input.mode, setId: createdSet && imported === 0 ? null : setId },
+      ip: actor.ip,
+    })
+    return { imported, updated, skipped, units }
   }
 
   async importVocab(actor: Actor, raw: unknown, target: VocabImportTarget | null): Promise<VocabImportResult> {
@@ -136,7 +303,7 @@ export class StudyService {
         updated++
         await this.db
           .update(vocabEntries)
-          .set({ word: row.word, meaning: row.meaning, updatedAt: new Date() })
+          .set({ word: row.word, meaning: row.meaning, ...(row.example ? { example: row.example } : {}), updatedAt: new Date() })
           .where(and(eq(vocabEntries.wordKey, row.word.toLowerCase()), sql`lower(${vocabEntries.partOfSpeech}) = ${row.partOfSpeech.toLowerCase()}`))
       }
       if (fresh.length === 0) continue
@@ -156,6 +323,7 @@ export class StudyService {
           wordKey: row.word.toLowerCase(),
           partOfSpeech: row.partOfSpeech,
           meaning: row.meaning,
+          example: row.example,
           createdBy: actor.id,
         })
       }
@@ -172,16 +340,15 @@ export class StudyService {
   }
 
   private async importStructured(actor: Actor, parsed: VocabSheet, target: VocabImportTarget | null): Promise<VocabImportResult> {
-    const title = parsed.title?.trim() ?? ''
-    if (title.length < 2) throw AppException.badRequest('File mẫu cần tên bộ ở ô cạnh nhãn Bộ đề.')
-    const topic = (parsed.topic?.trim() || (target?.mode === 'new' ? target.topic : '') || 'Từ vựng').slice(0, 80)
-    if (topic.length < 2) throw AppException.badRequest('Chủ đề cần ít nhất 2 ký tự.')
-    let setId = await this.findVocabSet(topic, title)
-    let createdSet = false
+    const title = (parsed.title?.trim() || (target?.mode === 'new' ? target.title : '')).slice(0, 120)
+    let setId = target?.mode === 'unit' ? await this.requireVocabSet(target.setId) : null
     if (!setId) {
-      setId = await this.createVocabSet(actor, topic, title)
-      createdSet = true
+      if (title.length < 2) throw AppException.badRequest('File mẫu cần tên bộ ở ô cạnh nhãn Bộ đề.')
+      const topic = (parsed.topic?.trim() || (target?.mode === 'new' ? target.topic : '') || 'Từ vựng').slice(0, 80)
+      if (topic.length < 2) throw AppException.badRequest('Chủ đề cần ít nhất 2 ký tự.')
+      setId = (await this.findVocabSet(topic, title)) ?? (await this.createVocabSet(actor, topic, title))
     }
+    const createdSet = !(await this.db.select({ id: vocabUnits.id }).from(vocabUnits).where(eq(vocabUnits.setId, setId)).limit(1)).length
     const existing = await this.db.select({ wordKey: vocabEntries.wordKey, partOfSpeech: vocabEntries.partOfSpeech }).from(vocabEntries)
     const known = new Set(existing.map((row) => `${row.wordKey}\0${row.partOfSpeech.toLowerCase()}`))
     const groups = new Map<number, VocabSheet['rows']>()
@@ -200,7 +367,7 @@ export class StudyService {
         updated++
         await this.db
           .update(vocabEntries)
-          .set({ word: row.word, meaning: row.meaning, updatedAt: new Date() })
+          .set({ word: row.word, meaning: row.meaning, ...(row.example ? { example: row.example } : {}), updatedAt: new Date() })
           .where(and(eq(vocabEntries.wordKey, row.word.toLowerCase()), sql`lower(${vocabEntries.partOfSpeech}) = ${row.partOfSpeech.toLowerCase()}`))
       }
       if (fresh.length === 0) continue
@@ -222,6 +389,7 @@ export class StudyService {
           wordKey: row.word.toLowerCase(),
           partOfSpeech: row.partOfSpeech,
           meaning: row.meaning,
+          example: row.example,
           createdBy: actor.id,
         })
       }
@@ -231,7 +399,7 @@ export class StudyService {
       action: 'VOCAB_IMPORTED',
       actorId: actor.id,
       entityType: 'vocab',
-      metadata: { imported, updated, skipped: parsed.skipped, units, mode: 'file', title, topic },
+      metadata: { imported, updated, skipped: parsed.skipped, units, mode: 'file', title },
       ip: actor.ip,
     })
     return { imported, updated, skipped: parsed.skipped, units }
@@ -271,6 +439,142 @@ export class StudyService {
     return (row?.n ?? 0) + 1
   }
 
+  async unitDetail(userId: string, setId: string, unitRaw: string): Promise<VocabUnitDetailDto> {
+    const loose = setId === UNASSIGNED_VOCAB_SET
+    if (!loose && !z.uuid().safeParse(setId).success) throw AppException.badRequest('Mã bộ từ không hợp lệ.')
+    const unit = Number(unitRaw)
+    if (!Number.isInteger(unit) || unit < 1 || unit > 500) throw AppException.badRequest('Unit không hợp lệ.')
+    const named = loose
+      ? { topic: 'Chưa gắn bộ', title: 'Kho từ chung' }
+      : (await this.db.select({ topic: vocabSets.topic, title: vocabSets.title }).from(vocabSets).where(eq(vocabSets.id, setId)).limit(1))[0]
+    if (!named) throw AppException.notFound('Không tìm thấy bộ từ này.')
+
+    const savedSet = new Set(
+      (
+        await this.db
+          .select({ vocabEntryId: notebookEntries.vocabEntryId, wordKey: notebookEntries.wordKey, pos: notebookEntries.partOfSpeech })
+          .from(notebookEntries)
+          .where(eq(notebookEntries.userId, userId))
+      ).flatMap((r) => [r.vocabEntryId ?? '', `${r.wordKey}\0${r.pos.toLowerCase()}`]),
+    )
+
+    type Row = { id: string; word: string; partOfSpeech: string; meaning: string; example: string; displayOrder: number }
+    const result = (await this.db.execute(
+      loose
+        ? sql`
+            with numbered as (
+              select id, word, part_of_speech, meaning, example,
+                ((row_number() over (order by word_key, id) - 1) / ${sql.raw(String(VOCAB_UNIT_SIZE))}) + 1 as unit,
+                row_number() over (order by word_key, id) as display_order
+              from vocab_entries
+              where set_id is null
+            )
+            select id, word, part_of_speech as "partOfSpeech", meaning, example, display_order::int as "displayOrder"
+            from numbered
+            where unit = ${unit}
+            order by word
+          `
+        : sql`
+            select v.id, v.word, v.part_of_speech as "partOfSpeech", v.meaning, v.example, v.display_order::int as "displayOrder"
+            from vocab_units u
+            join vocab_entries v on v.unit_id = u.id
+            where u.set_id = ${setId} and u.position = ${unit}
+            order by v.display_order, v.word
+          `,
+    )) as unknown as { rows: Row[] }
+
+    return {
+      setId,
+      topic: named.topic,
+      title: named.title,
+      unit,
+      items: result.rows.map((r) => ({
+        id: r.id,
+        word: r.word,
+        partOfSpeech: r.partOfSpeech,
+        meaning: r.meaning,
+        example: r.example ?? '',
+        displayOrder: r.displayOrder,
+        savedInNotebook: savedSet.has(r.id) || savedSet.has(`${r.word.toLowerCase()}\0${r.partOfSpeech.toLowerCase()}`),
+      })),
+    }
+  }
+
+  async createVocabEntry(actor: Actor, setId: string, body: unknown) {
+    await this.requireVocabSet(setId)
+    const input = parse(createVocabEntrySchema, body)
+    let [unitRow] = await this.db.select({ id: vocabUnits.id }).from(vocabUnits).where(and(eq(vocabUnits.setId, setId), eq(vocabUnits.position, input.unit))).limit(1)
+    if (!unitRow) {
+      ;[unitRow] = await this.db.insert(vocabUnits).values({ setId, position: input.unit }).returning({ id: vocabUnits.id })
+    }
+    const [last] = await this.db.select({ n: sql<number>`coalesce(max(${vocabEntries.displayOrder}), 0)::int` }).from(vocabEntries).where(eq(vocabEntries.unitId, unitRow!.id))
+    try {
+      const [created] = await this.db
+        .insert(vocabEntries)
+        .values({
+          setId,
+          unitId: unitRow!.id,
+          displayOrder: (last?.n ?? 0) + 1,
+          word: input.word,
+          wordKey: input.word.toLowerCase(),
+          partOfSpeech: input.partOfSpeech,
+          meaning: input.meaning,
+          example: input.example?.trim() ?? '',
+          createdBy: actor.id,
+        })
+        .returning()
+      await this.audit.log({ action: 'VOCAB_CREATED', actorId: actor.id, entityType: 'vocab', entityId: created!.id, ip: actor.ip })
+      return created!
+    } catch (error) {
+      if (isUniqueViolation(error)) throw AppException.conflict('Từ và loại từ này đã tồn tại trong kho từ.')
+      throw error
+    }
+  }
+
+  async updateVocab(actor: Actor, id: string, body: unknown) {
+    const input = parse(updateVocabEntrySchema, body)
+    const [current] = await this.db.select().from(vocabEntries).where(eq(vocabEntries.id, id)).limit(1)
+    if (!current) throw AppException.notFound('Không tìm thấy từ này.')
+    let targetUnitId = current.unitId
+    if (input.unit !== undefined && current.setId) {
+      const [foundUnit] = await this.db
+        .select({ id: vocabUnits.id })
+        .from(vocabUnits)
+        .where(and(eq(vocabUnits.setId, current.setId), eq(vocabUnits.position, input.unit)))
+        .limit(1)
+      if (foundUnit) {
+        targetUnitId = foundUnit.id
+      } else {
+        const [createdUnit] = await this.db.insert(vocabUnits).values({ setId: current.setId, position: input.unit }).returning({ id: vocabUnits.id })
+        targetUnitId = createdUnit!.id
+      }
+    }
+    try {
+      const [updated] = await this.db
+        .update(vocabEntries)
+        .set({
+          word: input.word,
+          wordKey: input.word.toLowerCase(),
+          partOfSpeech: input.partOfSpeech,
+          meaning: input.meaning,
+          example: input.example?.trim() ?? '',
+          unitId: targetUnitId,
+          updatedAt: new Date(),
+        })
+        .where(eq(vocabEntries.id, id))
+        .returning()
+      if (current.unitId && targetUnitId !== current.unitId) {
+        const [left] = await this.db.select({ n: sql<number>`count(*)::int` }).from(vocabEntries).where(eq(vocabEntries.unitId, current.unitId))
+        if ((left?.n ?? 0) === 0) await this.db.delete(vocabUnits).where(eq(vocabUnits.id, current.unitId))
+      }
+      await this.audit.log({ action: 'VOCAB_UPDATED', actorId: actor.id, entityType: 'vocab', entityId: id, ip: actor.ip })
+      return updated!
+    } catch (error) {
+      if (isUniqueViolation(error)) throw AppException.conflict('Đã có từ trùng tên và loại từ trong kho.')
+      throw error
+    }
+  }
+
   async deleteVocab(actor: Actor, id: string) {
     const [row] = await this.db.delete(vocabEntries).where(eq(vocabEntries.id, id)).returning({ id: vocabEntries.id, unitId: vocabEntries.unitId })
     if (!row) throw AppException.notFound('Không tìm thấy từ này.')
@@ -301,14 +605,22 @@ export class StudyService {
         skipped++
         continue
       }
-      const inserted = await this.insertNotebook(userId, word, row.partOfSpeech, row.meaning, 'MANUAL', null)
+      const topic = (row.topic || parsed.topic || '').trim().slice(0, 80)
+      const inserted = await this.insertNotebook(userId, word, row.partOfSpeech, row.meaning, row.example, topic, row.unit, 'default', 'MANUAL', null)
       if (inserted) {
         added++
         continue
       }
       await this.db
         .update(notebookEntries)
-        .set({ word, meaning: row.meaning, updatedAt: new Date() })
+        .set({
+          word,
+          meaning: row.meaning,
+          ...(row.example ? { example: row.example } : {}),
+          ...(topic ? { topic } : {}),
+          ...(row.unit ? { unit: row.unit } : {}),
+          updatedAt: new Date(),
+        })
         .where(and(eq(notebookEntries.userId, userId), eq(notebookEntries.wordKey, word.toLowerCase()), eq(notebookEntries.partOfSpeech, row.partOfSpeech)))
       updated++
     }
@@ -329,44 +641,158 @@ export class StudyService {
   async saveNotebook(userId: string, body: unknown): Promise<SaveNotebookResult> {
     const input = parse(saveNotebookSchema, body)
     if (input.vocabEntryId) {
-      const [vocab] = await this.db.select().from(vocabEntries).where(eq(vocabEntries.id, input.vocabEntryId)).limit(1)
+      const [vocab] = await this.db
+        .select({
+          id: vocabEntries.id,
+          word: vocabEntries.word,
+          partOfSpeech: vocabEntries.partOfSpeech,
+          meaning: vocabEntries.meaning,
+          example: vocabEntries.example,
+          topic: vocabSets.topic,
+          unitPos: vocabUnits.position,
+        })
+        .from(vocabEntries)
+        .leftJoin(vocabSets, eq(vocabEntries.setId, vocabSets.id))
+        .leftJoin(vocabUnits, eq(vocabEntries.unitId, vocabUnits.id))
+        .where(eq(vocabEntries.id, input.vocabEntryId))
+        .limit(1)
       if (!vocab) throw AppException.notFound('Không tìm thấy từ trong kho.')
-      const inserted = await this.insertNotebook(userId, vocab.word, vocab.partOfSpeech, vocab.meaning, 'CATALOG', vocab.id)
+      const inserted = await this.insertNotebook(
+        userId,
+        vocab.word,
+        vocab.partOfSpeech,
+        vocab.meaning,
+        vocab.example ?? '',
+        (input.topic ?? vocab.topic ?? '').trim(),
+        input.unit !== undefined ? input.unit : vocab.unitPos ?? null,
+        input.color ?? 'default',
+        'CATALOG',
+        vocab.id,
+      )
       const entries = await this.notebookRows(userId, vocab.word.toLowerCase())
       return { word: vocab.word, alreadySaved: !inserted, entries }
     }
     const word = notebookPhrase(input.word ?? '')
     if (!word) throw AppException.badRequest('Chỉ thêm được từ hoặc cụm từ tiếng Anh.')
     if (input.manual) {
-      const inserted = await this.insertNotebook(userId, word, input.partOfSpeech ?? '', input.meaning ?? '', 'MANUAL', null)
+      const inserted = await this.insertNotebook(
+        userId,
+        word,
+        input.partOfSpeech ?? '',
+        input.meaning ?? '',
+        input.example ?? '',
+        (input.topic ?? '').trim(),
+        input.unit ?? null,
+        input.color ?? 'default',
+        'MANUAL',
+        null,
+      )
       const entries = await this.notebookRows(userId, word.toLowerCase())
       return { word, alreadySaved: !inserted, entries }
     }
     if (word.includes(' ')) {
-      const inserted = await this.insertNotebook(userId, word, '', '', 'EXAM', null)
+      const inserted = await this.insertNotebook(userId, word, '', '', input.example ?? '', (input.topic ?? '').trim(), input.unit ?? null, input.color ?? 'default', 'EXAM', null)
       const entries = await this.notebookRows(userId, word.toLowerCase())
       return { word, alreadySaved: !inserted, entries }
     }
-    const matches = await this.db.select().from(vocabEntries).where(eq(vocabEntries.wordKey, word.toLowerCase()))
+    const matches = await this.db
+      .select({
+        id: vocabEntries.id,
+        word: vocabEntries.word,
+        partOfSpeech: vocabEntries.partOfSpeech,
+        meaning: vocabEntries.meaning,
+        example: vocabEntries.example,
+        topic: vocabSets.topic,
+        unitPos: vocabUnits.position,
+      })
+      .from(vocabEntries)
+      .leftJoin(vocabSets, eq(vocabEntries.setId, vocabSets.id))
+      .leftJoin(vocabUnits, eq(vocabEntries.unitId, vocabUnits.id))
+      .where(eq(vocabEntries.wordKey, word.toLowerCase()))
     if (matches.length === 0) {
-      const inserted = await this.insertNotebook(userId, word, '', '', 'EXAM', null)
+      const inserted = await this.insertNotebook(userId, word, '', '', input.example ?? '', (input.topic ?? '').trim(), input.unit ?? null, input.color ?? 'default', 'EXAM', null)
       const entries = await this.notebookRows(userId, word.toLowerCase())
       return { word, alreadySaved: !inserted, entries }
     }
     let added = 0
     for (const vocab of matches) {
-      if (await this.insertNotebook(userId, vocab.word, vocab.partOfSpeech, vocab.meaning, 'EXAM', vocab.id)) added++
+      if (
+        await this.insertNotebook(
+          userId,
+          vocab.word,
+          vocab.partOfSpeech,
+          vocab.meaning,
+          vocab.example ?? '',
+          vocab.topic ?? '',
+          vocab.unitPos ?? null,
+          input.color ?? 'default',
+          'EXAM',
+          vocab.id,
+        )
+      ) {
+        added++
+      }
     }
     const entries = await this.notebookRows(userId, word.toLowerCase())
     return { word, alreadySaved: added === 0, entries }
   }
 
+  async batchSaveNotebook(userId: string, body: unknown): Promise<BatchSaveNotebookResult> {
+    const input = parse(batchSaveNotebookSchema, body)
+    const rows = await this.db
+      .select({
+        id: vocabEntries.id,
+        word: vocabEntries.word,
+        partOfSpeech: vocabEntries.partOfSpeech,
+        meaning: vocabEntries.meaning,
+        example: vocabEntries.example,
+        topic: vocabSets.topic,
+        unitPos: vocabUnits.position,
+      })
+      .from(vocabEntries)
+      .leftJoin(vocabSets, eq(vocabEntries.setId, vocabSets.id))
+      .leftJoin(vocabUnits, eq(vocabEntries.unitId, vocabUnits.id))
+      .where(inArray(vocabEntries.id, input.vocabEntryIds))
+    let added = 0
+    let alreadySaved = 0
+    for (const vocab of rows) {
+      const ok = await this.insertNotebook(
+        userId,
+        vocab.word,
+        vocab.partOfSpeech,
+        vocab.meaning,
+        vocab.example ?? '',
+        vocab.topic ?? '',
+        vocab.unitPos ?? null,
+        'default',
+        'CATALOG',
+        vocab.id,
+      )
+      if (ok) added++
+      else alreadySaved++
+    }
+    return { added, alreadySaved }
+  }
+
   async updateNotebook(userId: string, id: string, body: unknown): Promise<NotebookEntryDto> {
     const input = parse(updateNotebookSchema, body)
+    const patch: Partial<typeof notebookEntries.$inferInsert> = { updatedAt: new Date() }
+    if (input.word !== undefined) {
+      const cleaned = notebookPhrase(input.word)
+      if (!cleaned) throw AppException.badRequest('Chỉ lưu được từ hoặc cụm từ tiếng Anh.')
+      patch.word = cleaned
+      patch.wordKey = cleaned.toLowerCase()
+    }
+    if (input.partOfSpeech !== undefined) patch.partOfSpeech = input.partOfSpeech
+    if (input.meaning !== undefined) patch.meaning = input.meaning
+    if (input.example !== undefined) patch.example = input.example
+    if (input.topic !== undefined) patch.topic = input.topic
+    if (input.unit !== undefined) patch.unit = input.unit
+    if (input.color !== undefined) patch.color = input.color
     try {
       const [row] = await this.db
         .update(notebookEntries)
-        .set({ partOfSpeech: input.partOfSpeech, meaning: input.meaning, updatedAt: new Date() })
+        .set(patch)
         .where(and(eq(notebookEntries.id, id), eq(notebookEntries.userId, userId)))
         .returning({ id: notebookEntries.id })
       if (!row) throw AppException.notFound('Không tìm thấy từ trong sổ tay.')
@@ -479,10 +905,94 @@ export class StudyService {
     return { sets }
   }
 
-  async flashcards(userId: string, deck: string, setId?: string, unit?: string): Promise<FlashcardDeckDto> {
-    if (deck === 'notebook') return this.notebookDeck(userId)
+  async flashcards(
+    userId: string,
+    deck: string,
+    setId?: string,
+    unit?: string,
+    topic?: string,
+    color?: string,
+  ): Promise<FlashcardDeckDto> {
+    if (deck === 'notebook') return this.notebookDeck(userId, topic, unit, color)
     if (setId || unit) return this.unitDeck(userId, setId ?? '', unit ?? '')
     return this.catalogDeck(userId)
+  }
+
+  async gameStatus(userId: string, now = new Date()): Promise<VocabGameStatusDto> {
+    const day = localDay(now)
+    const [sumRow] = await this.db
+      .select({ xp: sql<number>`coalesce(sum(${vocabGameLogs.xpAwarded}), 0)::int` })
+      .from(vocabGameLogs)
+      .where(and(eq(vocabGameLogs.userId, userId), eq(vocabGameLogs.playedDay, day)))
+    const recentRows = await this.db
+      .select()
+      .from(vocabGameLogs)
+      .where(eq(vocabGameLogs.userId, userId))
+      .orderBy(desc(vocabGameLogs.playedAt))
+      .limit(10)
+    return {
+      todayGameXp: sumRow?.xp ?? 0,
+      dailyCap: VOCAB_GAME_DAILY_XP_CAP,
+      recent: recentRows.map((r) => ({
+        id: r.id,
+        gameKind: r.gameKind as VocabGameKind,
+        deckLabel: r.deckLabel,
+        score: r.score,
+        totalItems: r.totalItems,
+        xpAwarded: r.xpAwarded,
+        playedAt: r.playedAt.toISOString(),
+      })),
+    }
+  }
+
+  async completeGame(userId: string, body: unknown, now = new Date()): Promise<CompleteVocabGameResultDto> {
+    const input = parse(completeVocabGameSchema, body)
+    let reviewedCount = 0
+    for (const card of input.reviewedCards) {
+      if (card.kind === 'CATALOG') {
+        const [vocab] = await this.db.select({ id: vocabEntries.id }).from(vocabEntries).where(eq(vocabEntries.id, card.id)).limit(1)
+        if (!vocab) continue
+        await this.writeReview(userId, { vocabEntryId: card.id }, card.result)
+        reviewedCount++
+      } else {
+        const [note] = await this.db
+          .select({ id: notebookEntries.id, meaning: notebookEntries.meaning, partOfSpeech: notebookEntries.partOfSpeech })
+          .from(notebookEntries)
+          .where(and(eq(notebookEntries.id, card.id), eq(notebookEntries.userId, userId)))
+          .limit(1)
+        if (!note || !note.meaning || !note.partOfSpeech) continue
+        await this.writeReview(userId, { notebookEntryId: card.id }, card.result)
+        reviewedCount++
+      }
+    }
+
+    const day = localDay(now)
+    const [sumRow] = await this.db
+      .select({ xp: sql<number>`coalesce(sum(${vocabGameLogs.xpAwarded}), 0)::int` })
+      .from(vocabGameLogs)
+      .where(and(eq(vocabGameLogs.userId, userId), eq(vocabGameLogs.playedDay, day)))
+    const usedToday = sumRow?.xp ?? 0
+    const rawXp = input.score > 0 ? Math.min(15, Math.max(1, Math.ceil(input.score / 2))) : 0
+    const remaining = Math.max(0, VOCAB_GAME_DAILY_XP_CAP - usedToday)
+    const xpAwarded = Math.min(rawXp, remaining)
+
+    await this.db.insert(vocabGameLogs).values({
+      userId,
+      gameKind: input.gameKind,
+      deckLabel: input.deckLabel,
+      score: input.score,
+      totalItems: input.totalItems,
+      xpAwarded,
+      playedDay: day,
+      playedAt: now,
+    })
+
+    return {
+      xpAwarded,
+      todayGameXp: usedToday + xpAwarded,
+      dailyCap: VOCAB_GAME_DAILY_XP_CAP,
+      reviewedCount,
+    }
   }
 
   async review(userId: string, body: unknown) {
@@ -601,6 +1111,14 @@ export class StudyService {
   }
 
   private async catalogDeck(userId: string): Promise<FlashcardDeckDto> {
+    const savedSet = new Set(
+      (
+        await this.db
+          .select({ vocabEntryId: notebookEntries.vocabEntryId, wordKey: notebookEntries.wordKey, pos: notebookEntries.partOfSpeech })
+          .from(notebookEntries)
+          .where(eq(notebookEntries.userId, userId))
+      ).flatMap((r) => [r.vocabEntryId ?? '', `${r.wordKey}\0${r.pos.toLowerCase()}`]),
+    )
     const due = await this.db
       .select({ entry: vocabEntries })
       .from(vocabEntries)
@@ -623,7 +1141,9 @@ export class StudyService {
       title: 'Kho từ',
       dueCount: await this.catalogCounts(userId),
       newCount: await this.catalogNewCount(userId),
-      cards: [...due.map((row) => toCard('CATALOG', row.entry)), ...fresh.map((row) => toCard('CATALOG', row.entry))],
+      cards: [...due.map((row) => row.entry), ...fresh.map((row) => row.entry)].map((entry) =>
+        toCard('CATALOG', entry, savedSet.has(entry.id) || savedSet.has(`${entry.wordKey}\0${entry.partOfSpeech.toLowerCase()}`)),
+      ),
     }
   }
 
@@ -636,24 +1156,32 @@ export class StudyService {
       ? { topic: 'Chưa gắn bộ', title: 'Kho từ chung' }
       : (await this.db.select({ topic: vocabSets.topic, title: vocabSets.title }).from(vocabSets).where(eq(vocabSets.id, setId)).limit(1))[0]
     if (!named) throw AppException.notFound('Không tìm thấy bộ từ này.')
-    type CardRow = { id: string; word: string; partOfSpeech: string; meaning: string; due_at: Date | string | null }
+    const savedSet = new Set(
+      (
+        await this.db
+          .select({ vocabEntryId: notebookEntries.vocabEntryId, wordKey: notebookEntries.wordKey, pos: notebookEntries.partOfSpeech })
+          .from(notebookEntries)
+          .where(eq(notebookEntries.userId, userId))
+      ).flatMap((r) => [r.vocabEntryId ?? '', `${r.wordKey}\0${r.pos.toLowerCase()}`]),
+    )
+    type CardRow = { id: string; word: string; partOfSpeech: string; meaning: string; example: string; due_at: Date | string | null }
     const result = (await this.db.execute(
       loose
         ? sql`
             with numbered as (
-              select id, word, part_of_speech, meaning, 0 as display_order,
+              select id, word, part_of_speech, meaning, example, 0 as display_order,
                 ((row_number() over (order by word_key, id) - 1) / ${sql.raw(String(VOCAB_UNIT_SIZE))}) + 1 as unit
               from vocab_entries
               where set_id is null
             )
-            select n.id, n.word, n.part_of_speech as "partOfSpeech", n.meaning, r.due_at
+            select n.id, n.word, n.part_of_speech as "partOfSpeech", n.meaning, n.example, r.due_at
             from numbered n
             left join card_reviews r on r.vocab_entry_id = n.id and r.user_id = ${userId}
             where n.unit = ${unit}
             order by (r.id is null) desc, n.word
           `
         : sql`
-            select v.id, v.word, v.part_of_speech as "partOfSpeech", v.meaning, r.due_at
+            select v.id, v.word, v.part_of_speech as "partOfSpeech", v.meaning, v.example, r.due_at
             from vocab_units u
             join vocab_entries v on v.unit_id = u.id
             left join card_reviews r on r.vocab_entry_id = v.id and r.user_id = ${userId}
@@ -670,21 +1198,30 @@ export class StudyService {
       title: `${named.title} · Unit ${unit}`,
       dueCount,
       newCount,
-      cards: result.rows.map((row) => toCard('CATALOG', row)),
+      cards: result.rows.map((row) => ({
+        ...toCard('CATALOG', row, savedSet.has(row.id) || savedSet.has(`${row.word.toLowerCase()}\0${row.partOfSpeech.toLowerCase()}`)),
+        topic: named.topic,
+        unit,
+      })),
     }
   }
 
-  private async notebookDeck(userId: string): Promise<FlashcardDeckDto> {
-    const ready = and(eq(notebookEntries.userId, userId), sql`${notebookEntries.meaning} <> ''`, sql`${notebookEntries.partOfSpeech} <> ''`)
+  private async notebookDeck(userId: string, topic?: string, unitRaw?: string, color?: string): Promise<FlashcardDeckDto> {
+    const conditions = [eq(notebookEntries.userId, userId), sql`${notebookEntries.meaning} <> ''`, sql`${notebookEntries.partOfSpeech} <> ''`]
+    if (topic && topic.trim()) conditions.push(eq(notebookEntries.topic, topic.trim()))
+    const unitNum = unitRaw ? Number(unitRaw) : NaN
+    if (Number.isInteger(unitNum) && unitNum > 0) conditions.push(eq(notebookEntries.unit, unitNum))
+    if (color && COLOR_SET.has(color)) conditions.push(eq(notebookEntries.color, color))
+    const ready = and(...conditions)
     const due = await this.db
       .select({ entry: notebookEntries })
       .from(notebookEntries)
       .innerJoin(cardReviews, and(eq(cardReviews.notebookEntryId, notebookEntries.id), eq(cardReviews.userId, userId)))
       .where(and(ready, lte(cardReviews.dueAt, new Date())))
       .orderBy(asc(cardReviews.dueAt))
-      .limit(20)
+      .limit(40)
     const fresh =
-      due.length >= 20
+      due.length >= 40
         ? []
         : await this.db
             .select({ entry: notebookEntries })
@@ -692,11 +1229,11 @@ export class StudyService {
             .leftJoin(cardReviews, and(eq(cardReviews.notebookEntryId, notebookEntries.id), eq(cardReviews.userId, userId)))
             .where(and(ready, isNull(cardReviews.id)))
             .orderBy(asc(notebookEntries.word))
-            .limit(20 - due.length)
+            .limit(40 - due.length)
     const summary = await this.notebookSummary(userId)
     return {
       deck: 'notebook',
-      title: 'Sổ tay',
+      title: topic?.trim() ? `Sổ tay · ${topic.trim()}` : 'Sổ tay',
       dueCount: summary.dueCount,
       newCount: summary.newCount,
       cards: [...due.map((row) => toCard('NOTEBOOK', row.entry)), ...fresh.map((row) => toCard('NOTEBOOK', row.entry))],
@@ -730,10 +1267,21 @@ export class StudyService {
     return Boolean(row)
   }
 
-  private async insertNotebook(userId: string, word: string, partOfSpeech: string, meaning: string, source: 'CATALOG' | 'EXAM' | 'MANUAL', vocabEntryId: string | null) {
+  private async insertNotebook(
+    userId: string,
+    word: string,
+    partOfSpeech: string,
+    meaning: string,
+    example: string,
+    topic: string,
+    unit: number | null,
+    color: NotebookCardColor,
+    source: 'CATALOG' | 'EXAM' | 'MANUAL',
+    vocabEntryId: string | null,
+  ) {
     const inserted = await this.db
       .insert(notebookEntries)
-      .values({ userId, word, wordKey: word.toLowerCase(), partOfSpeech, meaning, source, vocabEntryId })
+      .values({ userId, word, wordKey: word.toLowerCase(), partOfSpeech, meaning, example, topic, unit, color, source, vocabEntryId })
       .onConflictDoNothing()
       .returning({ id: notebookEntries.id })
     return inserted.length > 0
@@ -752,6 +1300,11 @@ export class StudyService {
       word: row.entry.word,
       partOfSpeech: row.entry.partOfSpeech || null,
       meaning: row.entry.meaning || null,
+      example: row.entry.example || null,
+      topic: row.entry.topic || '',
+      unit: row.entry.unit ?? null,
+      color: normalizeColor(row.entry.color),
+      vocabEntryId: row.entry.vocabEntryId ?? null,
       source: row.entry.source as NotebookEntryDto['source'],
       due: Boolean(row.entry.meaning && row.entry.partOfSpeech && (row.dueAt == null || row.dueAt.getTime() <= now)),
       createdAt: row.entry.createdAt.toISOString(),
@@ -849,8 +1402,22 @@ function isUniqueViolation(error: unknown) {
   return false
 }
 
-function toCard(kind: FlashcardDto['kind'], row: { id: string; word: string; partOfSpeech: string; meaning: string }): FlashcardDto {
-  return { kind, id: row.id, word: row.word, partOfSpeech: row.partOfSpeech, meaning: row.meaning }
+function toCard(
+  kind: FlashcardDto['kind'],
+  row: { id: string; word: string; partOfSpeech: string; meaning: string; example?: string | null; topic?: string | null; unit?: number | null },
+  savedInNotebook?: boolean,
+): FlashcardDto {
+  return {
+    kind,
+    id: row.id,
+    word: row.word,
+    partOfSpeech: row.partOfSpeech,
+    meaning: row.meaning,
+    example: row.example ?? '',
+    ...(row.topic ? { topic: row.topic } : {}),
+    ...(row.unit != null ? { unit: row.unit } : {}),
+    ...(savedInNotebook !== undefined ? { savedInNotebook } : {}),
+  }
 }
 
 function pdfFilename(raw: string) {

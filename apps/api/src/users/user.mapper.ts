@@ -1,4 +1,4 @@
-import { goalFromStored, teacherGrants, type UserDto } from '@toeic/shared'
+import { effectiveAvatarFrame, goalFromStored, teacherGrants, type UserDto } from '@toeic/shared'
 import type { UserRow } from '../db/schema'
 
 /** The ONLY place a DB user row becomes an API payload — guarantees password_hash etc. never leak. */
@@ -13,6 +13,8 @@ export function toUserDto(u: UserRow, classroom?: { id: string; name: string } |
     role: u.role,
     status: u.status,
     avatarUrl: u.avatarUrl,
+    avatarFrame: effectiveAvatarFrame(u.role, u.avatarFrame, u.avatarFrameExpiresAt),
+    rewardPoints: u.rewardPoints ?? 0,
     targetScore: u.targetScore,
     goal: goalFromStored(u.goalTrack, u.targetScore),
     mustChangePassword: u.mustChangePassword,

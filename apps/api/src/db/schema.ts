@@ -44,6 +44,9 @@ export const users = pgTable(
     role: roleEnum('role').notNull(),
     status: userStatusEnum('status').notNull().default('ACTIVE'),
     avatarUrl: text('avatar_url'),
+    avatarFrame: text('avatar_frame').notNull().default('none'),
+    avatarFrameExpiresAt: timestamp('avatar_frame_expires_at', { withTimezone: true }),
+    rewardPoints: integer('reward_points').notNull().default(0),
     /** Upper bound of the student's score band; kept for list/sort compatibility. */
     targetScore: integer('target_score'),
     /** TWO_SKILL | FOUR_SKILL; null when the student has no goal. */
@@ -502,7 +505,9 @@ export const siteSettings = pgTable('site_settings', {
   themePaper: text('theme_paper').notNull(),
   themeButton: text('theme_button').notNull().default('#1f7a8c'),
   backgroundMode: text('background_mode').notNull().default('fixed'),
+  themePreset: text('theme_preset').notNull().default('classic'),
   honorBoardEnabled: boolean('honor_board_enabled').notNull().default(true),
+  honorRewardConfig: jsonb('honor_reward_config').$type<Record<string, unknown> | null>(),
   ...timestamps,
 }).enableRLS()
 
@@ -571,6 +576,7 @@ export const vocabEntries = pgTable(
     wordKey: text('word_key').notNull(),
     partOfSpeech: text('part_of_speech').notNull(),
     meaning: text('meaning').notNull(),
+    example: text('example').notNull().default(''),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     ...timestamps,
   },
@@ -594,11 +600,37 @@ export const notebookEntries = pgTable(
     wordKey: text('word_key').notNull(),
     partOfSpeech: text('part_of_speech').notNull().default(''),
     meaning: text('meaning').notNull().default(''),
+    example: text('example').notNull().default(''),
+    topic: text('topic').notNull().default(''),
+    unit: integer('unit'),
+    color: text('color').notNull().default('default'),
     source: text('source').notNull(),
     vocabEntryId: uuid('vocab_entry_id').references(() => vocabEntries.id, { onDelete: 'set null' }),
     ...timestamps,
   },
   (t) => [uniqueIndex('notebook_entries_user_word_uq').on(t.userId, t.wordKey, t.partOfSpeech), index('notebook_entries_user_idx').on(t.userId, t.createdAt)],
+).enableRLS()
+
+/** Daily capped mini-game sessions so students earn bonus EXP without gaming the leaderboard. */
+export const vocabGameLogs = pgTable(
+  'vocab_game_logs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    gameKind: text('game_kind').notNull(),
+    deckLabel: text('deck_label').notNull(),
+    score: integer('score').notNull(),
+    totalItems: integer('total_items').notNull(),
+    xpAwarded: integer('xp_awarded').notNull(),
+    playedDay: text('played_day').notNull(),
+    playedAt: timestamp('played_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('vocab_game_logs_user_day_idx').on(t.userId, t.playedDay),
+    index('vocab_game_logs_user_at_idx').on(t.userId, t.playedAt),
+  ],
 ).enableRLS()
 
 /** A student's highlight or note on one span of a reading passage, prompt, or option. */
@@ -727,6 +759,55 @@ export const dailyGoals = pgTable('daily_goals', {
   vocabTarget: integer('vocab_target').notNull().default(0),
   ...timestamps,
 }).enableRLS()
+
+/** Frames unlocked by a student (weekly Top 3 frames carry expiresAt; monthly & streak frames have null expiresAt). */
+export const userAvatarFrames = pgTable(
+  'user_avatar_frames',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    frameId: text('frame_id').notNull(),
+    unlockedAt: timestamp('unlocked_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.frameId] })],
+).enableRLS()
+
+/** Audit record & idempotency lock for settled leaderboard cycles, streak milestones, and rollout sentinel. */
+export const honorSettlements = pgTable(
+  'honor_settlements',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    cycleKey: text('cycle_key').notNull(),
+    scopeKey: text('scope_key').notNull(),
+    period: text('period').notNull(),
+    classId: uuid('class_id').references(() => classes.id, { onDelete: 'set null' }),
+    className: text('class_name'),
+    winners: jsonb('winners').$type<Array<Record<string, unknown>>>().notNull(),
+    triggeredBy: uuid('triggered_by').references(() => users.id, { onDelete: 'set null' }),
+    settledAt: timestamp('settled_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('honor_settlements_cycle_scope_uq').on(t.cycleKey, t.scopeKey)],
+).enableRLS()
+
+/** Append-only point transaction ledger powering the future gift redemption shop. */
+export const rewardPointLedger = pgTable(
+  'reward_point_ledger',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    delta: integer('delta').notNull(),
+    reason: text('reason').notNull(),
+    source: text('source').notNull(),
+    settlementId: uuid('settlement_id').references(() => honorSettlements.id, { onDelete: 'set null' }),
+    actorId: uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('reward_point_ledger_user_idx').on(t.userId, t.createdAt)],
+).enableRLS()
 
 export type ExamRow = typeof exams.$inferSelect
 export type AttemptRow = typeof attempts.$inferSelect

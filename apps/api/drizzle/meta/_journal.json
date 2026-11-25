@@ -197,6 +197,20 @@
       "when": 1793900000000,
       "tag": "0028_account_avatars",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1794000000000,
+      "tag": "0029_honor_rewards",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1794100000000,
+      "tag": "0030_vocab_theme_year_games",
+      "breakpoints": true
     }
   ]
 }

@@ -16,14 +16,6 @@ import {
   type ScorePointDto,
   type SetGoalInput,
   type SkillStatDto,
-  HONOR_BOARD_SIZE,
-  XP_PER_CORRECT,
-  assignCenterPlaces,
-  rankFromXp,
-  type HonorBoardDto,
-  type HonorCenterEntry,
-  type HonorStudentEntry,
-  type StaffHonorDto,
   type StudentDashboardDto,
   type StudentProgressDto,
   type UpdateProfileInput,
@@ -31,29 +23,20 @@ import {
   remainingToGoal,
   goalFromStored,
 } from '@toeic/shared'
-import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { AuditService } from '../audit/audit.service'
 import { AppException } from '../common/app-exception'
 import { DB, type Db } from '../db/database.module'
-import { attempts, assignments, classMembers, classes, classTeachers, exams, siteSettings, users } from '../db/schema'
+import { attempts, assignments, classMembers, classTeachers, exams, users } from '../db/schema'
 import { toUserDto } from '../users/user.mapper'
+import { HonorRewardsService } from './honor-rewards.service'
 
 /** Class is in Vietnam: "today" and "this week" follow local time, not the server's. */
 export const TZ = 'Asia/Ho_Chi_Minh'
 const TZ_SQL = sql.raw(`'${TZ}'`)
-const XP_PER_CORRECT_SQL = sql.raw(String(XP_PER_CORRECT))
 const HISTORY_SIZE = 12
 
 type Rows<T> = { rows: T[] }
-
-type HonorSnapshot = {
-  enabled: boolean
-  weekStart: string
-  year: number
-  xpByUser: Map<string, { name: string; weeklyXp: number; yearlyXp: number; classXp: number }>
-  members: Array<{ userId: string; classId: string; className: string; avatarUrl: string | null }>
-  resets: Map<string, string | null>
-}
 
 const dayFormat = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' })
 export const localDay = (d: Date) => dayFormat.format(d) // YYYY-MM-DD in TZ
@@ -153,6 +136,7 @@ export class ProgressService {
   constructor(
     @Inject(DB) private readonly db: Db,
     private readonly audit: AuditService,
+    private readonly honorRewards: HonorRewardsService,
   ) {}
 
   async studentDashboard(userId: string, now = new Date()): Promise<StudentDashboardDto> {
@@ -234,7 +218,7 @@ export class ProgressService {
         localDay(now),
       ),
       weekStart,
-      honor: await this.honorBoard(userId, now, weekStart),
+      honor: await this.honorRewards.honorBoard(userId, now),
       skills,
     }
   }
@@ -609,231 +593,6 @@ export class ProgressService {
       const e = err as { code?: string; cause?: { code?: string } }
       if (e?.code === '23505' || e?.cause?.code === '23505') throw AppException.conflict('Email đã được sử dụng bởi tài khoản khác')
       throw err
-    }
-  }
-
-  /**
-   * Yearly EXP boards. Both the class board and the center board count EXP since 1 January.
-   * An admin reset moves one class board's start to that moment; the center board stays on the calendar year.
-   * A sentence pattern awards XP_PER_CORRECT the first time it is answered correctly inside the board's window.
-   * Rank uses the EXP shown on that board; 300 EXP is one rank.
-   * On the center board, 1st place needs 2000 EXP and 2nd and 3rd need 1500. Later places have no minimum.
-   */
-  private async honorBoard(userId: string, now: Date, weekStart: string): Promise<HonorBoardDto> {
-    const snap = await this.honorSnapshot(now, weekStart)
-    const empty = (): HonorBoardDto => ({
-      enabled: snap.enabled,
-      weekStart: snap.weekStart,
-      year: snap.year,
-      className: null,
-      me: { weeklyXp: 0, yearlyXp: 0, rank: rankFromXp(0) },
-      classBoard: { entries: [], you: null, participants: 0, resetAt: null },
-      centerBoard: [],
-    })
-    if (!snap.enabled) return empty()
-
-    const mine = snap.members.find((row) => row.userId === userId) ?? null
-    const meXp = snap.xpByUser.get(userId) ?? { name: '', weeklyXp: 0, yearlyXp: 0, classXp: 0 }
-    const ranked = this.rankClass(snap, mine?.classId ?? null, userId)
-    return {
-      enabled: true,
-      weekStart: snap.weekStart,
-      year: snap.year,
-      className: mine?.className ?? null,
-      me: { weeklyXp: meXp.weeklyXp, yearlyXp: meXp.yearlyXp, rank: rankFromXp(meXp.yearlyXp) },
-      classBoard: {
-        entries: ranked.slice(0, HONOR_BOARD_SIZE),
-        you: ranked.find((row) => row.you) ?? null,
-        participants: ranked.length,
-        resetAt: mine ? (snap.resets.get(mine.classId) ?? null) : null,
-      },
-      centerBoard: this.centerStudents(snap, userId, new Set()),
-    }
-  }
-
-  /**
-   * Staff view. A teacher sees student names on the class boards only for classes they manage.
-   * Every board ranks by EXP since 1 January. An admin reset restarts one class board only.
-   * An admin sees every class roster.
-   */
-  async staffHonor(actor: { id: string; role: string }, now = new Date()): Promise<StaffHonorDto> {
-    const weekRows = (await this.db.execute(sql`select to_char(date_trunc('week', ${now.toISOString()}::timestamptz at time zone ${TZ_SQL}), 'YYYY-MM-DD') as day`)) as unknown as Rows<{ day: string }>
-    const weekStart = weekRows.rows[0]?.day ?? localDay(now)
-    const snap = await this.honorSnapshot(now, weekStart)
-    const managed =
-      actor.role === 'ADMIN'
-        ? null
-        : new Set(
-            (
-              await this.db.select({ classId: classTeachers.classId }).from(classTeachers).where(eq(classTeachers.userId, actor.id))
-            ).map((row) => row.classId),
-          )
-    const roomRows =
-      managed === null
-        ? await this.db.select({ id: classes.id, name: classes.name }).from(classes).where(isNull(classes.closedAt))
-        : await this.db
-            .select({ id: classes.id, name: classes.name })
-            .from(classes)
-            .innerJoin(classTeachers, eq(classTeachers.classId, classes.id))
-            .where(and(eq(classTeachers.userId, actor.id), isNull(classes.closedAt)))
-    if (!snap.enabled) {
-      return { enabled: false, weekStart: snap.weekStart, year: snap.year, classes: [], centerBoard: [] }
-    }
-    return {
-      enabled: true,
-      weekStart: snap.weekStart,
-      year: snap.year,
-      classes: roomRows
-        .map((room) => {
-          const entries = this.rankClass(snap, room.id, null)
-          return { classId: room.id, className: room.name, entries, participants: entries.length, resetAt: snap.resets.get(room.id) ?? null }
-        })
-        .sort((a, b) => a.className.localeCompare(b.className, 'vi')),
-      centerBoard: this.centerStudents(snap, null, managed ?? new Set()),
-    }
-  }
-
-  private rankClass(
-    snap: HonorSnapshot,
-    classId: string | null,
-    viewerId: string | null,
-  ): HonorStudentEntry[] {
-    if (!classId) return []
-    return snap.members
-      .filter((row) => row.classId === classId)
-      .map((row) => {
-        const xp = snap.xpByUser.get(row.userId) ?? { name: '', weeklyXp: 0, yearlyXp: 0, classXp: 0 }
-        return { id: row.userId, name: xp.name, avatarUrl: row.avatarUrl, weeklyXp: xp.weeklyXp, yearlyXp: xp.classXp }
-      })
-      .filter((row) => row.yearlyXp > 0)
-      .sort((a, b) => b.yearlyXp - a.yearlyXp || a.name.localeCompare(b.name, 'vi'))
-      .map((row, index) => ({
-        place: index + 1,
-        name: row.name,
-        avatarUrl: row.avatarUrl,
-        weeklyXp: row.weeklyXp,
-        yearlyXp: row.yearlyXp,
-        rank: rankFromXp(row.yearlyXp),
-        you: row.id === viewerId,
-      }))
-  }
-
-  /** Students from every class. Podium places need the center EXP floors; later places are open. The list is empty again on 1 January. */
-  private centerStudents(snap: HonorSnapshot, viewerId: string | null, yours: Set<string>): HonorCenterEntry[] {
-    const rows = snap.members
-      .map((row) => {
-        const xp = snap.xpByUser.get(row.userId) ?? { name: '', weeklyXp: 0, yearlyXp: 0, classXp: 0 }
-        return { id: row.userId, name: xp.name, avatarUrl: row.avatarUrl, classId: row.classId, className: row.className, weeklyXp: xp.weeklyXp, yearlyXp: xp.yearlyXp }
-      })
-      .filter((row) => row.yearlyXp > 0)
-    return assignCenterPlaces(rows).map((row) => ({
-      place: row.place,
-      name: row.name,
-      avatarUrl: row.avatarUrl,
-      className: row.className,
-      weeklyXp: row.weeklyXp,
-      yearlyXp: row.yearlyXp,
-      rank: rankFromXp(row.yearlyXp),
-      you: row.id === viewerId,
-      yours: yours.has(row.classId),
-    }))
-  }
-
-  /** Finished-work EXP and class membership used by both the student board and the staff board. */
-  private async honorSnapshot(now: Date, weekStart: string): Promise<HonorSnapshot> {
-    const iso = now.toISOString()
-    const [settings] = await this.db.select({ enabled: siteSettings.honorBoardEnabled }).from(siteSettings).limit(1)
-    const enabled = settings?.enabled ?? true
-    const yearRows = (await this.db.execute(sql`
-      select to_char(${iso}::timestamptz at time zone ${TZ_SQL}, 'YYYY') as year
-    `)) as unknown as Rows<{ year: string }>
-    const year = Number(yearRows.rows[0]?.year ?? weekStart.slice(0, 4))
-    if (!enabled) return { enabled, weekStart, year, xpByUser: new Map(), members: [], resets: new Map() }
-
-    const [xpRows, memberRows, resetRows] = await Promise.all([
-      this.db.execute(sql`
-        with bounds as (
-          select
-            (date_trunc('week', ${iso}::timestamptz at time zone ${TZ_SQL}) at time zone ${TZ_SQL}) as week_start,
-            (date_trunc('year', ${iso}::timestamptz at time zone ${TZ_SQL}) at time zone ${TZ_SQL}) as year_start
-        ),
-        correct as (
-          select a.user_id, aa.question_id, a.submitted_at
-          from attempt_answers aa
-          join attempts a on a.id = aa.attempt_id
-          cross join bounds b
-          where aa.is_correct = true
-            and a.status in ('SUBMITTED', 'EXPIRED')
-            and a.submitted_at is not null
-            and a.submitted_at <= ${iso}::timestamptz
-            and a.submitted_at >= b.year_start
-        ),
-        first_correct as (
-          select user_id, question_id, min(submitted_at) as first_at
-          from correct
-          group by user_id, question_id
-        ),
-        class_correct as (
-          select a.user_id, aa.question_id, a.submitted_at
-          from attempt_answers aa
-          join attempts a on a.id = aa.attempt_id
-          join class_members cm on cm.user_id = a.user_id
-          join classes c on c.id = cm.class_id
-          cross join bounds b
-          where aa.is_correct = true
-            and a.status in ('SUBMITTED', 'EXPIRED')
-            and a.submitted_at is not null
-            and a.submitted_at <= ${iso}::timestamptz
-            and a.submitted_at >= b.year_start
-            and (c.honor_reset_at is null or a.submitted_at >= c.honor_reset_at)
-        ),
-        class_first as (
-          select user_id, question_id
-          from class_correct
-          group by user_id, question_id
-        )
-        select u.id as id, u.full_name as name,
-               coalesce(w.xp, 0)::int as weekly_xp,
-               coalesce(y.xp, 0)::int as yearly_xp,
-               coalesce(cx.xp, 0)::int as class_xp
-        from users u
-        left join (
-          select f.user_id, (count(*) * ${XP_PER_CORRECT_SQL})::int as xp
-          from first_correct f, bounds b
-          where f.first_at >= b.week_start
-          group by f.user_id
-        ) w on w.user_id = u.id
-        left join (
-          select user_id, (count(*) * ${XP_PER_CORRECT_SQL})::int as xp
-          from first_correct
-          group by user_id
-        ) y on y.user_id = u.id
-        left join (
-          select user_id, (count(*) * ${XP_PER_CORRECT_SQL})::int as xp
-          from class_first
-          group by user_id
-        ) cx on cx.user_id = u.id
-        where u.role = 'STUDENT' and u.status = 'ACTIVE'
-      `) as unknown as Promise<Rows<{ id: string; name: string; weekly_xp: number; yearly_xp: number; class_xp: number }>>,
-      this.db.execute(sql`
-        select cm.user_id as user_id, c.id as class_id, c.name as class_name, u.avatar_url
-        from class_members cm
-        join classes c on c.id = cm.class_id
-        join users u on u.id = cm.user_id
-        where u.role = 'STUDENT' and u.status = 'ACTIVE'
-      `) as unknown as Promise<Rows<{ user_id: string; class_id: string; class_name: string; avatar_url: string | null }>>,
-      this.db.execute(sql`
-        select id as id, honor_reset_at as reset_at from classes
-      `) as unknown as Promise<Rows<{ id: string; reset_at: Date | string | null }>>,
-    ])
-
-    return {
-      enabled: true,
-      weekStart,
-      year,
-      xpByUser: new Map(xpRows.rows.map((row) => [row.id, { name: row.name, weeklyXp: Number(row.weekly_xp), yearlyXp: Number(row.yearly_xp), classXp: Number(row.class_xp) }])),
-      members: memberRows.rows.map((row) => ({ userId: row.user_id, classId: row.class_id, className: row.class_name, avatarUrl: row.avatar_url })),
-      resets: new Map(resetRows.rows.map((row) => [row.id, row.reset_at ? new Date(row.reset_at).toISOString() : null])),
     }
   }
 }

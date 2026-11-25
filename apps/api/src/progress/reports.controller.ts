@@ -1,13 +1,20 @@
-import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common'
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Put, Req } from '@nestjs/common'
+import { adjustUserPointsSchema, earlySettleHonorSchema, honorRewardConfigSchema } from '@toeic/shared'
+import type { Request } from 'express'
 import { assertTeacherGrant } from '../auth/permissions'
-import { CurrentUser, Roles, type AuthUser } from '../common/decorators'
+import { clientIp, CurrentUser, Roles, type AuthUser } from '../common/decorators'
+import { parse } from '../common/zod'
+import { HonorRewardsService } from './honor-rewards.service'
 import { ProgressService } from './progress.service'
 
-/** Teacher/admin read-only views over student activity. */
+/** Teacher/admin views over student activity and honor administration. */
 @Roles('TEACHER', 'ADMIN')
 @Controller()
 export class ReportsController {
-  constructor(private readonly progress: ProgressService) {}
+  constructor(
+    private readonly progress: ProgressService,
+    private readonly honorRewards: HonorRewardsService,
+  ) {}
 
   @Get('students/:id/progress')
   async studentProgress(@CurrentUser() user: AuthUser, @Param('id', new ParseUUIDPipe()) id: string) {
@@ -36,9 +43,27 @@ export class ReportsController {
     return this.progress.examReport(user.role === 'TEACHER' ? user.id : undefined)
   }
 
-  /** Class boards the viewer may see, plus the center-wide class ranking. */
+  /** Class boards the viewer may see, plus the center-wide ranking and settlements. */
   @Get('reports/honor')
   honor(@CurrentUser() user: AuthUser) {
-    return this.progress.staffHonor({ id: user.id, role: user.role })
+    return this.honorRewards.staffHonor({ id: user.id, role: user.role })
+  }
+
+  @Roles('ADMIN')
+  @Put('reports/honor/config')
+  updateHonorConfig(@CurrentUser() user: AuthUser, @Body() body: unknown, @Req() req: Request) {
+    return this.honorRewards.updateRewardConfig(user.id, parse(honorRewardConfigSchema, body), clientIp(req))
+  }
+
+  @Roles('ADMIN')
+  @Post('reports/honor/points')
+  adjustPoints(@CurrentUser() user: AuthUser, @Body() body: unknown, @Req() req: Request) {
+    return this.honorRewards.adjustUserPoints(user.id, parse(adjustUserPointsSchema, body), clientIp(req))
+  }
+
+  @Roles('ADMIN')
+  @Post('reports/honor/settle')
+  earlySettle(@CurrentUser() user: AuthUser, @Body() body: unknown, @Req() req: Request) {
+    return this.honorRewards.earlySettle(user.id, parse(earlySettleHonorSchema, body), new Date(), clientIp(req))
   }
 }

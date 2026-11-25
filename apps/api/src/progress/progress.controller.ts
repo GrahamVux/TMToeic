@@ -4,6 +4,7 @@ import type { Request } from 'express'
 import { clientIp, CurrentUser, Roles, type AuthUser } from '../common/decorators'
 import { parse } from '../common/zod'
 import { DailyGoalsService } from './daily-goals.service'
+import { HonorRewardsService } from './honor-rewards.service'
 import { ProgressService } from './progress.service'
 
 /** Endpoints about the signed-in student themselves. */
@@ -13,11 +14,17 @@ export class ProgressController {
   constructor(
     private readonly progress: ProgressService,
     private readonly daily: DailyGoalsService,
+    private readonly honorRewards: HonorRewardsService,
   ) {}
 
   @Get('dashboard')
   dashboard(@CurrentUser() user: AuthUser) {
     return this.progress.studentDashboard(user.id)
+  }
+
+  @Get('honor')
+  honor(@CurrentUser() user: AuthUser) {
+    return this.honorRewards.honorBoard(user.id)
   }
 
   @Get('progress')

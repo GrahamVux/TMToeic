@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { type AssignClassInput, type ClassSummaryDto, type ClassTeacherDto, type CreateClassInput, type RenameClassInput, type SetClassClosedInput, type SetClassTeachersInput } from '@toeic/shared'
+import { effectiveAvatarFrame, type AssignClassInput, type ClassSummaryDto, type ClassTeacherDto, type CreateClassInput, type RenameClassInput, type SetClassClosedInput, type SetClassTeachersInput } from '@toeic/shared'
 import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 import { AppException } from '../common/app-exception'
 import { DB, type Db } from '../db/database.module'
@@ -119,25 +119,51 @@ export class ClassesService {
       .groupBy(classes.id, classes.name, classes.closedAt, classes.createdAt)
       .orderBy(asc(classes.createdAt))
     const teacherRows = await this.db
-      .select({ classId: classTeachers.classId, id: users.id, fullName: users.fullName, avatarUrl: users.avatarUrl })
+      .select({
+        classId: classTeachers.classId,
+        id: users.id,
+        fullName: users.fullName,
+        avatarUrl: users.avatarUrl,
+        role: users.role,
+        avatarFrame: users.avatarFrame,
+        avatarFrameExpiresAt: users.avatarFrameExpiresAt,
+      })
       .from(classTeachers)
       .innerJoin(users, eq(users.id, classTeachers.userId))
       .orderBy(asc(users.fullName))
     const byClass = new Map<string, ClassTeacherDto[]>()
     for (const teacher of teacherRows) {
       const list = byClass.get(teacher.classId) ?? []
-      list.push({ id: teacher.id, fullName: teacher.fullName, avatarUrl: teacher.avatarUrl })
+      list.push({
+        id: teacher.id,
+        fullName: teacher.fullName,
+        avatarUrl: teacher.avatarUrl,
+        avatarFrame: effectiveAvatarFrame(teacher.role, teacher.avatarFrame, teacher.avatarFrameExpiresAt),
+      })
       byClass.set(teacher.classId, list)
     }
     return rows.map((row) => ({ ...row, closedAt: row.closedAt?.toISOString() ?? null, teachers: byClass.get(row.id) ?? [] }))
   }
 
   private async teachersOf(classId: string): Promise<ClassTeacherDto[]> {
-    return this.db
-      .select({ id: users.id, fullName: users.fullName, avatarUrl: users.avatarUrl })
+    const rows = await this.db
+      .select({
+        id: users.id,
+        fullName: users.fullName,
+        avatarUrl: users.avatarUrl,
+        role: users.role,
+        avatarFrame: users.avatarFrame,
+        avatarFrameExpiresAt: users.avatarFrameExpiresAt,
+      })
       .from(classTeachers)
       .innerJoin(users, eq(users.id, classTeachers.userId))
       .where(eq(classTeachers.classId, classId))
       .orderBy(asc(users.fullName))
+    return rows.map((t) => ({
+      id: t.id,
+      fullName: t.fullName,
+      avatarUrl: t.avatarUrl,
+      avatarFrame: effectiveAvatarFrame(t.role, t.avatarFrame, t.avatarFrameExpiresAt),
+    }))
   }
 }

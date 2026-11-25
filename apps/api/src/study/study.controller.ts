@@ -26,6 +26,15 @@ export class StudyController {
     return this.study.vocabCourse(user.id)
   }
 
+  @Get('vocab/sets/:setId/units/:unit')
+  vocabUnitDetail(
+    @CurrentUser() user: AuthUser,
+    @Param('setId') setId: string,
+    @Param('unit') unit: string,
+  ) {
+    return this.study.unitDetail(user.id, setId, unit)
+  }
+
   @Get('vocab')
   listVocab(@Query('q') q: string | undefined) {
     return this.study.listVocab(typeof q === 'string' ? q : '')
@@ -41,6 +50,20 @@ export class StudyController {
   }
 
   @Roles('ADMIN')
+  @Post('vocab/preview')
+  @HttpCode(200)
+  previewVocab(@Req() req: Request) {
+    return this.study.previewVocab(req.body)
+  }
+
+  @Roles('ADMIN')
+  @Post('vocab/commit')
+  @HttpCode(200)
+  commitVocab(@CurrentUser() user: AuthUser, @Body() body: unknown, @Req() req: Request) {
+    return this.study.commitVocab(actorOf(user, req), body)
+  }
+
+  @Roles('ADMIN')
   @Post('vocab/import')
   @HttpCode(200)
   importVocab(
@@ -53,6 +76,28 @@ export class StudyController {
   ) {
     const target = mode ? parse(vocabImportTargetSchema, { mode, topic, title, setId }) : null
     return this.study.importVocab(actorOf(user, req), req.body, target)
+  }
+
+  @Roles('ADMIN')
+  @Post('vocab/sets/:setId/entries')
+  createVocabEntry(
+    @CurrentUser() user: AuthUser,
+    @Param('setId', new ParseUUIDPipe()) setId: string,
+    @Body() body: unknown,
+    @Req() req: Request,
+  ) {
+    return this.study.createVocabEntry(actorOf(user, req), setId, body)
+  }
+
+  @Roles('ADMIN')
+  @Patch('vocab/:id')
+  updateVocab(
+    @CurrentUser() user: AuthUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: unknown,
+    @Req() req: Request,
+  ) {
+    return this.study.updateVocab(actorOf(user, req), id, body)
   }
 
   @Roles('ADMIN')
@@ -102,6 +147,12 @@ export class StudyController {
     return this.study.saveNotebook(user.id, body)
   }
 
+  @Post('notebook/batch')
+  @HttpCode(200)
+  batchSaveNotebook(@CurrentUser() user: AuthUser, @Body() body: unknown) {
+    return this.study.batchSaveNotebook(user.id, body)
+  }
+
   @Patch('notebook/:id')
   updateNotebook(@CurrentUser() user: AuthUser, @Param('id', new ParseUUIDPipe()) id: string, @Body() body: unknown) {
     return this.study.updateNotebook(user.id, id, body)
@@ -118,14 +169,27 @@ export class StudyController {
     @Query('deck') deck: string | undefined,
     @Query('setId') setId: string | undefined,
     @Query('unit') unit: string | undefined,
+    @Query('topic') topic: string | undefined,
+    @Query('color') color: string | undefined,
   ) {
-    return this.study.flashcards(user.id, deck === 'notebook' ? 'notebook' : 'catalog', setId, unit)
+    return this.study.flashcards(user.id, deck === 'notebook' ? 'notebook' : 'catalog', setId, unit, topic, color)
   }
 
   @Post('flashcards/review')
   @HttpCode(200)
   review(@CurrentUser() user: AuthUser, @Body() body: unknown) {
     return this.study.review(user.id, body)
+  }
+
+  @Get('games/status')
+  gameStatus(@CurrentUser() user: AuthUser) {
+    return this.study.gameStatus(user.id)
+  }
+
+  @Post('games/complete')
+  @HttpCode(200)
+  completeGame(@CurrentUser() user: AuthUser, @Body() body: unknown) {
+    return this.study.completeGame(user.id, body)
   }
 
   @Get('grammar')

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { DEFAULT_SITE_SETTINGS, type SiteSettingsDto, type UpdateSiteSettingsInput } from '@toeic/shared'
+import { DEFAULT_SITE_SETTINGS, THEME_PRESET_IDS, type BackgroundMode, type SiteSettingsDto, type ThemePresetId, type UpdateSiteSettingsInput } from '@toeic/shared'
 import { eq } from 'drizzle-orm'
 import { AuditService } from '../audit/audit.service'
 import type { AuthUser } from '../common/decorators'
@@ -7,6 +7,7 @@ import { DB, type Db } from '../db/database.module'
 import { siteSettings, type SiteSettingsRow } from '../db/schema'
 
 const ID = 'default'
+const PRESET_SET = new Set<string>(THEME_PRESET_IDS)
 
 @Injectable()
 export class SiteService {
@@ -43,6 +44,7 @@ export class SiteService {
       if (input.theme.button) patch.themeButton = input.theme.button
     }
     if (input.backgroundMode !== undefined) patch.backgroundMode = input.backgroundMode
+    if (input.themePreset !== undefined) patch.themePreset = input.themePreset
     if (input.logoUrl !== undefined) patch.logoDataUrl = input.logoUrl
     if (input.faviconUrl !== undefined) patch.faviconDataUrl = input.faviconUrl
     if (input.honorBoardEnabled !== undefined) patch.honorBoardEnabled = input.honorBoardEnabled
@@ -79,6 +81,7 @@ export class SiteService {
         themePaper: d.theme.paper,
         themeButton: d.theme.button ?? '#1f7a8c',
         backgroundMode: d.backgroundMode,
+        themePreset: d.themePreset,
         honorBoardEnabled: d.honorBoardEnabled,
       })
       .returning()
@@ -86,6 +89,8 @@ export class SiteService {
   }
 
   private toDto(row: SiteSettingsRow): SiteSettingsDto {
+    const bgMode: BackgroundMode = row.backgroundMode === 'sky' || row.backgroundMode === 'gradient' ? row.backgroundMode : 'fixed'
+    const themePreset: ThemePresetId = PRESET_SET.has(row.themePreset) ? (row.themePreset as ThemePresetId) : 'classic'
     return {
       brandName: row.brandName,
       slogan: row.slogan,
@@ -102,7 +107,8 @@ export class SiteService {
       legalNote: row.legalNote,
       copyright: row.copyright,
       theme: { primary: row.themePrimary, primarySoft: row.themePrimarySoft, paper: row.themePaper, button: row.themeButton },
-      backgroundMode: row.backgroundMode === 'sky' ? 'sky' : 'fixed',
+      backgroundMode: bgMode,
+      themePreset,
       logoUrl: row.logoDataUrl,
       faviconUrl: row.faviconDataUrl,
       honorBoardEnabled: row.honorBoardEnabled,

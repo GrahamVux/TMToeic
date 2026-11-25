@@ -1,12 +1,24 @@
-import { Body, Controller, Delete, Get, Header, HttpCode, Inject, Param, ParseUUIDPipe, Post, StreamableFile } from '@nestjs/common'
-import { AVATAR_MAX_BYTES, AVATAR_MIME_TYPES, type AccountAvatarDto } from '@toeic/shared'
+import { Body, Controller, Delete, Get, Header, HttpCode, Inject, Param, ParseUUIDPipe, Post, Put, StreamableFile } from '@nestjs/common'
+import {
+  AVATAR_FRAME_IDS,
+  AVATAR_MAX_BYTES,
+  AVATAR_MIME_TYPES,
+  effectiveAvatarFrame,
+  equipFrameSchema,
+  isFreeFrame,
+  type AccountAvatarDto,
+  type AccountFrameDto,
+  type AccountRewardsDto,
+  type PointLedgerSource,
+} from '@toeic/shared'
 import { randomUUID } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { and, desc, eq, gt, isNull, or } from 'drizzle-orm'
 import sharp from 'sharp'
 import { AppException } from '../common/app-exception'
 import { CurrentUser, type AuthUser } from '../common/decorators'
+import { parse } from '../common/zod'
 import { DB, type Db } from '../db/database.module'
-import { accountAvatars, users } from '../db/schema'
+import { accountAvatars, rewardPointLedger, userAvatarFrames, users } from '../db/schema'
 import { API_PREFIX } from '../setup'
 
 @Controller()
@@ -42,6 +54,110 @@ export class AvatarController {
   @Delete('me/avatar')
   remove(@CurrentUser() user: AuthUser) {
     return this.replace(user.id, null)
+  }
+
+  @Get('me/rewards')
+  async rewards(@CurrentUser() user: AuthUser): Promise<AccountRewardsDto> {
+    const now = new Date()
+    const [row] = await this.db
+      .select({
+        role: users.role,
+        avatarFrame: users.avatarFrame,
+        avatarFrameExpiresAt: users.avatarFrameExpiresAt,
+        rewardPoints: users.rewardPoints,
+      })
+      .from(users)
+      .where(eq(users.id, user.id))
+      .limit(1)
+    if (!row) throw AppException.notFound('Không tìm thấy tài khoản')
+
+    const ledgerRows = await this.db
+      .select({
+        id: rewardPointLedger.id,
+        delta: rewardPointLedger.delta,
+        reason: rewardPointLedger.reason,
+        source: rewardPointLedger.source,
+        createdAt: rewardPointLedger.createdAt,
+      })
+      .from(rewardPointLedger)
+      .where(eq(rewardPointLedger.userId, user.id))
+      .orderBy(desc(rewardPointLedger.createdAt))
+      .limit(30)
+
+    let unlockedFrames: AccountRewardsDto['unlockedFrames']
+    if (row.role === 'ADMIN' || row.role === 'TEACHER') {
+      const epoch = new Date(0).toISOString()
+      unlockedFrames = AVATAR_FRAME_IDS.map((frameId) => ({ frameId, unlockedAt: epoch, expiresAt: null }))
+    } else {
+      const earned = await this.db
+        .select({
+          frameId: userAvatarFrames.frameId,
+          unlockedAt: userAvatarFrames.unlockedAt,
+          expiresAt: userAvatarFrames.expiresAt,
+        })
+        .from(userAvatarFrames)
+        .where(
+          and(
+            eq(userAvatarFrames.userId, user.id),
+            or(isNull(userAvatarFrames.expiresAt), gt(userAvatarFrames.expiresAt, now)),
+          ),
+        )
+      const byId = new Map(earned.map((f) => [f.frameId, f]))
+      const epoch = new Date(0).toISOString()
+      unlockedFrames = AVATAR_FRAME_IDS.flatMap((frameId) => {
+        const hit = byId.get(frameId)
+        if (hit) {
+          return [{ frameId, unlockedAt: hit.unlockedAt.toISOString(), expiresAt: hit.expiresAt?.toISOString() ?? null }]
+        }
+        if (isFreeFrame(frameId)) {
+          return [{ frameId, unlockedAt: epoch, expiresAt: null }]
+        }
+        return []
+      })
+    }
+
+    return {
+      rewardPoints: row.rewardPoints,
+      avatarFrame: effectiveAvatarFrame(row.role, row.avatarFrame, row.avatarFrameExpiresAt, now),
+      unlockedFrames,
+      ledger: ledgerRows.map((l) => ({
+        id: l.id,
+        delta: l.delta,
+        reason: l.reason,
+        source: l.source as PointLedgerSource,
+        createdAt: l.createdAt.toISOString(),
+      })),
+    }
+  }
+
+  @Put('me/avatar-frame')
+  async equipFrame(@CurrentUser() user: AuthUser, @Body() body: unknown): Promise<AccountFrameDto> {
+    const { frameId } = parse(equipFrameSchema, body)
+    const now = new Date()
+    let expiresAt: Date | null = null
+
+    if (user.role === 'STUDENT' && !isFreeFrame(frameId)) {
+      const [unlock] = await this.db
+        .select({ expiresAt: userAvatarFrames.expiresAt })
+        .from(userAvatarFrames)
+        .where(
+          and(
+            eq(userAvatarFrames.userId, user.id),
+            eq(userAvatarFrames.frameId, frameId),
+            or(isNull(userAvatarFrames.expiresAt), gt(userAvatarFrames.expiresAt, now)),
+          ),
+        )
+        .limit(1)
+      if (!unlock) throw AppException.forbidden('Bạn chưa mở khóa khung viền này hoặc khung đã hết hạn.')
+      expiresAt = unlock.expiresAt
+    }
+
+    await this.db
+      .update(users)
+      .set({ avatarFrame: frameId, avatarFrameExpiresAt: expiresAt, updatedAt: now })
+      .where(eq(users.id, user.id))
+
+    return { id: user.id, avatarFrame: frameId }
   }
 
   private async replace(id: string, thumbnail: Buffer | null): Promise<AccountAvatarDto> {

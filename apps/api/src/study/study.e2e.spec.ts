@@ -203,6 +203,82 @@ describe('Study notebook and flashcards (e2e)', () => {
     expect((await student.agent.get(`/api/v1/study/grammar/${lessonId}/pdf`)).status).toBe(404)
     expect((await student.get(`/study/grammar/${lessonId}`)).body.pdf).toBeNull()
   })
+
+  it('supports Excel preview/commit staging, inline unit edits, notebook topic/unit/color inheritance, and capped game EXP', async () => {
+    const sampleTpl = await admin.agent.get('/api/v1/study/vocab/template')
+    expect(sampleTpl.status).toBe(200)
+
+    const sheet = await workbook([
+      ['Bộ đề', 'Hợp đồng nâng cao'],
+      ['', 'Unit', '1'],
+      ['', '', 'Từ vựng', 'Loại từ', 'Nghĩa', 'Câu mẫu'],
+      ['', '', 'substantial', 'adjective', 'đáng kể, lớn, quan trọng', 'The company saw a substantial rise in revenue this year.'],
+      ['', 'Unit', '2'],
+      ['', '', 'Từ vựng', 'Loại từ', 'Nghĩa'],
+      ['', '', 'compliance', 'noun', 'sự tuân thủ', 'Full compliance is required by Friday.'],
+    ])
+    const preview = await admin.agent
+      .post('/api/v1/study/vocab/preview')
+      .set(CSRF_HEADER, CSRF_HEADER_VALUE)
+      .set('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      .send(sheet)
+    expect(preview.status).toBe(200)
+    expect(preview.body.suggestedTitle).toBe('Hợp đồng nâng cao')
+    expect(preview.body.rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ unit: 1, word: 'substantial', status: 'UPDATE' }),
+        expect.objectContaining({ unit: 2, word: 'compliance', example: 'Full compliance is required by Friday.', status: 'NEW' }),
+      ]),
+    )
+
+    const committed = await admin.post('/study/vocab/commit').send({
+      mode: 'new',
+      topic: 'Pháp lý',
+      title: 'Hợp đồng nâng cao',
+      rows: preview.body.rows.map((r: { unit: number; word: string; partOfSpeech: string; meaning: string; example: string }) =>
+        r.word === 'compliance' ? { ...r, meaning: 'sự tuân thủ quy định' } : r,
+      ),
+    })
+    expect(committed.status).toBe(200)
+    expect(committed.body.imported).toBeGreaterThanOrEqual(1)
+
+    const sets = (await student.get('/study/vocab/sets')).body.sets as Array<{ id: string; title: string }>
+    const legalSet = sets.find((s) => s.title === 'Hợp đồng nâng cao')!
+    const unit2 = await student.get(`/study/vocab/sets/${legalSet.id}/units/2`)
+    expect(unit2.status).toBe(200)
+    const compWord = unit2.body.items.find((i: { word: string }) => i.word === 'compliance')
+    expect(compWord).toMatchObject({ meaning: 'sự tuân thủ quy định', example: 'Full compliance is required by Friday.', savedInNotebook: false })
+
+    const patched = await admin.agent
+      .patch(`/api/v1/study/vocab/${compWord.id}`)
+      .set(CSRF_HEADER, CSRF_HEADER_VALUE)
+      .send({ word: 'compliance', partOfSpeech: 'noun', meaning: 'tuân thủ bắt buộc', example: 'Safety compliance matters.' })
+    expect(patched.status).toBe(200)
+    expect(patched.body.meaning).toBe('tuân thủ bắt buộc')
+
+    const saved = await student.post('/study/notebook').send({ vocabEntryId: compWord.id })
+    expect(saved.status).toBe(200)
+    const noteRow = saved.body.entries[0]
+    expect(noteRow).toMatchObject({ topic: 'Pháp lý', unit: 2, example: 'Safety compliance matters.', color: 'default' })
+
+    const recolored = await student.patch(`/study/notebook/${noteRow.id}`).send({ color: 'rose' })
+    expect(recolored.status).toBe(200)
+    expect(recolored.body.color).toBe('rose')
+
+    for (let i = 0; i < 4; i++) {
+      const g = await student.post('/study/games/complete').send({
+        gameKind: 'QUIZ',
+        deckLabel: 'Pháp lý · Unit 2',
+        score: 30,
+        totalItems: 30,
+        reviewedCards: [{ kind: 'NOTEBOOK', id: noteRow.id, result: 'GOOD' }],
+      })
+      expect(g.status).toBe(200)
+    }
+    const statusRes = await student.get('/study/games/status')
+    expect(statusRes.status).toBe(200)
+    expect(statusRes.body.todayGameXp).toBe(40)
+  })
 })
 
 function postPdf(who: TestClient, lessonId: string, filename: string, body: Buffer) {

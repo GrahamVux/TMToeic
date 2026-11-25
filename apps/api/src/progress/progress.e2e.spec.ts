@@ -1,6 +1,6 @@
 import type { INestApplication } from '@nestjs/common'
 import sharp from 'sharp'
-import { assignCenterPlaces, rankFromXp, type StudentDashboardDto } from '@toeic/shared'
+import { assignPodiumPlaces, effectiveAvatarFrame, normalizeHonorRewardConfig, rankFromXp, streakBonusXp, type AccountRewardsDto, type HonorBoardDto, type StaffHonorDto, type StudentDashboardDto } from '@toeic/shared'
 import { ADMIN, createTestApp, login, type TestClient } from '../test/test-app'
 import { computeStreak } from './progress.service'
 
@@ -18,12 +18,15 @@ describe('rankFromXp', () => {
   })
 
   it('reserves center podium places for the EXP floors and leaves later places open', () => {
-    const placed = assignCenterPlaces([
-      { name: 'Thấp', yearlyXp: 400 },
-      { name: 'Đủ Nhì', yearlyXp: 1600 },
-      { name: 'Đủ Nhất', yearlyXp: 2100 },
-      { name: 'Vừa', yearlyXp: 1400 },
-    ])
+    const placed = assignPodiumPlaces(
+      [
+        { name: 'Thấp', periodXp: 40 },
+        { name: 'Đủ Nhì', periodXp: 65 },
+        { name: 'Đủ Nhất', periodXp: 120 },
+        { name: 'Vừa', periodXp: 49 },
+      ],
+      50,
+    )
     expect(placed.map((row) => [row.place, row.name])).toEqual([
       [1, 'Đủ Nhất'],
       [2, 'Đủ Nhì'],
@@ -31,14 +34,27 @@ describe('rankFromXp', () => {
       [5, 'Thấp'],
     ])
 
-    const noChampion = assignCenterPlaces([
-      { name: 'Gần Nhất', yearlyXp: 1800 },
-      { name: 'Mới', yearlyXp: 20 },
-    ])
+    const noChampion = assignPodiumPlaces(
+      [
+        { name: 'Gần Nhất', periodXp: 199 },
+        { name: 'Mới', periodXp: 20 },
+      ],
+      200,
+    )
     expect(noChampion.map((row) => [row.place, row.name])).toEqual([
-      [2, 'Gần Nhất'],
-      [4, 'Mới'],
+      [4, 'Gần Nhất'],
+      [5, 'Mới'],
     ])
+  })
+
+  it('computes streak bonus EXP and expired frame fallback accurately', () => {
+    expect(streakBonusXp(0, 'week')).toBe(0)
+    expect(streakBonusXp(1, 'week')).toBe(5)
+    expect(streakBonusXp(7, 'week')).toBe(55)
+    expect(streakBonusXp(30, 'month')).toBe(220)
+    expect(effectiveAvatarFrame('STUDENT', 'class-top1', new Date(Date.now() - 60_000))).toBe('none')
+    expect(effectiveAvatarFrame('STUDENT', 'class-top1', new Date(Date.now() + 60_000))).toBe('class-top1')
+    expect(effectiveAvatarFrame('ADMIN', 'staff-mentor', null)).toBe('staff-mentor')
   })
 })
 
@@ -145,7 +161,9 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
       honor: {
         enabled: true,
         className: 'Lớp K42',
-        classBoard: { entries: [], you: null, participants: 0 },
+        boards: {
+          class: { week: { entries: [], you: null, participants: 0 } },
+        },
       },
     })
     expect(d.skills.map((k) => [k.skill, k.attempts, k.answered, k.accuracy])).toEqual([
@@ -225,39 +243,51 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     expect(d.latestScore).toBeNull() // partial practice has no 990-scale score
     expect(d.skills.find((k) => k.skill === 'READING')).toMatchObject({ attempts: 1, answered: 2, correct: 2, accuracy: 100 })
     expect(d.skills.find((k) => k.skill === 'LISTENING')).toMatchObject({ attempts: 0, accuracy: null })
-    expect(d.honor.classBoard.you).toMatchObject({ name: 'Chăm Chỉ', avatarUrl: photo.body.avatarUrl, weeklyXp: 2, you: true }) // 2 patterns, 1 EXP the first time each is correct
+    expect(d.honor.boards.class.week.you).toMatchObject({
+      name: 'Chăm Chỉ',
+      avatarUrl: photo.body.avatarUrl,
+      avatarFrame: 'none',
+      questionXp: 2,
+      streakDays: 1,
+      streakBonusXp: 5,
+      periodXp: 7,
+      you: true,
+    })
     expect(d.honor.me.rank.label).toBe('Đồng III')
-    expect(d.honor.centerBoard.find((row) => row.you)).toMatchObject({ name: 'Chăm Chỉ', className: 'Lớp K42', avatarUrl: photo.body.avatarUrl })
+    expect(d.honor.boards.center.week.entries.find((row) => row.you)).toMatchObject({ name: 'Chăm Chỉ', className: 'Lớp K42', avatarUrl: photo.body.avatarUrl })
   })
 
-  it('ranks classmates, limits to top 5 and only exposes their name, avatar and rank details', async () => {
+  it('ranks classmates up to top 10, includes neighborhood rivals and exposes public fields only', async () => {
     const examId = await publishedExam(SMALL as typeof FULL)
-    const names = ['Hạng A', 'Hạng B', 'Hạng C', 'Hạng D', 'Hạng E', 'Hạng F']
+    const names = ['Hạng A', 'Hạng B', 'Hạng C', 'Hạng D', 'Hạng E', 'Hạng F', 'Hạng G', 'Hạng H', 'Hạng I', 'Hạng J', 'Hạng K']
     const clients: TestClient[] = []
     for (const [i, name] of names.entries()) {
       const c = await newStudent(name)
       clients.push(c)
-      await practice(c, examId, 3 - Math.min(2, Math.floor(i / 2)), true) // 3,3,2,2,1,1 answered
+      await practice(c, examId, 3 - Math.min(2, Math.floor(i / 4)), true)
     }
-    const last = await dash(clients[5])
-    // Previous tests' students are also in the class ranking, so assert structure rather than absolute ranks.
-    expect(last.honor.classBoard.entries).toHaveLength(5)
-    expect(last.honor.classBoard.entries.map((e) => e.place)).toEqual([1, 2, 3, 4, 5])
-    expect(last.honor.classBoard.entries.every((e, i, arr) => i === 0 || arr[i - 1].weeklyXp >= e.weeklyXp)).toBe(true)
-    expect(last.honor.classBoard.entries.every((e, i, arr) => i === 0 || arr[i - 1].yearlyXp >= e.yearlyXp)).toBe(true)
-    expect(last.honor.classBoard.you).toMatchObject({ name: 'Hạng F', you: true })
-    expect(last.honor.classBoard.you!.place).toBeGreaterThan(5)
-    expect(last.honor.classBoard.participants).toBeGreaterThanOrEqual(7)
-    for (const e of last.honor.classBoard.entries) expect(Object.keys(e).sort()).toEqual(['avatarUrl', 'name', 'place', 'rank', 'weeklyXp', 'yearlyXp', 'you'])
-    expect(last.honor.classBoard.entries.every((e) => e.rank.label.length > 0)).toBe(true)
-    expect(last.honor.centerBoard.every((row) => row.className === 'Lớp K42' && row.name.length > 0)).toBe(true)
+    const last = (await clients[10].get('/me/honor')).body as HonorBoardDto
+    const classWeek = last.boards.class.week
+    expect(classWeek.entries).toHaveLength(10)
+    expect(classWeek.entries.map((e) => e.place)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    expect(classWeek.entries.every((e, i, arr) => i === 0 || arr[i - 1].periodXp >= e.periodXp)).toBe(true)
+    expect(classWeek.you).toMatchObject({ name: 'Hạng K', you: true })
+    expect(classWeek.you!.place).toBeGreaterThan(10)
+    expect(classWeek.rivals.some((r) => r.you)).toBe(true)
+    expect(classWeek.rivals.length).toBeLessThanOrEqual(5)
+    expect(classWeek.participants).toBeGreaterThanOrEqual(12)
+    for (const e of classWeek.entries) {
+      expect(Object.keys(e).sort()).toEqual(['avatarFrame', 'avatarUrl', 'className', 'lifetimeXp', 'name', 'periodXp', 'place', 'questionXp', 'rank', 'streakBonusXp', 'streakDays', 'you', 'yours'])
+    }
+    expect(classWeek.entries.every((e) => e.rank.label.length > 0)).toBe(true)
+    expect(last.boards.center.week.entries.every((row) => row.className === 'Lớp K42' && row.name.length > 0)).toBe(true)
 
     const first = await dash(clients[0])
-    expect(first.honor.classBoard.you!.place).toBeLessThan(last.honor.classBoard.you!.place)
-    expect(last.honor.centerBoard.every((row, i, arr) => i === 0 || arr[i - 1].yearlyXp >= row.yearlyXp)).toBe(true)
+    expect(first.honor.boards.class.week.you!.place).toBeLessThan(classWeek.you!.place)
+    expect(last.boards.center.week.entries.every((row, i, arr) => i === 0 || arr[i - 1].periodXp >= row.periodXp)).toBe(true)
   })
 
-  it('ranks the center board by this year and drops last year’s EXP', async () => {
+  it('separates week and month boards while preserving pre-year historical answers in lifetimeXp', async () => {
     const examId = await publishedExam(SMALL as typeof FULL)
     const early = await newStudent('Đầu Năm')
     const recent = await newStudent('Tuần Này')
@@ -273,25 +303,31 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     const bounds = (await db.execute(sql`
       select
         (date_trunc('week', now() at time zone 'Asia/Ho_Chi_Minh') at time zone 'Asia/Ho_Chi_Minh') as week_start,
+        (date_trunc('month', now() at time zone 'Asia/Ho_Chi_Minh') at time zone 'Asia/Ho_Chi_Minh') as month_start,
         (date_trunc('year', now() at time zone 'Asia/Ho_Chi_Minh') at time zone 'Asia/Ho_Chi_Minh') as year_start
-    `)) as unknown as { rows: Array<{ week_start: Date; year_start: Date }> }
+    `)) as unknown as { rows: Array<{ week_start: Date; month_start: Date; year_start: Date }> }
     const weekStart = new Date(bounds.rows[0]!.week_start)
+    const monthStart = new Date(bounds.rows[0]!.month_start)
     const yearStart = new Date(bounds.rows[0]!.year_start)
-    await db.update(attempts).set({ submittedAt: yearStart }).where(eq(attempts.id, earlyId))
+    await db.update(attempts).set({ submittedAt: monthStart }).where(eq(attempts.id, earlyId))
     await db.update(attempts).set({ submittedAt: new Date(yearStart.getTime() - 86_400_000) }).where(eq(attempts.id, oldId))
 
     const board = await dash(recent)
-    const earlyRow = board.honor.centerBoard.find((row) => row.name === 'Đầu Năm')
-    const recentRow = board.honor.centerBoard.find((row) => row.name === 'Tuần Này')
-    expect(earlyRow).toMatchObject({ yearlyXp: 3, className: 'Lớp K42' })
-    expect(recentRow).toMatchObject({ weeklyXp: 1, yearlyXp: 1 })
-    expect(earlyRow!.place).toBeLessThan(recentRow!.place)
-    expect(board.honor.centerBoard.some((row) => row.name === 'Năm Trước')).toBe(false)
-    expect(board.honor.centerBoard.every((row, i, arr) => i === 0 || arr[i - 1].yearlyXp >= row.yearlyXp)).toBe(true)
-    if (weekStart.getTime() > yearStart.getTime()) {
-      expect(earlyRow!.weeklyXp).toBe(0)
+    expect(board.honor.boards.center.week.you).toMatchObject({ name: 'Tuần Này', questionXp: 1 })
+    const staffCenter = ((await admin.get('/reports/honor')).body as StaffHonorDto).center
+    expect(staffCenter.week.entries.some((row) => row.name === 'Năm Trước')).toBe(false)
+    expect(staffCenter.month.entries.some((row) => row.name === 'Năm Trước')).toBe(false)
+
+    // Pre-year answers stay preserved in Lifetime EXP for personal rank progression
+    const oldBoard = await dash(lastYear)
+    expect(oldBoard.honor.me.lifetimeXp).toBe(3)
+    expect(oldBoard.honor.me.weeklyXp).toBe(0)
+    expect(oldBoard.honor.me.monthlyXp).toBe(0)
+
+    if (weekStart.getTime() > monthStart.getTime()) {
       const earlyBoard = await dash(early)
-      expect(earlyBoard.honor.classBoard.you).toMatchObject({ name: 'Đầu Năm', yearlyXp: 3, weeklyXp: 0 })
+      expect(earlyBoard.honor.me.weeklyXp).toBe(0)
+      expect(earlyBoard.honor.me.monthlyXp).toBe(8) // 3 question EXP + 5 streak EXP
     }
     expect(recentId).toBeTruthy()
   })
@@ -556,24 +592,24 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
       expect((await narrow.post('/auth/change-password').send({ currentPassword: staff.body.temporaryPassword, newPassword: 'TeacherPass99' })).status).toBe(200)
       expect((await put(admin, `/classes/${room.body.id}/teachers`, { teacherIds: [staff.body.user.id] })).status).toBe(200)
 
-      const mine = (await narrow.get('/reports/honor')).body as import('@toeic/shared').StaffHonorDto
+      const mine = (await narrow.get('/reports/honor')).body as StaffHonorDto
       expect(mine.enabled).toBe(true)
       expect(mine.classes.map((row) => row.className)).toEqual(['Lớp Giáo Viên A'])
-      expect(mine.classes[0]?.entries.map((row) => row.name)).toEqual(['Hạng Riêng'])
+      expect(mine.classes[0]?.boards.week.entries.map((row) => row.name)).toEqual(['Hạng Riêng'])
       expect(JSON.stringify(mine.classes)).not.toContain('Chăm Chỉ')
-      expect(mine.centerBoard.map((row) => row.name)).toEqual(expect.arrayContaining(['Hạng Riêng', 'Hạng K42']))
-      expect(mine.centerBoard.find((row) => row.name === 'Hạng Riêng')).toMatchObject({ className: 'Lớp Giáo Viên A', yours: true })
-      expect(mine.centerBoard.find((row) => row.name === 'Hạng K42')?.yours).toBe(false)
+      expect(mine.center.week.entries.map((row) => row.name)).toEqual(expect.arrayContaining(['Hạng Riêng', 'Hạng K42']))
+      expect(mine.center.week.entries.find((row) => row.name === 'Hạng Riêng')).toMatchObject({ className: 'Lớp Giáo Viên A', yours: true })
+      expect(mine.center.week.entries.find((row) => row.name === 'Hạng K42')?.yours).toBe(false)
 
-      const k42 = (await teacher.get('/reports/honor')).body as import('@toeic/shared').StaffHonorDto
+      const k42 = (await teacher.get('/reports/honor')).body as StaffHonorDto
       expect(k42.classes.map((row) => row.className)).toEqual(['Lớp K42'])
-      expect(k42.classes[0]?.entries.map((row) => row.name)).toContain('Hạng K42')
-      expect(k42.classes[0]?.entries.map((row) => row.name)).not.toContain('Hạng Riêng')
-      expect(k42.centerBoard.some((row) => row.name === 'Hạng Riêng' && row.className === 'Lớp Giáo Viên A')).toBe(true)
+      expect(k42.classes[0]?.boards.week.entries.map((row) => row.name)).toContain('Hạng K42')
+      expect(k42.classes[0]?.boards.week.entries.map((row) => row.name)).not.toContain('Hạng Riêng')
+      expect(k42.center.week.entries.some((row) => row.name === 'Hạng Riêng' && row.className === 'Lớp Giáo Viên A')).toBe(true)
 
-      const all = (await admin.get('/reports/honor')).body as import('@toeic/shared').StaffHonorDto
+      const all = (await admin.get('/reports/honor')).body as StaffHonorDto
       expect(all.classes.map((row) => row.className)).toEqual(expect.arrayContaining(['Lớp K42', 'Lớp Giáo Viên A']))
-      expect(all.classes.find((row) => row.className === 'Lớp Giáo Viên A')?.entries.map((row) => row.name)).toEqual(['Hạng Riêng'])
+      expect(all.classes.find((row) => row.className === 'Lớp Giáo Viên A')?.boards.week.entries.map((row) => row.name)).toEqual(['Hạng Riêng'])
       expect((await pupil.get('/reports/honor')).status).toBe(403)
     })
   })
@@ -600,63 +636,102 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     const boardB = await dash(b)
     expect(boardA.honor.className).toBe('Lớp K42')
     expect(boardB.honor.className).toBe('Lớp Bí Mật')
-    expect(boardA.honor.classBoard.entries.map((e) => e.name)).not.toContain('Lớp B Hai')
-    expect(boardB.honor.classBoard.entries.map((e) => e.name)).toEqual(['Lớp B Hai'])
-    expect(boardA.honor.centerBoard.map((row) => row.name)).toEqual(expect.arrayContaining(['Lớp A Một', 'Lớp B Hai']))
-    expect(boardA.honor.centerBoard.find((row) => row.name === 'Lớp B Hai')?.className).toBe('Lớp Bí Mật')
-    expect(boardB.honor.centerBoard.find((row) => row.name === 'Lớp B Hai')?.you).toBe(true)
+    expect(boardA.honor.boards.class.week.entries.map((e) => e.name)).not.toContain('Lớp B Hai')
+    expect(boardB.honor.boards.class.week.entries.map((e) => e.name)).toEqual(['Lớp B Hai'])
+    expect(boardA.honor.boards.center.week.you).toMatchObject({ name: 'Lớp A Một', className: 'Lớp K42', you: true })
+    expect(boardB.honor.boards.center.week.you).toMatchObject({ name: 'Lớp B Hai', className: 'Lớp Bí Mật', you: true })
+    const staffCheck = (await admin.get('/reports/honor')).body as StaffHonorDto
+    expect(staffCheck.center.week.entries.map((row) => row.name)).toEqual(expect.arrayContaining(['Lớp A Một', 'Lớp B Hai']))
+    expect(staffCheck.center.week.entries.find((row) => row.name === 'Lớp B Hai')?.className).toBe('Lớp Bí Mật')
 
     expect((await put(admin, '/site-settings', { honorBoardEnabled: false })).status).toBe(200)
     const hidden = await dash(a)
     expect(hidden.honor.enabled).toBe(false)
-    expect(hidden.honor.classBoard.entries).toEqual([])
-    expect(hidden.honor.centerBoard).toEqual([])
+    expect(hidden.honor.boards.class.week.entries).toEqual([])
+    expect(hidden.honor.boards.center.week.entries).toEqual([])
     expect((await put(admin, '/site-settings', { honorBoardEnabled: true })).status).toBe(200)
   })
 
-  it('lets an admin restart one class board without clearing the yearly center board', async () => {
+  it('equips free frames, rejects locked frames, enforces 7-day expiry, and preserves permanent unlocks over weekly wins', async () => {
     const examId = await publishedExam(SMALL as typeof FULL)
-    const created = await admin.post('/users/students').send({ fullName: 'Reset Riêng' })
+    const created = await admin.post('/users/students').send({ fullName: 'Đua Top Khung' })
     expect(created.status).toBe(201)
-    const room = await admin.post('/classes').send({ name: `Lớp Reset ${seq}` })
+    const sid = created.body.user.id as string
+    const room = await admin.post('/classes').send({ name: `Lớp Khung ${seq}` })
     expect(room.status).toBe(201)
-    expect((await put(admin, '/classes/members', { userId: created.body.user.id, classId: room.body.id })).status).toBe(200)
+    expect((await put(admin, '/classes/members', { userId: sid, classId: room.body.id })).status).toBe(200)
     const pupil = (await login(app, created.body.user.studentCode as string, created.body.temporaryPassword as string)).c
     expect((await pupil.post('/auth/change-password').send({ currentPassword: created.body.temporaryPassword, newPassword: 'StudentPass99' })).status).toBe(200)
     await practice(pupil, examId, 3, true)
 
-    const before = await dash(pupil)
-    expect(before.honor.classBoard.you).toMatchObject({ name: 'Reset Riêng', yearlyXp: 3 })
-    expect(before.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 3, className: room.body.name })
+    // Free frame succeeds, locked frame fails with 403
+    expect((await put(pupil, '/me/avatar-frame', { frameId: 'mint-ring' })).status).toBe(200)
+    expect((await pupil.get('/auth/me')).body.user.avatarFrame).toBe('mint-ring')
+    expect((await put(pupil, '/me/avatar-frame', { frameId: 'class-top1' })).status).toBe(403)
+    expect((await put(pupil, '/me/avatar-frame', { frameId: 'staff-mentor' })).status).toBe(403)
 
-    expect((await pupil.post(`/classes/${room.body.id}/honor-reset`)).status).toBe(403)
-    const username = `teacher.reset.${seq}`
-    const staff = await admin.post('/users/staff').send({ username, fullName: 'Thầy Reset', role: 'TEACHER' })
-    expect(staff.status).toBe(201)
-    const teacher = (await login(app, username, staff.body.temporaryPassword as string)).c
-    expect((await teacher.post('/auth/change-password').send({ currentPassword: staff.body.temporaryPassword, newPassword: 'TeacherPass99' })).status).toBe(200)
-    expect((await teacher.post(`/classes/${room.body.id}/honor-reset`)).status).toBe(403)
+    // Staff unlocks all frames
+    expect((await put(admin, '/me/avatar-frame', { frameId: 'staff-mentor' })).status).toBe(200)
+    expect((await admin.get('/auth/me')).body.user.avatarFrame).toBe('staff-mentor')
 
-    const reset = await admin.post(`/classes/${room.body.id}/honor-reset`)
-    expect(reset.status).toBe(201)
-    expect(typeof reset.body.resetAt).toBe('string')
+    // Admin early monthly settle grants permanent class-top1 + points
+    const monthly = await admin.post('/reports/honor/settle').send({ scope: 'class', period: 'month', classId: room.body.id })
+    expect(monthly.status).toBe(201)
+    expect(monthly.body.winners[0]).toMatchObject({ userId: sid, place: 1, points: 300, frameId: 'class-top1' })
 
-    const cleared = await dash(pupil)
-    expect(cleared.honor.classBoard.resetAt).toBe(reset.body.resetAt)
-    expect(cleared.honor.classBoard.you).toBeNull()
-    expect(cleared.honor.me.yearlyXp).toBe(3)
-    expect(cleared.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 3 })
+    // Subsequent weekly settle must NOT downgrade the permanent class-top1 unlock to 7 days
+    const weekly = await admin.post('/reports/honor/settle').send({ scope: 'class', period: 'week', classId: room.body.id })
+    expect(weekly.status).toBe(201)
 
-    await practice(pupil, examId, 1, true)
-    const again = await dash(pupil)
-    expect(again.honor.classBoard.you).toMatchObject({ yearlyXp: 1 })
-    expect(again.honor.centerBoard.find((row) => row.name === 'Reset Riêng')).toMatchObject({ yearlyXp: 3 })
+    const rewards = (await pupil.get('/me/rewards')).body as AccountRewardsDto
+    expect(rewards.rewardPoints).toBe(400)
+    expect(rewards.unlockedFrames.find((f) => f.frameId === 'class-top1')?.expiresAt).toBeNull()
+    expect((await put(pupil, '/me/avatar-frame', { frameId: 'class-top1' })).status).toBe(200)
 
-    const staffBoard = (await admin.get('/reports/honor')).body as import('@toeic/shared').StaffHonorDto
-    const listed = staffBoard.classes.find((row) => row.classId === room.body.id)
-    expect(listed?.resetAt).toBe(reset.body.resetAt)
-    expect(listed?.entries.map((row) => row.name)).toEqual(['Reset Riêng'])
-    expect((await admin.post('/classes/00000000-0000-4000-8000-000000000099/honor-reset')).status).toBe(404)
+    // Simulate expired 7-day frame on user row: effectiveAvatarFrame falls back to 'none'
+    const { users } = await import('../db/schema')
+    const { DB } = await import('../db/database.module')
+    const { eq } = await import('drizzle-orm')
+    const db = app.get<import('../db/database.module').Db>(DB)
+    await db.update(users).set({ avatarFrameExpiresAt: new Date(Date.now() - 60_000) }).where(eq(users.id, sid))
+    expect((await pupil.get('/auth/me')).body.user.avatarFrame).toBe('none')
+  })
+
+  it('lets admin update reward config, adjust points manually, and never retroactively settles pre-rollout cycles', async () => {
+    const created = await admin.post('/users/students').send({ fullName: 'Ví Điểm Test' })
+    const sid = created.body.user.id as string
+    const pupil = (await login(app, created.body.user.studentCode as string, created.body.temporaryPassword as string)).c
+    await pupil.post('/auth/change-password').send({ currentPassword: created.body.temporaryPassword, newPassword: 'StudentPass99' })
+
+    // Verify INIT_ROLLOUT sentinel exists and prevented retroactive payouts on brand new student
+    const initialRewards = (await pupil.get('/me/rewards')).body as AccountRewardsDto
+    expect(initialRewards.rewardPoints).toBe(0)
+    expect(initialRewards.ledger).toEqual([])
+
+    const currentStaff = (await admin.get('/reports/honor')).body as StaffHonorDto
+    const customConfig = {
+      ...currentStaff.rewardConfig,
+      class: {
+        ...currentStaff.rewardConfig.class,
+        week: currentStaff.rewardConfig.class.week.map((t) => (t.place === 1 ? { ...t, points: 777 } : t)),
+      },
+    }
+    const updatedCfg = await put(admin, '/reports/honor/config', customConfig)
+    expect(updatedCfg.status).toBe(200)
+    expect(updatedCfg.body.class.week[0].points).toBe(777)
+
+    // Manual +/- points adjustment
+    const plus = await admin.post('/reports/honor/points').send({ userId: sid, delta: 150, reason: 'Thưởng nóng kiểm tra đầu vào' })
+    expect(plus.status).toBe(201)
+    expect(plus.body.rewardPoints).toBe(150)
+
+    const minus = await admin.post('/reports/honor/points').send({ userId: sid, delta: -40, reason: 'Điều chỉnh điểm nhập nhầm' })
+    expect(minus.status).toBe(201)
+    expect(minus.body.rewardPoints).toBe(110)
+
+    const afterRewards = (await pupil.get('/me/rewards')).body as AccountRewardsDto
+    expect(afterRewards.rewardPoints).toBe(110)
+    expect(afterRewards.ledger.map((l) => l.delta)).toEqual([-40, 150])
   })
 
   it('closes a class to new students and deletes the class without deleting accounts', async () => {
@@ -698,5 +773,50 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     const b = await newStudent('Riêng Tư B', 950)
     expect((await dash(a)).targetScore).toBe(700)
     expect((await dash(b)).targetScore).toBe(950)
+  })
+
+  it('tracks yearly honor board and stays compatible with legacy 2-period reward configs', async () => {
+    const legacy = normalizeHonorRewardConfig({
+      class: {
+        week: [
+          { place: 1, points: 120, frameId: 'class-top1' },
+          { place: 2, points: 70, frameId: 'class-top2' },
+          { place: 3, points: 50, frameId: 'class-top3' },
+        ],
+        month: [
+          { place: 1, points: 350, frameId: 'class-top1' },
+          { place: 2, points: 220, frameId: 'class-top2' },
+          { place: 3, points: 140, frameId: 'class-top3' },
+        ],
+      },
+      center: {
+        week: [
+          { place: 1, points: 300, frameId: 'center-top1' },
+          { place: 2, points: 180, frameId: 'center-top2' },
+          { place: 3, points: 110, frameId: 'center-top3' },
+        ],
+        month: [
+          { place: 1, points: 900, frameId: 'center-top1' },
+          { place: 2, points: 550, frameId: 'center-top2' },
+          { place: 3, points: 350, frameId: 'center-top3' },
+        ],
+      },
+    })
+    expect(legacy.class.week[0]!.points).toBe(120)
+    expect(legacy.class.year).toHaveLength(3)
+    expect(legacy.center.year[0]!.points).toBe(2500)
+
+    const examId = await publishedExam(SMALL as typeof FULL)
+    const s = await newStudent('Xếp Hạng Năm')
+    await practice(s, examId, 2, true)
+    const honor = (await s.get('/me/honor')).body as HonorBoardDto
+    expect(honor.yearKey).toMatch(/^\d{4}$/)
+    expect(honor.me.yearlyXp).toBeGreaterThanOrEqual(7)
+    expect(honor.boards.class.year.you?.periodXp).toBeGreaterThanOrEqual(7)
+    expect(honor.boards.center.year.minPodiumXp).toBe(1000)
+
+    const staff = (await admin.get('/reports/honor')).body as StaffHonorDto
+    expect(staff.center.year.minPodiumXp).toBe(1000)
+    expect(staff.rewardConfig.center.year).toHaveLength(3)
   })
 })
