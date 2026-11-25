@@ -19,6 +19,7 @@
   ],
   "scripts": {
     "build": "tsup",
+    "watch": "node scripts/watch.mjs",
     "dev": "tsup --watch"
   },
   "dependencies": {

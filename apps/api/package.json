@@ -6,6 +6,8 @@
     "build": "nest build",
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
+    "prestart:dev": "node ../../packages/shared/scripts/sync-dist.mjs",
+    "pretypecheck": "node ../../packages/shared/scripts/sync-dist.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate-cli.ts",
     "assets:upload": "tsx src/scripts/upload-zip.ts",

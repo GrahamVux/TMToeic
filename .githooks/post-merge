@@ -1,0 +1,4 @@
+#!/bin/sh
+if git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD -- packages/shared 2>/dev/null | grep -q .; then
+  node packages/shared/scripts/sync-dist.mjs --force
+fi

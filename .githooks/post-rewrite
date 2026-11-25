@@ -1,0 +1,4 @@
+#!/bin/sh
+if [ "$1" = "rebase" ]; then
+  node packages/shared/scripts/sync-dist.mjs --force
+fi

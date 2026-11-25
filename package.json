@@ -10,9 +10,10 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "npm run build -w @toeic/shared && concurrently -n api,web -c blue,green \"npm run start:dev -w @toeic/api\" \"npm run dev -w @toeic/web\"",
-    "dev:web": "npm run dev -w @toeic/web",
-    "dev:api": "npm run start:dev -w @toeic/api",
+    "prepare": "node packages/shared/scripts/prepare.mjs",
+    "dev": "node packages/shared/scripts/sync-dist.mjs && concurrently -n shared,api,web -c yellow,blue,green \"npm run watch -w @toeic/shared\" \"npm run start:dev -w @toeic/api\" \"npm run dev -w @toeic/web\"",
+    "dev:web": "node packages/shared/scripts/sync-dist.mjs && concurrently -n shared,web -c yellow,green \"npm run watch -w @toeic/shared\" \"npm run dev -w @toeic/web\"",
+    "dev:api": "node packages/shared/scripts/sync-dist.mjs && concurrently -n shared,api -c yellow,blue \"npm run watch -w @toeic/shared\" \"npm run start:dev -w @toeic/api\"",
     "build": "npm run build -w @toeic/shared && npm run build -w @toeic/api && npm run build -w @toeic/web",
     "test": "npm run build -w @toeic/shared && npm run test -w @toeic/api && npm run test -w @toeic/web",
     "lint": "npm run lint -w @toeic/web",
