@@ -45,6 +45,7 @@ export class SiteService {
     }
     if (input.backgroundMode !== undefined) patch.backgroundMode = input.backgroundMode
     if (input.themePreset !== undefined) patch.themePreset = input.themePreset
+    if (input.studentAllowedThemes !== undefined) patch.studentAllowedThemes = [...new Set(input.studentAllowedThemes)]
     if (input.logoUrl !== undefined) patch.logoDataUrl = input.logoUrl
     if (input.faviconUrl !== undefined) patch.faviconDataUrl = input.faviconUrl
     if (input.honorBoardEnabled !== undefined) patch.honorBoardEnabled = input.honorBoardEnabled
@@ -82,6 +83,7 @@ export class SiteService {
         themeButton: d.theme.button ?? '#143899',
         backgroundMode: d.backgroundMode,
         themePreset: d.themePreset,
+        studentAllowedThemes: [...d.studentAllowedThemes],
         honorBoardEnabled: d.honorBoardEnabled,
       })
       .returning()
@@ -91,6 +93,9 @@ export class SiteService {
   private toDto(row: SiteSettingsRow): SiteSettingsDto {
     const bgMode: BackgroundMode = row.backgroundMode === 'sky' || row.backgroundMode === 'gradient' ? row.backgroundMode : 'fixed'
     const themePreset: ThemePresetId = PRESET_SET.has(row.themePreset) ? (row.themePreset as ThemePresetId) : 'classic'
+    const studentAllowedThemes: ThemePresetId[] = Array.isArray(row.studentAllowedThemes)
+      ? [...new Set(row.studentAllowedThemes.filter((id): id is ThemePresetId => PRESET_SET.has(id)))]
+      : [...THEME_PRESET_IDS]
     return {
       brandName: row.brandName,
       slogan: row.slogan,
@@ -109,6 +114,7 @@ export class SiteService {
       theme: { primary: row.themePrimary, primarySoft: row.themePrimarySoft, paper: row.themePaper, button: row.themeButton },
       backgroundMode: bgMode,
       themePreset,
+      studentAllowedThemes,
       logoUrl: row.logoDataUrl,
       faviconUrl: row.faviconDataUrl,
       honorBoardEnabled: row.honorBoardEnabled,

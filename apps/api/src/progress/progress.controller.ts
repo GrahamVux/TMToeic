@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Patch, Put, Req } from '@nestjs/common'
-import { setDailyGoalsSchema, setGoalSchema, updateProfileSchema } from '@toeic/shared'
+import { setDailyGoalsSchema, setGoalSchema, setStudentThemeSchema, updateProfileSchema } from '@toeic/shared'
 import type { Request } from 'express'
 import { clientIp, CurrentUser, Roles, type AuthUser } from '../common/decorators'
 import { parse } from '../common/zod'
@@ -50,5 +50,10 @@ export class ProgressController {
   @Patch('profile')
   async updateProfile(@CurrentUser() user: AuthUser, @Body() body: unknown, @Req() req: Request) {
     return { user: await this.progress.updateProfile(user.id, parse(updateProfileSchema, body), clientIp(req)) }
+  }
+
+  @Patch('theme')
+  async setTheme(@CurrentUser() user: AuthUser, @Body() body: unknown, @Req() req: Request) {
+    return { user: await this.progress.setThemePreset(user.id, parse(setStudentThemeSchema, body), clientIp(req)) }
   }
 }

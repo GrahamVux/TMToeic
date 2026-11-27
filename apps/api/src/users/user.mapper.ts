@@ -1,5 +1,7 @@
-import { effectiveAvatarFrame, goalFromStored, teacherGrants, type UserDto } from '@toeic/shared'
+import { effectiveAvatarFrame, goalFromStored, teacherGrants, THEME_PRESET_IDS, type ThemePresetId, type UserDto } from '@toeic/shared'
 import type { UserRow } from '../db/schema'
+
+const THEME_SET = new Set<string>(THEME_PRESET_IDS)
 
 /** The ONLY place a DB user row becomes an API payload — guarantees password_hash etc. never leak. */
 export function toUserDto(u: UserRow, classroom?: { id: string; name: string } | null): UserDto {
@@ -14,6 +16,7 @@ export function toUserDto(u: UserRow, classroom?: { id: string; name: string } |
     status: u.status,
     avatarUrl: u.avatarUrl,
     avatarFrame: effectiveAvatarFrame(u.role, u.avatarFrame, u.avatarFrameExpiresAt),
+    themePreset: u.themePreset && THEME_SET.has(u.themePreset) ? (u.themePreset as ThemePresetId) : null,
     rewardPoints: u.rewardPoints ?? 0,
     targetScore: u.targetScore,
     goal: goalFromStored(u.goalTrack, u.targetScore),

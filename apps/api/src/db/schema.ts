@@ -16,7 +16,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { ASSET_PROVIDERS, ASSIGNMENT_LIFECYCLES, ATTEMPT_STATUSES, EXAM_MODES, EXAM_STATUSES, ROLES, SKILLS, USER_STATUSES, type AssetStatus } from '@toeic/shared'
+import { ASSET_PROVIDERS, ASSIGNMENT_LIFECYCLES, ATTEMPT_STATUSES, EXAM_MODES, EXAM_STATUSES, ROLES, SKILLS, THEME_PRESET_IDS, USER_STATUSES, type AssetStatus } from '@toeic/shared'
 
 export const roleEnum = pgEnum('role', ROLES)
 export const userStatusEnum = pgEnum('user_status', USER_STATUSES)
@@ -46,6 +46,7 @@ export const users = pgTable(
     avatarUrl: text('avatar_url'),
     avatarFrame: text('avatar_frame').notNull().default('none'),
     avatarFrameExpiresAt: timestamp('avatar_frame_expires_at', { withTimezone: true }),
+    themePreset: text('theme_preset'),
     rewardPoints: integer('reward_points').notNull().default(0),
     /** Upper bound of the student's score band; kept for list/sort compatibility. */
     targetScore: integer('target_score'),
@@ -506,6 +507,7 @@ export const siteSettings = pgTable('site_settings', {
   themeButton: text('theme_button').notNull().default('#1f7a8c'),
   backgroundMode: text('background_mode').notNull().default('fixed'),
   themePreset: text('theme_preset').notNull().default('classic'),
+  studentAllowedThemes: jsonb('student_allowed_themes').$type<string[]>().notNull().default([...THEME_PRESET_IDS]),
   honorBoardEnabled: boolean('honor_board_enabled').notNull().default(true),
   honorRewardConfig: jsonb('honor_reward_config').$type<Record<string, unknown> | null>(),
   ...timestamps,

@@ -15,6 +15,7 @@ import {
   type PartStatDto,
   type ScorePointDto,
   type SetGoalInput,
+  type SetStudentThemeInput,
   type SkillStatDto,
   type StudentDashboardDto,
   type StudentProgressDto,
@@ -27,7 +28,8 @@ import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { AuditService } from '../audit/audit.service'
 import { AppException } from '../common/app-exception'
 import { DB, type Db } from '../db/database.module'
-import { attempts, assignments, classMembers, classTeachers, exams, users } from '../db/schema'
+import { attempts, assignments, classes, classMembers, classTeachers, exams, users } from '../db/schema'
+import { SiteService } from '../site/site.service'
 import { toUserDto } from '../users/user.mapper'
 import { HonorRewardsService } from './honor-rewards.service'
 
@@ -137,6 +139,7 @@ export class ProgressService {
     @Inject(DB) private readonly db: Db,
     private readonly audit: AuditService,
     private readonly honorRewards: HonorRewardsService,
+    private readonly site: SiteService,
   ) {}
 
   async studentDashboard(userId: string, now = new Date()): Promise<StudentDashboardDto> {
@@ -594,5 +597,35 @@ export class ProgressService {
       if (e?.code === '23505' || e?.cause?.code === '23505') throw AppException.conflict('Email đã được sử dụng bởi tài khoản khác')
       throw err
     }
+  }
+
+  async setThemePreset(userId: string, input: SetStudentThemeInput, ip?: string): Promise<UserDto> {
+    if (input.themePreset !== null) {
+      const site = await this.site.get()
+      if (!site.studentAllowedThemes.includes(input.themePreset)) {
+        throw AppException.forbidden('Chủ đề giao diện này hiện chưa được quản trị viên mở cho học viên.')
+      }
+    }
+    const [row] = await this.db
+      .update(users)
+      .set({ themePreset: input.themePreset, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning()
+    if (!row) throw AppException.notFound('Không tìm thấy tài khoản')
+    const [classroom] = await this.db
+      .select({ id: classes.id, name: classes.name })
+      .from(classMembers)
+      .innerJoin(classes, eq(classes.id, classMembers.classId))
+      .where(eq(classMembers.userId, userId))
+      .limit(1)
+    await this.audit.log({
+      action: 'THEME_PRESET_UPDATED',
+      actorId: userId,
+      entityType: 'user',
+      entityId: userId,
+      metadata: { themePreset: input.themePreset },
+      ip,
+    })
+    return toUserDto(row, classroom ?? null)
   }
 }

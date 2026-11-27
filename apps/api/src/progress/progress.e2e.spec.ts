@@ -819,4 +819,30 @@ describe('Student dashboard & goal (e2e on PGlite)', () => {
     expect(staff.center.year.minPodiumXp).toBe(1000)
     expect(staff.rewardConfig.center.year).toHaveLength(3)
   })
+
+  it('lets a student choose an allowed theme, blocks restricted themes, and keeps classroom metadata', async () => {
+    const room = await admin.post('/classes').send({ name: `Lớp Theme ${seq}` })
+    expect(room.status).toBe(201)
+    const created = await admin.post('/users/students').send({ fullName: 'Học Viên Đổi Theme', classId: room.body.id })
+    expect(created.status).toBe(201)
+    const pupil = (await login(app, created.body.user.studentCode as string, created.body.temporaryPassword as string)).c
+    await pupil.post('/auth/change-password').send({ currentPassword: created.body.temporaryPassword, newPassword: 'StudentPass99' })
+
+    // Works even if no /site-settings request ran before (default allows all 12)
+    const ok = await patch(pupil, '/me/theme', { themePreset: 'spring' })
+    expect(ok.status).toBe(200)
+    expect(ok.body.user.themePreset).toBe('spring')
+    expect(ok.body.user.className).toBe(`Lớp Theme ${seq}`)
+    expect((await pupil.get('/auth/me')).body.user.themePreset).toBe('spring')
+
+    // Admin restricts studentAllowedThemes to only classic and autumn
+    expect((await put(admin, '/site-settings', { studentAllowedThemes: ['classic', 'autumn'] })).status).toBe(200)
+    expect((await patch(pupil, '/me/theme', { themePreset: 'spring' })).status).toBe(403)
+    expect((await patch(pupil, '/me/theme', { themePreset: 'autumn' })).status).toBe(200)
+
+    // Reset back to class default (null) is always allowed
+    const reset = await patch(pupil, '/me/theme', { themePreset: null })
+    expect(reset.status).toBe(200)
+    expect(reset.body.user.themePreset).toBeNull()
+  })
 })

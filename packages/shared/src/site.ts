@@ -271,6 +271,7 @@ export const DEFAULT_SITE_SETTINGS = {
   theme: DEFAULT_SITE_THEME,
   backgroundMode: 'fixed' as BackgroundMode,
   themePreset: 'classic' as ThemePresetId,
+  studentAllowedThemes: [...THEME_PRESET_IDS] as ThemePresetId[],
   logoUrl: null as string | null,
   faviconUrl: null as string | null,
   /** Weekly honor boards on the student home. Admin can hide the whole block. */
@@ -299,12 +300,32 @@ export const updateSiteSettingsSchema = z.object({
   theme: siteThemeSchema.optional(),
   backgroundMode: backgroundModeSchema.optional(),
   themePreset: z.enum(THEME_PRESET_IDS).optional(),
+  studentAllowedThemes: z
+    .array(z.enum(THEME_PRESET_IDS))
+    .max(THEME_PRESET_IDS.length)
+    .transform((arr) => [...new Set(arr)])
+    .optional(),
   /** data URL to replace; null clears back to the default logo. */
   logoUrl: z.union([dataUrl, z.null()]).optional(),
   faviconUrl: z.union([dataUrl, z.null()]).optional(),
   honorBoardEnabled: z.boolean().optional(),
 })
 export type UpdateSiteSettingsInput = z.infer<typeof updateSiteSettingsSchema>
+
+export const setStudentThemeSchema = z.object({
+  themePreset: z.enum(THEME_PRESET_IDS).nullable(),
+})
+export type SetStudentThemeInput = z.infer<typeof setStudentThemeSchema>
+
+export function effectiveSiteForUser(
+  site: SiteSettingsDto,
+  studentPreset: ThemePresetId | null | undefined,
+  isStudent: boolean,
+): SiteSettingsDto {
+  if (!isStudent || !studentPreset) return site
+  if (!site.studentAllowedThemes.includes(studentPreset)) return site
+  return { ...site, backgroundMode: 'gradient', themePreset: studentPreset }
+}
 
 const emptyToNull = (v: string) => {
   const t = v.trim()

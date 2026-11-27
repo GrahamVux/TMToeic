@@ -218,6 +218,13 @@
       "when": 1794200000000,
       "tag": "0031_navy_theme_defaults",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1794300000000,
+      "tag": "0032_student_theme_permissions",
+      "breakpoints": true
     }
   ]
 }
