@@ -289,7 +289,7 @@ export class HonorRewardsService {
         themePrimary: d.theme.primary,
         themePrimarySoft: d.theme.primarySoft,
         themePaper: d.theme.paper,
-        themeButton: d.theme.button ?? '#1f7a8c',
+        themeButton: d.theme.button ?? '#143899',
         backgroundMode: d.backgroundMode,
         themePreset: d.themePreset,
         honorBoardEnabled: d.honorBoardEnabled,

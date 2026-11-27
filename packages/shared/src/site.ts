@@ -61,15 +61,15 @@ export const THEME_PRESETS: readonly ThemePresetDef[] = [
   {
     id: 'classic',
     group: 'general',
-    label: 'Ngọc Lam Chuẩn',
-    subtitle: 'Khung cảnh đồi núi thanh bình mặc định',
+    label: 'Xanh Học Thuật Chuẩn',
+    subtitle: 'Khung cảnh xanh học thuật thanh lịch mặc định',
     emoji: '🌊',
-    lightGradient: 'radial-gradient(at 15% 15%, #c7f0f7 0%, transparent 50%), radial-gradient(at 88% 12%, #dff6e8 0%, transparent 48%), linear-gradient(145deg, #f3fafc 0%, #e7f4f8 55%, #eef9f5 100%)',
-    darkGradient: 'radial-gradient(at 18% 15%, rgba(34, 155, 173, 0.28) 0%, transparent 52%), radial-gradient(at 85% 20%, rgba(45, 130, 110, 0.22) 0%, transparent 48%), linear-gradient(145deg, #091318 0%, #0d1d24 55%, #09151a 100%)',
-    lightAccent: '#1f7a8c',
-    darkAccent: '#58c7d8',
-    lightPaper: '#f3fafc',
-    darkPaper: '#091318',
+    lightGradient: 'radial-gradient(at 10% 14%, #dbeafe 0%, transparent 46%), radial-gradient(at 90% 12%, #fdecee 0%, transparent 42%), linear-gradient(145deg, #f6f8fc 0%, #edf2fb 55%, #f4f7fc 100%)',
+    darkGradient: 'radial-gradient(at 12% 15%, rgba(20, 56, 153, 0.34) 0%, transparent 50%), radial-gradient(at 88% 18%, rgba(217, 35, 46, 0.14) 0%, transparent 46%), linear-gradient(145deg, #080f1d 0%, #0d172a 55%, #0b1218 100%)',
+    lightAccent: '#143899',
+    darkAccent: '#60a5fa',
+    lightPaper: '#f6f8fc',
+    darkPaper: '#0b1218',
   },
   {
     id: 'auto',
@@ -79,7 +79,7 @@ export const THEME_PRESETS: readonly ThemePresetDef[] = [
     emoji: '🗓️',
     lightGradient: 'linear-gradient(135deg, #e0f7fa 0%, #fce4ec 50%, #fff8e1 100%)',
     darkGradient: 'linear-gradient(135deg, #0e1e26 0%, #241428 50%, #241c0d 100%)',
-    lightAccent: '#1f7a8c',
+    lightAccent: '#143899',
     darkAccent: '#7bdff2',
     lightPaper: '#f6fafc',
     darkPaper: '#0c121b',
@@ -245,10 +245,10 @@ export function resolveThemePreset(preset: ThemePresetId, now = new Date()): The
 }
 
 export const DEFAULT_SITE_THEME: SiteThemeDto = {
-  primary: '#2b8a9c',
-  primarySoft: '#b9e4ec',
-  paper: '#f7fbfd',
-  button: '#1f7a8c',
+  primary: '#143899',
+  primarySoft: '#dbeafe',
+  paper: '#f6f8fc',
+  button: '#143899',
 }
 
 export const DEFAULT_SITE_SETTINGS = {

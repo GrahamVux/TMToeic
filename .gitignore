@@ -32,3 +32,7 @@ dist-ssr
 
 # Imported exam drafts (copyrighted scans/crops, internal use only)
 apps/api/content/drafts/
+
+
+# Local improvement plan (not committed)
+de-xuat-phuong-an-sua-chua.md

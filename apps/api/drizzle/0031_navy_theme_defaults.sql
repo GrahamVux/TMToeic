@@ -1,0 +1,1 @@
+UPDATE "site_settings" SET "theme_primary" = '#143899', "theme_primary_soft" = '#dbeafe', "theme_paper" = '#f6f8fc', "theme_button" = '#143899', "updated_at" = now() WHERE "id" = 'default' AND lower("theme_primary") = '#2b8a9c' AND lower("theme_primary_soft") = '#b9e4ec' AND lower("theme_paper") = '#f7fbfd' AND lower("theme_button") = '#1f7a8c';

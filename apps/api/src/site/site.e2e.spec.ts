@@ -62,7 +62,7 @@ describe('Site settings (e2e on PGlite)', () => {
       backgroundMode: 'sky',
     })
     expect(res.body.logoUrl).toMatch(/^data:image\/png;base64,/)
-    expect(res.body.theme.button).toBe('#1f7a8c')
+    expect(res.body.theme.button).toBe(DEFAULT_SITE_SETTINGS.theme.button)
 
     const colored = await put(admin, '/site-settings', {
       theme: { primary: '#0f766e', primarySoft: '#99f6e4', paper: '#f0fdfa', button: '#123456' },
