@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/Button'
+import { Button, buttonClasses } from '@/components/ui/Button'
 import { CornerNotice, flashError, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { Card } from '@/components/ui/Primitives'
 import { PageLoading } from '@/components/ui/LoadingScreen'
@@ -59,8 +59,8 @@ export function FlashcardPage() {
     setParams({ deck: next })
   }
 
-  if (query.isPending || cards === null) return <PageLoading message="Đang mở flashcard…" />
   if (query.error) return <QueryErrorRedirect error={query.error} />
+  if (query.isPending || cards === null) return <PageLoading message="Đang mở flashcard…" />
 
   const card = cards[0]
   const isSaved = Boolean(card && (card.savedInNotebook || savedIds[card.id]))
@@ -116,10 +116,10 @@ export function FlashcardPage() {
 
       {unit ? null : (
         <div className="flex gap-2">
-          <button type="button" className={tab(deck === 'catalog')} onClick={() => switchDeck('catalog')}>
+          <button type="button" aria-pressed={deck === 'catalog'} className={tab(deck === 'catalog')} onClick={() => switchDeck('catalog')}>
             Kho từ
           </button>
-          <button type="button" className={tab(deck === 'notebook')} onClick={() => switchDeck('notebook')}>
+          <button type="button" aria-pressed={deck === 'notebook'} className={tab(deck === 'notebook')} onClick={() => switchDeck('notebook')}>
             Sổ tay
           </button>
         </div>
@@ -133,7 +133,12 @@ export function FlashcardPage() {
       {card ? (
         <>
           <div className="space-y-3">
-            <button type="button" className="block w-full text-left" onClick={() => setFlipped((value) => !value)}>
+            <button
+              type="button"
+              aria-pressed={flipped}
+              className="block w-full rounded-2xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+              onClick={() => setFlipped((value) => !value)}
+            >
               <Card className="flex min-h-68 flex-col items-center justify-center p-8 text-center">
                 {flipped ? (
                   <>
@@ -204,16 +209,15 @@ export function FlashcardPage() {
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-3">
             <Button
+              disabled={query.isFetching}
               onClick={() => {
                 void query.refetch().then((result) => setCards(result.data?.cards ?? []))
               }}
             >
-              Lấy thêm thẻ
+              {query.isFetching ? 'Đang tải…' : 'Lấy thêm thẻ'}
             </Button>
-            <Link to={gameHref}>
-              <Button variant="paper">
-                <Gamepad2 className="size-4" /> Chơi game ôn từ
-              </Button>
+            <Link to={gameHref} className={buttonClasses('paper')}>
+              <Gamepad2 className="size-4" /> Chơi game ôn từ
             </Link>
           </div>
         </Card>
@@ -223,5 +227,7 @@ export function FlashcardPage() {
 }
 
 function tab(active: boolean) {
-  return active ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-paper-2 px-4 py-2 text-sm font-semibold text-ink'
+  return active
+    ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
+    : 'rounded-full bg-paper-2 px-4 py-2 text-sm font-semibold text-ink transition hover:bg-button-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
 }

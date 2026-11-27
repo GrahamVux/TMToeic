@@ -33,14 +33,15 @@ function ExamColumn({
     <div className="min-w-0">
       <h3 className="font-semibold">{title}</h3>
       <Input className="mt-2" value={query} placeholder="Tìm mã hoặc tên đề" onChange={(e) => onQuery(e.target.value)} />
-      <div className="mt-2 max-h-[calc(4.875rem*3+0.5rem*2)] space-y-2 overflow-y-auto pr-1">
+      <div className="mt-2 max-h-72 space-y-2 overflow-y-auto pr-1">
         {visible.length === 0 ? <p className="rounded-xl bg-paper px-3 py-4 text-sm text-ink-soft">Không có đề phù hợp.</p> : null}
         {visible.map((exam) => (
           <button
             key={exam.id}
             type="button"
+            aria-pressed={selectedId === exam.id}
             className={cn(
-              'h-[4.875rem] w-full overflow-hidden rounded-xl border px-3 py-2 text-left',
+              'min-h-[4.875rem] w-full rounded-xl border px-3 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
               selectedId === exam.id ? 'border-gold-deep bg-gold/20' : 'border-ink/10 bg-cream hover:border-gold/60',
             )}
             onClick={() => onSelect(exam.id)}
@@ -124,10 +125,19 @@ export function ExamBundlePanel() {
           {trimmedTitle && !titleOk ? <span className="mt-1 block text-xs text-coral">Tên cần từ 3 đến 200 ký tự.</span> : null}
         </label>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-4">
-        <ExamColumn title="Listening" query={listeningQuery} onQuery={setListeningQuery} exams={listening} selectedId={listeningId} onSelect={setListeningId} />
-        <ExamColumn title="Reading" query={readingQuery} onQuery={setReadingQuery} exams={reading} selectedId={readingId} onSelect={setReadingId} />
-      </div>
+      {exams.isPending ? <p className="mt-4 text-sm text-ink-soft">Đang tải danh sách đề…</p> : null}
+      {exams.isError ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2.5 text-sm text-danger" role="alert">
+          <span>Không tải được danh sách đề để ghép bộ.</span>
+          <Button type="button" variant="paper" onClick={() => void exams.refetch()}>Thử lại</Button>
+        </div>
+      ) : null}
+      {!exams.isPending && !exams.isError ? (
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <ExamColumn title="Listening" query={listeningQuery} onQuery={setListeningQuery} exams={listening} selectedId={listeningId} onSelect={setListeningId} />
+          <ExamColumn title="Reading" query={readingQuery} onQuery={setReadingQuery} exams={reading} selectedId={readingId} onSelect={setReadingId} />
+        </div>
+      ) : null}
       <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
         {pairTaken ? <p className="text-sm text-coral">Cặp này đã có bộ đề tổng hợp.</p> : null}
         <Button
@@ -150,7 +160,13 @@ export function ExamBundlePanel() {
           {create.isPending ? 'Đang tạo…' : 'Tạo bộ đề'}
         </Button>
       </div>
-      {(bundles.data ?? []).length > 0 ? (
+      {bundles.isError ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2.5 text-sm text-danger" role="alert">
+          <span>Không tải được danh sách bộ đề tổng hợp.</span>
+          <Button type="button" variant="paper" onClick={() => void bundles.refetch()}>Thử lại</Button>
+        </div>
+      ) : null}
+      {!bundles.isPending && !bundles.isError && (bundles.data ?? []).length > 0 ? (
         <ul className="mt-4 space-y-2 border-t border-ink/10 pt-4">
           {bundles.data?.map((bundle) => (
             <li key={bundle.id} className="text-sm text-ink-soft">

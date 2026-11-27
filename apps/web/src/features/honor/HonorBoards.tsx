@@ -1,5 +1,5 @@
 import { AccountAvatar } from '@/components/ui/AccountAvatar'
-import { Button } from '@/components/ui/Button'
+import { Button, buttonClasses } from '@/components/ui/Button'
 import { Badge, Card, ProgressBar } from '@/components/ui/Primitives'
 import { cn } from '@/lib/cn'
 import {
@@ -51,14 +51,12 @@ export function DashboardHonorSummaryCard({
           <button
             type="button"
             onClick={() => onOpenWardrobe('frames')}
-            className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/70 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-100 dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-200 dark:hover:bg-amber-500/25"
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-warn/35 bg-warn-soft px-3 py-1.5 text-xs font-semibold text-warn transition hover:bg-warn-soft/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
           >
-            <Coins className="size-3.5 text-amber-600 dark:text-amber-300" /> {honor.me.rewardPoints.toLocaleString('vi-VN')} điểm • Kho khung viền
+            <Coins className="size-3.5 text-warn" /> {honor.me.rewardPoints.toLocaleString('vi-VN')} điểm • Kho khung viền
           </button>
-          <Link to="/honor">
-            <Button type="button">
-              Mở trang Xếp Hạng <ArrowRight className="size-4" />
-            </Button>
+          <Link to="/honor" className={buttonClasses('gold')}>
+            Mở trang Xếp Hạng <ArrowRight className="size-4" />
           </Link>
         </div>
       </div>
@@ -72,8 +70,8 @@ export function DashboardHonorSummaryCard({
                 <span className="rounded-full bg-button px-2.5 py-0.5 text-xs font-bold text-button-ink">
                   {myEntry ? `Hạng #${myEntry.place} Trung Tâm` : 'Chưa lên bảng tuần này'}
                 </span>
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-orange-700 dark:text-orange-300">
-                  <Flame className="size-3.5 fill-orange-500 text-orange-600" /> {honor.me.streakDays} ngày
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-warn">
+                  <Flame className="size-3.5 fill-warn text-warn" /> {honor.me.streakDays} ngày
                 </span>
               </div>
               <p className="mt-1 text-sm font-semibold text-ink">
@@ -164,7 +162,7 @@ export function RivalsNeighborhoodPanel({ rivals, myPlace }: { rivals: HonorEntr
                 <div className="shrink-0 text-right">
                   <p className="text-sm font-bold">{row.periodXp} EXP</p>
                   {!row.you && me ? (
-                    <p className={delta > 0 ? 'text-[13px] font-semibold text-amber-600 dark:text-amber-300' : 'text-[13px] font-semibold text-emerald-600 dark:text-emerald-400'}>
+                    <p className={delta > 0 ? 'text-[13px] font-semibold text-warn' : 'text-[13px] font-semibold text-success'}>
                       {delta > 0 ? `Hơn bạn +${delta} EXP` : `Kém bạn ${Math.abs(delta)} EXP`}
                     </p>
                   ) : (
@@ -256,13 +254,13 @@ export function HonorBentoView({
               </div>
               <div className="rounded-2xl border border-gold/25 bg-paper p-2.5">
                 <p className="text-xs font-medium text-ink-soft">Chuỗi Streak</p>
-                <p className="serif mt-0.5 inline-flex items-center gap-1 text-lg text-orange-600 tabular-nums dark:text-orange-300">
-                  <Flame className="size-4 fill-orange-500" /> {honor.me.streakDays}N
+                <p className="serif mt-0.5 inline-flex items-center gap-1 text-lg text-warn tabular-nums">
+                  <Flame className="size-4 fill-warn text-warn" /> {honor.me.streakDays}N
                 </p>
               </div>
-              <div className="rounded-2xl border border-amber-200/80 bg-amber-50/80 p-2.5 dark:border-amber-400/30 dark:bg-amber-500/15">
-                <p className="text-xs font-medium text-amber-900/80 dark:text-amber-200/85">Ví điểm</p>
-                <p className="serif mt-0.5 text-lg text-amber-800 tabular-nums dark:text-amber-200">{honor.me.rewardPoints.toLocaleString('vi-VN')}</p>
+              <div className="rounded-2xl border border-warn/35 bg-warn-soft p-2.5">
+                <p className="text-xs font-medium text-warn">Ví điểm</p>
+                <p className="serif mt-0.5 text-lg text-warn tabular-nums">{honor.me.rewardPoints.toLocaleString('vi-VN')}</p>
               </div>
             </div>
 
@@ -295,18 +293,18 @@ export function HonorBentoView({
           <Card className="p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
-                <div className="inline-flex rounded-xl border border-gold/40 bg-paper p-1" role="tablist" aria-label="Phạm vi bảng">
+                <div className="flex max-w-full flex-wrap rounded-xl border border-gold/40 bg-paper p-1" role="tablist" aria-label="Phạm vi bảng">
                   <button
                     type="button"
                     role="tab"
                     aria-selected={scope === 'class'}
                     onClick={() => setScope('class')}
                     className={cn(
-                      'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition',
+                      'inline-flex min-h-10 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
                       scope === 'class' ? 'bg-button text-button-ink' : 'text-ink-soft hover:text-ink',
                     )}
                   >
-                    <Users className="size-3.5" /> Bảng Lớp{honor.className ? ` (${honor.className})` : ''}
+                    <Users className="size-3.5 shrink-0" /> Bảng Lớp{honor.className ? ` (${honor.className})` : ''}
                   </button>
                   <button
                     type="button"
@@ -314,15 +312,15 @@ export function HonorBentoView({
                     aria-selected={scope === 'center'}
                     onClick={() => setScope('center')}
                     className={cn(
-                      'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition',
+                      'inline-flex min-h-10 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
                       scope === 'center' ? 'bg-button text-button-ink' : 'text-ink-soft hover:text-ink',
                     )}
                   >
-                    <Crown className="size-3.5" /> Toàn Trung Tâm
+                    <Crown className="size-3.5 shrink-0" /> Toàn Trung Tâm
                   </button>
                 </div>
 
-                <div className="inline-flex rounded-xl border border-gold/40 bg-paper p-1" role="tablist" aria-label="Chu kỳ">
+                <div className="flex max-w-full flex-wrap rounded-xl border border-gold/40 bg-paper p-1" role="tablist" aria-label="Chu kỳ">
                   {(['week', 'month', 'year'] as const).map((p) => (
                     <button
                       key={p}
@@ -331,7 +329,7 @@ export function HonorBentoView({
                       aria-selected={period === p}
                       onClick={() => setPeriod(p)}
                       className={cn(
-                        'rounded-lg px-3 py-1.5 text-xs font-semibold transition',
+                        'min-h-10 rounded-lg px-3 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
                         period === p ? 'bg-button text-button-ink' : 'text-ink-soft hover:text-ink',
                       )}
                     >
@@ -361,16 +359,16 @@ export function HonorBentoView({
                       className={cn(
                         'rounded-2xl border p-3.5 transition',
                         place === 1
-                          ? 'border-amber-300 bg-amber-50/65 dark:border-amber-400/40 dark:bg-amber-500/12'
+                          ? 'border-warn/45 bg-warn-soft'
                           : place === 2
-                            ? 'border-slate-300 bg-slate-50/75 dark:border-slate-400/35 dark:bg-slate-400/10'
-                            : 'border-orange-200 bg-orange-50/55 dark:border-orange-400/35 dark:bg-orange-500/10',
+                            ? 'border-gold-deep/30 bg-paper'
+                            : 'border-gold/40 bg-paper-2/70',
                         entry?.you && 'ring-2 ring-button',
                       )}
                     >
                       <div className="flex items-center justify-between">
                         <span className="inline-flex items-center gap-1 text-xs font-extrabold text-ink">
-                          <Trophy className="size-3.5 text-amber-600 dark:text-amber-300" /> TOP {place}
+                          <Trophy className="size-3.5 text-warn" /> TOP {place}
                         </span>
                         <span className="text-sm font-extrabold text-gold-deep">
                           {entry ? `${entry.periodXp} EXP` : `≥${board.minPodiumXp} EXP`}
@@ -396,7 +394,7 @@ export function HonorBentoView({
 
                       <div className="mt-3 flex items-center justify-between rounded-xl border border-gold/25 bg-cream/90 px-2.5 py-1.5 text-[13px]">
                         <span className="inline-flex items-center gap-1 font-bold text-olive">
-                          <Coins className="size-3 text-amber-500" /> +{reward.points}đ
+                          <Coins className="size-3 text-warn" /> +{reward.points}đ
                         </span>
                         <span className="truncate text-ink-soft">
                           {getFrameDef(reward.frameId).name} ({period === 'week' ? '7N' : 'Vĩnh viễn'})
@@ -487,14 +485,15 @@ export function StaffHonorBoards({
           </p>
           <h2 className="serif mt-1 text-2xl">Bảng xếp hạng học viên</h2>
         </div>
-        <div className="inline-flex rounded-xl border border-gold/40 bg-paper p-1">
+        <div className="flex max-w-full flex-wrap rounded-xl border border-gold/40 bg-paper p-1">
           {(['week', 'month', 'year'] as const).map((p) => (
             <button
               key={p}
               type="button"
+              aria-pressed={period === p}
               onClick={() => onPeriodChange(p)}
               className={cn(
-                'rounded-lg px-3.5 py-1.5 text-xs font-semibold transition',
+                'min-h-10 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
                 period === p ? 'bg-button text-button-ink' : 'text-ink-soft hover:text-ink',
               )}
             >
@@ -597,7 +596,7 @@ function StaffEntryRow({ row, showClass = false }: { row: HonorEntryDto; showCla
   return (
     <li className={cn('flex items-center justify-between gap-3 rounded-2xl px-3 py-2.5', row.yours ? 'bg-button-soft' : 'bg-paper')}>
       <div className="flex min-w-0 items-center gap-3">
-        <span className={cn('w-8 text-center text-sm font-bold', row.place <= 3 ? 'text-amber-600' : 'text-ink-soft')}>#{row.place}</span>
+        <span className={cn('w-8 text-center text-sm font-bold', row.place <= 3 ? 'text-warn' : 'text-ink-soft')}>#{row.place}</span>
         <AccountAvatar name={row.name} url={row.avatarUrl} frameId={row.avatarFrame} className="size-10 text-xs" />
         <div className="min-w-0">
           <p className="truncate font-semibold">{row.name}</p>

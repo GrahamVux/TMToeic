@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/Button'
+import { Button, buttonClasses } from '@/components/ui/Button'
 import { Badge, Card } from '@/components/ui/Primitives'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
@@ -23,8 +23,8 @@ export function GrammarLessonPage() {
           <h1 className="serif mt-3 max-w-[28ch] text-3xl font-bold sm:text-4xl">{topic.title}</h1>
           <p className="mt-2 max-w-[68ch] text-sm leading-6 text-ink-soft">{topic.summary}</p>
         </div>
-        <Link to="/study">
-          <Button variant="ghost">Về mục học tập</Button>
+        <Link to="/study" className={buttonClasses('ghost')}>
+          Về mục học tập
         </Link>
       </div>
       <Card className="p-6">
@@ -34,8 +34,8 @@ export function GrammarLessonPage() {
           <div className="mt-6">
             <h3 className="font-semibold">Tài liệu PDF</h3>
             <p className="mt-1 text-sm text-ink-soft">{topic.pdf.filename}</p>
-            <a className="mt-3 inline-block" href={`/api/v1/study/grammar/${topic.id}/pdf`} target="_blank" rel="noreferrer">
-              <Button>Mở tài liệu PDF</Button>
+            <a className={buttonClasses('gold', 'mt-3')} href={`/api/v1/study/grammar/${topic.id}/pdf`} target="_blank" rel="noreferrer">
+              Mở tài liệu PDF
             </a>
             <iframe title={topic.pdf.filename} src={`/api/v1/study/grammar/${topic.id}/pdf`} className="mt-4 hidden h-[70vh] w-full rounded-xl border border-ink/10 bg-cream md:block" />
           </div>
@@ -44,8 +44,8 @@ export function GrammarLessonPage() {
           <Button disabled={progress.isPending} onClick={() => progress.mutate({ id: topic.id, completed: !topic.completed })}>
             {topic.completed ? 'Bỏ đánh dấu đã học' : 'Đánh dấu đã học'}
           </Button>
-          <Link to="/practice/reading">
-            <Button variant="navy">Luyện Part 5–7</Button>
+          <Link to="/practice/reading" className={buttonClasses('navy')}>
+            Luyện Part 5–7
           </Link>
         </div>
       </Card>

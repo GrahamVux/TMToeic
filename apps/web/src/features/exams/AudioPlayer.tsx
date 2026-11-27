@@ -128,17 +128,17 @@ function TrackAudio({
       />
       {active ? (
         <div className="rounded-2xl bg-teal-soft px-4 py-3" role="group" aria-label="Trình phát audio">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <button
               type="button"
               onClick={toggle}
               disabled={failed}
               aria-label={playing ? 'Tạm dừng' : 'Phát audio'}
-              className="grid size-10 shrink-0 place-items-center rounded-full bg-button text-button-ink disabled:opacity-40"
+              className="grid size-11 shrink-0 place-items-center rounded-full bg-button text-button-ink transition hover:bg-button-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 disabled:opacity-40"
             >
               {playing ? <Pause className="size-5" /> : <Play className="size-5" />}
             </button>
-            <div className="min-w-0 flex-1">
+            <div className="order-last w-full sm:order-none sm:min-w-0 sm:flex-1">
               <p className="flex items-center gap-1.5 text-xs font-semibold text-teal uppercase">
                 <Headphones className="size-4" /> Listening • {track.label}
               </p>
@@ -154,7 +154,10 @@ function TrackAudio({
                   if (el) el.currentTime = Number(e.target.value)
                 }}
                 aria-label="Vị trí audio"
-                className={cn('mt-1 h-1.5 w-full accent-gold-deep', !seekable && 'cursor-not-allowed opacity-70')}
+                className={cn(
+                  'mt-1 h-1.5 w-full rounded accent-gold-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
+                  !seekable && 'cursor-not-allowed opacity-70',
+                )}
               />
             </div>
             <span className="font-mono text-xs text-ink-soft tabular-nums" aria-label="Thời gian">
@@ -169,7 +172,7 @@ function TrackAudio({
                   setRate(next)
                   if (ref.current) ref.current.playbackRate = next
                 }}
-                className="rounded-lg border border-ink/15 bg-cream px-2.5 py-1 text-xs font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+                className="min-h-10 rounded-lg border border-ink/15 bg-cream px-2.5 py-1 text-xs font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
               >
                 {PLAYBACK_RATES.map((r) => (
                   <option key={r} value={r}>{r}x</option>

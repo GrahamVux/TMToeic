@@ -1,20 +1,11 @@
 import { HONOR_PODIUM, type HonorRankDto } from '@toeic/shared'
-import type { CSSProperties } from 'react'
 
 /** Original shield in the rank color. Not a copy of any game artwork. */
 export function RankBadge({ rank, size = 36 }: { rank: HonorRankDto; size?: number }) {
   return (
     <span className="inline-flex items-center gap-2" title={rank.label}>
       <Shield color={rank.color} ink={rank.ink} size={size} mark={rank.tier === 'Thách Đấu' ? 'star' : rank.tier === 'Cao Thủ' ? 'flame' : 'gem'} />
-      <span
-        className="text-sm font-semibold text-[var(--badge-light)] dark:text-[var(--badge-dark)]"
-        style={
-          {
-            '--badge-light': rank.ink === '#FFFFFF' ? rank.color : rank.ink,
-            '--badge-dark': rank.ink === '#FFFFFF' ? `color-mix(in srgb, ${rank.color} 72%, #ffffff)` : rank.color,
-          } as CSSProperties
-        }
-      >
+      <span className="text-sm font-semibold text-ink">
         {rank.label}
       </span>
     </span>
@@ -27,15 +18,7 @@ export function PodiumMark({ place }: { place: number }) {
   return (
     <span className="inline-flex items-center gap-2" title={`Hạng ${place} • ${podium.title}`}>
       <Shield color={podium.color} ink={podium.ink} size={42} mark={place === 1 ? 'star' : place === 2 ? 'flame' : 'gem'} />
-      <span
-        className="text-xs font-bold tracking-wide text-[var(--badge-light)] dark:text-[var(--badge-dark)]"
-        style={
-          {
-            '--badge-light': podium.ink === '#FFFFFF' ? podium.color : podium.ink,
-            '--badge-dark': podium.ink === '#FFFFFF' ? `color-mix(in srgb, ${podium.color} 72%, #ffffff)` : podium.color,
-          } as CSSProperties
-        }
-      >
+      <span className="text-xs font-bold tracking-wide text-ink">
         {podium.title}
       </span>
     </span>

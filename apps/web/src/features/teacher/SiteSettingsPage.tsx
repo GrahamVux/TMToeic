@@ -4,6 +4,8 @@ import { CornerNotice, flashNotice, type CornerNoticeState } from '@/components/
 import { DarkModeSwitch } from '@/components/ui/DarkModeSwitch'
 import { FilePick } from '@/components/ui/FilePick'
 import { Badge, Card, Input } from '@/components/ui/Primitives'
+import { PageLoading } from '@/components/ui/LoadingScreen'
+import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { SkyBackdrop } from '@/features/site/SkyBackdrop'
 import { ThemeBackdrop } from '@/features/site/ThemeBackdrop'
 import { skyClockLabel } from '@/features/site/sky'
@@ -88,6 +90,9 @@ export function SiteSettingsPage() {
       </Card>
     )
   }
+
+  if (remote.isPending && !remote.data) return <PageLoading message="Đang tải cài đặt…" />
+  if (remote.error && !remote.data) return <QueryErrorRedirect error={remote.error} />
 
   function set<K extends keyof UpdateSiteSettingsInput>(key: K, value: UpdateSiteSettingsInput[K]) {
     setForm((f) => ({ ...f, [key]: value }))
@@ -311,11 +316,15 @@ export function SiteSettingsPage() {
             <button
               key={id}
               type="button"
+              aria-pressed={backgroundMode === id}
               onClick={() => {
                 set('backgroundMode', id)
                 paintTheme(theme, id, themePreset)
               }}
-              className={cn('rounded-full px-4 py-2 text-sm font-semibold transition', backgroundMode === id ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft')}
+              className={cn(
+                'min-h-10 rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
+                backgroundMode === id ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft',
+              )}
             >
               {label}
             </button>
@@ -343,7 +352,7 @@ export function SiteSettingsPage() {
               </div>
             </div>
           ) : (
-            <div className="absolute inset-0" style={{ background: colorMode === 'dark' ? '#0b1218' : theme.paper }} />
+            <div className="absolute inset-0" style={{ background: colorMode === 'dark' ? 'var(--color-paper)' : theme.paper }} />
           )}
         </div>
 
@@ -365,16 +374,17 @@ export function SiteSettingsPage() {
                       <button
                         key={preset.id}
                         type="button"
+                        aria-pressed={selected}
                         onClick={() => {
                           set('themePreset', preset.id)
                           paintTheme(theme, 'gradient', preset.id)
                         }}
                         className={cn(
-                          'flex items-center gap-3 rounded-2xl border p-2.5 text-left transition',
+                          'flex min-h-10 items-center gap-3 rounded-2xl border p-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
                           selected ? 'border-button bg-button-soft ring-2 ring-button/35' : 'border-gold/35 bg-paper hover:border-gold-deep/60',
                         )}
                       >
-                        <span className="relative h-12 w-16 shrink-0 overflow-hidden rounded-xl border border-black/15 shadow-xs">
+                        <span className="relative h-12 w-16 shrink-0 overflow-hidden rounded-xl border border-ink/15 shadow-xs">
                           <ThemeBackdrop embedded presetOverride={preset.id} />
                           <span className="absolute right-1 bottom-0.5 text-sm drop-shadow">{preset.emoji}</span>
                         </span>

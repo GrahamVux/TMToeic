@@ -27,9 +27,12 @@ function Toggle({ checked, onChange, label, hint, disabled }: { checked: boolean
         aria-label={label}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={cn('relative h-6 w-11 shrink-0 rounded-full transition-colors', checked ? 'bg-button' : 'bg-ink/15')}
+        className={cn(
+          'relative h-6 w-11 shrink-0 rounded-full transition-colors after:absolute after:-inset-x-1 after:-inset-y-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 focus-visible:ring-offset-2 focus-visible:ring-offset-paper disabled:opacity-50',
+          checked ? 'bg-button' : 'bg-ink/15',
+        )}
       >
-        <span className={cn('absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow transition-transform', checked && 'translate-x-5')} />
+        <span className={cn('absolute top-0.5 left-0.5 size-5 rounded-full bg-button-ink shadow transition-transform', checked && 'translate-x-5')} />
       </button>
     </div>
   )

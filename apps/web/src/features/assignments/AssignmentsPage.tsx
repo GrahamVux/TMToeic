@@ -78,7 +78,9 @@ export function AssignmentsPage() {
         {TABS.map((t) => (
           <button
             key={t.id}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${tab === t.id ? 'bg-button text-button-ink' : 'bg-paper-2'}`}
+            type="button"
+            aria-pressed={tab === t.id}
+            className={`min-h-11 rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 focus-visible:ring-offset-2 focus-visible:ring-offset-paper ${tab === t.id ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink hover:bg-button-soft'}`}
             onClick={() => setTab(t.id)}
           >
             {t.label}

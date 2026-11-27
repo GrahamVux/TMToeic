@@ -3,7 +3,7 @@ import { Card, Input } from '@/components/ui/Primitives'
 import { partName } from '@/features/exams/exams.queries'
 import { cn } from '@/lib/cn'
 import { PART_SEED, type ListeningScanInput } from '@toeic/shared'
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
 
 type Draft = ListeningScanInput
 
@@ -69,17 +69,18 @@ function ReviewDock({
   return (
     <nav
       ref={dockRef}
-      className="fixed z-20 flex max-h-[calc(100vh-6.5rem)] flex-col gap-1 overflow-y-auto rounded-2xl border border-gold/40 bg-cream/95 p-2 shadow-[0_12px_32px_rgba(30,51,60,0.14)] backdrop-blur-md"
-      style={{ top: pos?.top ?? 72, left: pos?.left ?? 16, width: pos?.width ?? 148 }}
+      className="sticky top-[4.5rem] z-20 flex flex-row flex-wrap items-center gap-1.5 rounded-2xl border border-gold/40 bg-cream/95 p-2 shadow-[0_12px_32px_rgba(30,51,60,0.14)] backdrop-blur-md md:fixed md:top-[var(--dock-top)] md:left-[var(--dock-left)] md:w-[var(--dock-width)] md:max-h-[calc(100vh-6.5rem)] md:flex-col md:flex-nowrap md:items-stretch md:overflow-y-auto"
+      style={{ '--dock-top': `${pos.top}px`, '--dock-left': `${pos.left}px`, '--dock-width': `${pos.width}px` } as CSSProperties}
       aria-label="Đến từng part"
     >
-      <p className="px-1 pb-1 text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Đến part</p>
+      <p className="w-full px-1 pb-0.5 text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase md:pb-1">Đến part</p>
       {parts.map((code) => (
         <button
           key={code}
           type="button"
+          aria-current={active === code ? 'true' : undefined}
           className={cn(
-            'rounded-xl px-2 py-1.5 text-left text-xs font-semibold sm:text-sm',
+            'min-h-10 rounded-xl px-2.5 py-1.5 text-left text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 sm:text-sm',
             active === code ? 'bg-button text-button-ink' : 'text-ink-soft hover:bg-teal-soft',
           )}
           onClick={() => onJump(code)}
@@ -88,15 +89,19 @@ function ReviewDock({
         </button>
       ))}
       {stale ? (
-        <Button type="button" variant="paper" className="mt-1 w-full px-2 py-1.5 text-xs sm:text-sm" disabled={busy} onClick={onRecut}>
+        <Button type="button" variant="paper" className="mt-0 w-auto px-3 py-1.5 text-xs sm:text-sm md:mt-1 md:w-full" disabled={busy} onClick={onRecut}>
           {busy ? 'Đang cắt…' : 'Cắt lại ảnh'}
         </Button>
       ) : null}
-      <Button type="button" className="mt-1 w-full px-2 py-1.5 text-xs sm:text-sm" disabled={!canSave || busy} onClick={onSave}>
+      <Button type="button" className="mt-0 w-auto px-3 py-1.5 text-xs sm:text-sm md:mt-1 md:w-full" disabled={!canSave || busy} onClick={onSave}>
         {busy ? 'Đang lưu…' : 'Lưu nhanh'}
       </Button>
       {showTop ? (
-        <button type="button" className="rounded-xl px-2 py-1.5 text-left text-xs font-semibold text-ink-soft hover:bg-paper sm:text-sm" onClick={onTop}>
+        <button
+          type="button"
+          className="min-h-10 rounded-xl px-2.5 py-1.5 text-left text-xs font-semibold text-ink-soft hover:bg-paper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 sm:text-sm"
+          onClick={onTop}
+        >
           Lên đầu
         </button>
       ) : null}
@@ -236,7 +241,7 @@ function CropEditor({
           <PageCropper pageImage={pageImage} box={crop.box} onBox={(box) => onChange({ ...crop, manual: true, box })} />
         </>
       ) : null}
-      {image ? <img src={`data:image/jpeg;base64,${image}`} alt={crop.file} className="h-auto w-full rounded-xl border border-ink/10 bg-[#ffffff]" /> : <p className="text-sm text-coral">Chưa có ảnh cho {crop.file}.</p>}
+      {image ? <img src={`data:image/jpeg;base64,${image}`} alt={crop.file} className="h-auto w-full rounded-xl border border-ink/10 bg-cream" /> : <p className="text-sm text-coral">Chưa có ảnh cho {crop.file}.</p>}
       <div className="grid gap-2 sm:grid-cols-6">
         <label className="text-xs font-medium">
           Trang PDF
@@ -326,6 +331,7 @@ export function ListeningScanReview({
       const review = reviewRef.current
       if (!column || !review) return
       const columnBox = column.getBoundingClientRect()
+      if (columnBox.width === 0) return
       const reviewBox = review.getBoundingClientRect()
       const dockHeight = dockRef.current?.offsetHeight ?? 160
       let top = Math.max(pinTop, columnBox.top)
@@ -363,8 +369,8 @@ export function ListeningScanReview({
   }
 
   return (
-    <div ref={reviewRef} className="grid grid-cols-[7.25rem_minmax(0,1fr)] items-start gap-3 sm:grid-cols-[10.5rem_minmax(0,1fr)] sm:gap-4">
-      <div ref={columnRef} />
+    <div ref={reviewRef} className="grid grid-cols-1 items-start gap-4 md:grid-cols-[10.5rem_minmax(0,1fr)]">
+      <div ref={columnRef} className="hidden md:block" />
       <div className="min-w-0 space-y-4">
         <ReviewDock
           parts={parts}
@@ -446,7 +452,7 @@ export function ListeningScanReview({
                           groups: current.groups.map((item, i) => (i === groupIndex ? { ...item, instructions: e.target.value } : item)),
                         }))
                       }
-                      className="mt-1 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm"
+                      className="mt-1 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm outline-none focus:border-button focus:ring-2 focus:ring-button/30"
                     />
                   </label>
                   {crop ? <CropEditor crop={crop} image={shown[crop.file]} pageImage={pages[crop.page - 1]} onChange={(next) => patchCrop(crop.file, next)} /> : null}
@@ -463,7 +469,7 @@ export function ListeningScanReview({
                   </p>
                   <label className="mt-3 block text-sm font-medium">
                     Đề bài
-                    <textarea value={question.prompt} rows={2} onChange={(e) => patchQuestion(index, { ...question, prompt: e.target.value })} className="mt-1 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm" />
+                    <textarea value={question.prompt} rows={2} onChange={(e) => patchQuestion(index, { ...question, prompt: e.target.value })} className="mt-1 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm outline-none focus:border-button focus:ring-2 focus:ring-button/30" />
                   </label>
                   {crop ? <CropEditor crop={crop} image={shown[crop.file]} pageImage={pages[crop.page - 1]} onChange={(next) => patchCrop(crop.file, next)} /> : null}
                   <div className="mt-3 grid gap-2">

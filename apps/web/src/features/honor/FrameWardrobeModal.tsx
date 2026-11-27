@@ -115,18 +115,18 @@ export function FrameWardrobeModal({
             type="button"
             aria-label="Đóng hộp thoại"
             onClick={onClose}
-            className="grid size-8 place-items-center rounded-full border border-ink/12 bg-cream text-ink-soft hover:bg-paper-2"
+            className="grid size-10 shrink-0 place-items-center rounded-full border border-ink/12 bg-cream text-ink-soft transition hover:bg-paper-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
           >
             <X className="size-4" />
           </button>
         </div>
 
-        <div className="flex border-b border-gold/25 bg-cream px-6">
+        <div className="flex overflow-x-auto border-b border-gold/25 bg-cream px-4 sm:px-6">
           <button
             type="button"
             onClick={() => setTab('frames')}
             className={cn(
-              'border-b-2 px-4 py-3 text-sm font-semibold transition',
+              'shrink-0 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-button/50',
               tab === 'frames' ? 'border-button text-gold-deep' : 'border-transparent text-ink-soft hover:text-ink',
             )}
           >
@@ -136,7 +136,7 @@ export function FrameWardrobeModal({
             type="button"
             onClick={() => setTab('wallet')}
             className={cn(
-              'flex items-center gap-1.5 border-b-2 px-4 py-3 text-sm font-semibold transition',
+              'flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-button/50',
               tab === 'wallet' ? 'border-button text-gold-deep' : 'border-transparent text-ink-soft hover:text-ink',
             )}
           >
@@ -144,6 +144,12 @@ export function FrameWardrobeModal({
             Ví điểm thưởng ({points.toLocaleString('vi-VN')} điểm)
           </button>
         </div>
+
+        {rewards.error ? (
+          <div className="mx-4 mt-4 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-xs text-danger sm:mx-6" role="alert">
+            Không tải được dữ liệu ví điểm và khung viền.
+          </div>
+        ) : null}
 
         {tab === 'frames' ? (
           <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-6 md:grid-cols-[260px_1fr]">
@@ -276,7 +282,9 @@ export function FrameWardrobeModal({
                   <ShieldCheck className="size-3.5 text-olive" /> Tự động chốt theo kỳ & Streak
                 </span>
               </div>
-              {ledger.length === 0 ? (
+              {rewards.isPending ? (
+                <p className="text-xs text-ink-soft">Đang tải lịch sử điểm…</p>
+              ) : !rewards.error && ledger.length === 0 ? (
                 <p className="rounded-2xl border border-gold/30 bg-cream p-4 text-sm text-ink-soft">
                   Chưa có giao dịch điểm thưởng nào. Đạt Top 3 Tuần/Tháng hoặc các mốc Streak để nhận điểm!
                 </p>

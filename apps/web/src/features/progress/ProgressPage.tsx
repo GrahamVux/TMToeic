@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/Button'
+import { buttonClasses } from '@/components/ui/Button'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Badge, Card } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
@@ -28,7 +28,7 @@ export function ProgressPage() {
             {p.remainingToTarget !== null ? ` • Còn ${p.remainingToTarget} điểm` : ''}
           </p>
         </div>
-        <Link to="/practice"><Button>Làm đề</Button></Link>
+        <Link to="/practice" className={buttonClasses('gold')}>Làm đề</Link>
       </header>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -63,7 +63,7 @@ export function ProgressPage() {
           target={p.goal}
           subtitle={p.scoreHistory.length >= 2 ? `${p.scoreHistory.length} bài thi thử có điểm quy đổi` : undefined}
         />
-        <Card className="bg-teal-soft p-6">
+        <section className="rounded-2xl border border-gold/35 bg-teal-soft p-6">
           <p className="text-gold-deep">Nhận xét tự động</p>
           {weak ? (
             <p className="mt-4 text-sm leading-7">
@@ -76,7 +76,7 @@ export function ProgressPage() {
             </p>
           )}
           <p className="mt-6 text-xs text-ink-soft">Tính từ các bài đã nộp của bạn — không phải dự đoán điểm thi thật.</p>
-        </Card>
+        </section>
       </div>
 
       <section>
@@ -98,21 +98,21 @@ export function ProgressPage() {
               <Badge tone="danger">Khắc phục {weak.partCode.replace('PART_', 'Part ')}</Badge>
               <p className="mt-3 font-semibold">Luyện tập {partName(weak.partCode)}</p>
               <p className="mt-2 text-sm text-ink-soft">Tỷ lệ đúng hiện tại {weak.accuracy}%.</p>
-              <Link to={drillPath} className="mt-4 inline-block"><Button variant="navy">Luyện ngay</Button></Link>
+              <Link to={drillPath} className={buttonClasses('navy', 'mt-4')}>Luyện ngay</Link>
             </Card>
           ) : (
             <Card className="p-5">
               <Badge>Bắt đầu</Badge>
               <p className="mt-3 font-semibold">Làm một bài luyện để hệ thống hiểu năng lực của bạn</p>
               <p className="mt-2 text-sm text-ink-soft">Sau vài bài, phần phân tích điểm yếu sẽ xuất hiện ở đây.</p>
-              <Link to="/practice" className="mt-4 inline-block"><Button variant="navy">Chọn đề</Button></Link>
+              <Link to="/practice" className={buttonClasses('navy', 'mt-4')}>Chọn đề</Link>
             </Card>
           )}
           <Card className="p-5">
             <Badge tone="warn">Thi thử</Badge>
             <p className="mt-3 font-semibold">Làm một đề đủ 200 câu tính giờ</p>
             <p className="mt-2 text-sm text-ink-soft">Có điểm quy đổi Listening/Reading để theo dõi xu hướng.</p>
-            <Link to="/practice" className="mt-4 inline-block"><Button variant="gold">Vào kho đề</Button></Link>
+            <Link to="/practice" className={buttonClasses('gold', 'mt-4')}>Vào kho đề</Link>
           </Card>
         </div>
       </section>

@@ -1,6 +1,6 @@
 import { useAuth } from '@/app/AuthContext'
 import { AccountAvatar } from '@/components/ui/AccountAvatar'
-import { Button } from '@/components/ui/Button'
+import { Button, buttonClasses } from '@/components/ui/Button'
 import { Badge, Card, Input } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { useClassReport } from '@/features/progress/progress.queries'
@@ -71,8 +71,8 @@ export function TeacherDashboardPage() {
               Thêm giáo viên
             </Button>
           ) : null}
-          {canAssign ? <Link to="/admin/assignments"><Button variant="paper">Giao bài tập</Button></Link> : null}
-          {canAssign ? <Link to="/admin/exams"><Button variant="navy">Import đề</Button></Link> : null}
+          {canAssign ? <Link to="/admin/assignments" className={buttonClasses('paper')}>Giao bài tập</Link> : null}
+          {canAssign ? <Link to="/admin/exams" className={buttonClasses('navy')}>Import đề</Link> : null}
         </div>
       </div>
 
@@ -96,7 +96,11 @@ export function TeacherDashboardPage() {
           {chips.map((c) => (
             <button
               key={c.id || 'all'}
-              className={`rounded-full px-4 py-2 text-sm ${status === c.id ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft'}`}
+              type="button"
+              aria-pressed={status === c.id}
+              className={`min-h-10 rounded-full px-4 py-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 ${
+                status === c.id ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft hover:bg-button-soft hover:text-ink'
+              }`}
               onClick={() => {
                 setStatus(c.id)
                 setPage(1)
@@ -170,8 +174,8 @@ export function TeacherDashboardPage() {
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <AccountActions user={u} compact />
-                      {canView ? <Link to={`/admin/students/${u.id}#bai-lam`}><Button variant="paper" className="px-3 py-1.5 text-xs">Bài làm</Button></Link> : null}
-                      {canView ? <Link to={`/admin/students/${u.id}`}><Button variant="paper" className="px-3 py-1.5 text-xs">Hồ sơ</Button></Link> : null}
+                      {canView ? <Link to={`/admin/students/${u.id}#bai-lam`} className={buttonClasses('paper', 'px-3 py-1.5 text-xs')}>Bài làm</Link> : null}
+                      {canView ? <Link to={`/admin/students/${u.id}`} className={buttonClasses('paper', 'px-3 py-1.5 text-xs')}>Hồ sơ</Link> : null}
                     </div>
                   </td>
                 </tr>
@@ -189,7 +193,14 @@ export function TeacherDashboardPage() {
                   .map((n, index, list) => (
                     <span key={n} className="flex items-center gap-1">
                       {index > 0 && list[index - 1] !== n - 1 ? <span className="px-1">…</span> : null}
-                      <button type="button" className={`grid size-8 place-items-center rounded-full text-xs font-semibold ${n === page ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft'}`} onClick={() => setPage(n)}>
+                      <button
+                        type="button"
+                        aria-current={n === page ? 'page' : undefined}
+                        className={`grid size-10 place-items-center rounded-full text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 ${
+                          n === page ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft hover:bg-button-soft hover:text-ink'
+                        }`}
+                        onClick={() => setPage(n)}
+                      >
                         {n}
                       </button>
                     </span>
@@ -225,7 +236,7 @@ function NeedsAttention() {
           <h2 className="serif text-2xl">Học viên cần lưu tâm</h2>
           <p className="mt-1 text-xs text-ink-soft">Tỉ lệ đúng dưới {SUPPORT_ACCURACY_BELOW}%, từ {INACTIVE_AFTER_DAYS} ngày không làm bài, hoặc bài giao đã quá hạn mà chưa nộp.</p>
         </div>
-        <Link to="/admin/reports#luu-tam"><Button variant="paper" className="px-3 py-1.5 text-xs">Xem đầy đủ</Button></Link>
+        <Link to="/admin/reports#luu-tam" className={buttonClasses('paper', 'px-3 py-1.5 text-xs')}>Xem đầy đủ</Link>
       </div>
       {report.isPending ? <p className="mt-3 text-sm text-ink-soft">Đang tải…</p> : null}
       {report.isError ? <p className="mt-3 text-sm text-coral">Không tải được dữ liệu hoạt động.</p> : null}

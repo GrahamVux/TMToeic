@@ -218,10 +218,10 @@ export function StudentShell({ children }: { children: ReactNode }) {
             <button
               type="button"
               onClick={() => setWardrobeOpen(true)}
-              className="hidden min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-300/80 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-900 transition hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-200 dark:hover:bg-amber-500/25 sm:inline-flex"
+              className="hidden min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-warn/35 bg-warn-soft px-3 py-1 text-xs font-bold text-warn transition hover:bg-warn-soft/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 sm:inline-flex"
               title="Ví điểm thưởng & Kho khung viền (Đổi quà sắp mở)"
             >
-              <Coins className="size-3.5 text-amber-600 dark:text-amber-300" />
+              <Coins className="size-3.5 text-warn" />
               <span className="tabular-nums">{(user?.rewardPoints ?? 0).toLocaleString('vi-VN')} điểm</span>
             </button>
 
@@ -393,7 +393,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden text-ink">
+    <div className="min-h-screen overflow-x-clip text-ink">
       <header className="sticky top-0 z-30 border-b border-gold/30 bg-cream/95 backdrop-blur-md">
         <div aria-hidden="true" className="h-[3px] w-full bg-linear-to-r from-button via-navy to-crimson" />
         <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-3 px-4 sm:px-6">
@@ -526,7 +526,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <main className="shell-main mx-auto max-w-[1400px] px-4 py-6 pb-24 sm:px-6 sm:py-8 lg:pb-8">{children}</main>
 
       {moreOpen ? (
-        <button type="button" className="fixed inset-0 z-20 bg-slate-950/35 lg:hidden" aria-label="Đóng xem thêm" onClick={() => setMoreOpen(false)} />
+        <button type="button" className="fixed inset-0 z-20 bg-black/35 dark:bg-black/55 lg:hidden" aria-label="Đóng xem thêm" onClick={() => setMoreOpen(false)} />
       ) : null}
 
       <nav

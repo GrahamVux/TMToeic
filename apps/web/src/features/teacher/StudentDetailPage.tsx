@@ -33,7 +33,7 @@ export function StudentDetailPage() {
   const target = user.goal
   return (
     <div className="space-y-6">
-      <Link to="/admin" className="text-sm text-gold-deep">
+      <Link to="/admin" className="inline-block rounded-lg text-sm text-gold-deep hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50">
         ← Quay lại danh sách học viên
       </Link>
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -120,11 +120,12 @@ export function StudentDetailPage() {
             Không tải được danh sách bài làm.
             <Button className="ml-3" variant="paper" onClick={() => void sittings.refetch()}>Thử lại</Button>
           </div>
-        ) : (
+        ) : null}
+        {!sittings.isPending && !sittings.error ? (
           <div className="mt-3">
             <AttemptsTable attempts={sittings.data ?? []} staffStudentId={user.id} />
           </div>
-        )}
+        ) : null}
       </section>
     </div>
   )

@@ -135,7 +135,7 @@ export function LoginPage() {
           <button
             type="button"
             onClick={() => setRecover(true)}
-            className="mt-4 w-full text-center text-sm font-medium text-ink-soft underline-offset-2 hover:underline"
+            className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl px-3 text-center text-sm font-medium text-ink-soft underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
           >
             Quên mật khẩu quản trị?
           </button>

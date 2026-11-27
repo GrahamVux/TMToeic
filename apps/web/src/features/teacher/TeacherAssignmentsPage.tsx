@@ -144,10 +144,28 @@ export function TeacherAssignmentsPage() {
 
       {canManage ? (
         <div className="flex flex-wrap gap-2">
-          <button type="button" className={composer === 'bank' ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-cream px-4 py-2 text-sm font-semibold text-ink-soft ring-1 ring-ink/10'} onClick={() => setComposer('bank')}>
+          <button
+            type="button"
+            aria-pressed={composer === 'bank'}
+            className={
+              composer === 'bank'
+                ? 'min-h-10 rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
+                : 'min-h-10 rounded-full bg-cream px-4 py-2 text-sm font-semibold text-ink-soft ring-1 ring-ink/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
+            }
+            onClick={() => setComposer('bank')}
+          >
             Từ bộ đề
           </button>
-          <button type="button" className={composer === 'fill' ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-cream px-4 py-2 text-sm font-semibold text-ink-soft ring-1 ring-ink/10'} onClick={() => setComposer('fill')}>
+          <button
+            type="button"
+            aria-pressed={composer === 'fill'}
+            className={
+              composer === 'fill'
+                ? 'min-h-10 rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
+                : 'min-h-10 rounded-full bg-cream px-4 py-2 text-sm font-semibold text-ink-soft ring-1 ring-ink/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
+            }
+            onClick={() => setComposer('fill')}
+          >
             Điền từ
           </button>
         </div>
@@ -193,7 +211,7 @@ export function TeacherAssignmentsPage() {
             Ghi chú cho học viên
           </label>
           <Input id="asg-desc" className="mt-1" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Không bắt buộc" />
-          <div className="mt-3 grid grid-cols-2 gap-3">
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium" htmlFor="asg-min">
                 Thời gian làm (phút)
@@ -271,15 +289,20 @@ export function TeacherAssignmentsPage() {
       <section>
         <h2 className="serif text-2xl">Bài đã giao ({assignments.data?.length ?? 0})</h2>
         {assignments.isPending ? <p className="mt-3 text-sm text-ink-soft">Đang tải…</p> : null}
+        {!assignments.isPending && (assignments.data?.length ?? 0) === 0 ? (
+          <Card className="mt-3 p-6 text-center text-sm text-ink-soft">Chưa có bài tập nào được giao.</Card>
+        ) : null}
         <div className="mt-3 grid gap-3">
           {(assignments.data ?? []).map((a) => (
             <Card key={a.id} className="p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <Badge tone={a.status === 'PUBLISHED' ? 'olive' : a.status === 'CLOSED' ? 'paper' : 'warn'}>{ASSIGNMENT_LIFECYCLE_LABEL[a.status]}</Badge>
-                  {a.wholeExam ? <Badge tone="gold">Cả bộ đề</Badge> : null}
-                  {a.fillBlank ? <Badge tone="gold">Điền từ</Badge> : null}
-                  {a.fillBlank && a.inBank ? <Badge tone="olive">Đã vào bộ đề</Badge> : null}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge tone={a.status === 'PUBLISHED' ? 'olive' : a.status === 'CLOSED' ? 'paper' : 'warn'}>{ASSIGNMENT_LIFECYCLE_LABEL[a.status]}</Badge>
+                    {a.wholeExam ? <Badge tone="gold">Cả bộ đề</Badge> : null}
+                    {a.fillBlank ? <Badge tone="gold">Điền từ</Badge> : null}
+                    {a.fillBlank && a.inBank ? <Badge tone="olive">Đã vào bộ đề</Badge> : null}
+                  </div>
                   <h3 className="mt-2 font-semibold">{a.title}</h3>
                   <p className="text-sm text-ink-soft">
                     {a.examTitle} • {a.parts.map((p) => partName(p.code).split(' — ')[0]).join(', ')} • {a.submittedCount}/{a.studentCount} đã nộp
@@ -388,13 +411,13 @@ function AssignmentCheckModal({ assignmentId, onClose }: { assignmentId: string;
               ) : null}
             </div>
           ) : null}
-          <div className="mt-5 flex justify-end">
-            <Button type="button" variant="paper" onClick={onClose}>
-              Đóng
-            </Button>
-          </div>
         </>
       ) : null}
+      <div className="mt-5 flex justify-end">
+        <Button type="button" variant="paper" onClick={onClose}>
+          Đóng
+        </Button>
+      </div>
     </Modal>
   )
 }
@@ -504,14 +527,23 @@ function ExamPick({
 }) {
   return (
     <div className={`rounded-2xl border p-4 ${selected ? 'border-gold-deep bg-teal-soft/40' : 'border-gold/30 bg-cream'}`}>
-      <button type="button" className="w-full text-left" onClick={() => onSelect(exam.id)}>
+      <button
+        type="button"
+        aria-pressed={selected}
+        className="min-h-10 w-full rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+        onClick={() => onSelect(exam.id)}
+      >
         <p className="font-semibold">{exam.title}</p>
         <p className="text-xs text-ink-soft">
           {exam.code} • {exam.totalQuestions} câu
         </p>
       </button>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button type="button" className="rounded-full bg-navy px-3 py-1.5 text-xs font-semibold text-white" onClick={onWhole}>
+        <button
+          type="button"
+          className="min-h-10 rounded-full bg-button px-3 py-1.5 text-xs font-semibold text-button-ink transition hover:bg-button-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+          onClick={onWhole}
+        >
           Giao cả bộ đề
         </button>
         {exam.parts.map((p) => {
@@ -520,7 +552,8 @@ function ExamPick({
             <button
               key={p.code}
               type="button"
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${on ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft'}`}
+              aria-pressed={on}
+              className={`min-h-10 rounded-full px-3 py-1.5 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 ${on ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft'}`}
               onClick={() => {
                 if (!selected) {
                   onSelect(exam.id)

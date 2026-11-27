@@ -1,5 +1,5 @@
 import { useAuth } from '@/app/AuthContext'
-import { Button } from '@/components/ui/Button'
+import { Button, buttonClasses } from '@/components/ui/Button'
 import { Badge, Card } from '@/components/ui/Primitives'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
@@ -55,9 +55,11 @@ export function DashboardPage() {
             <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Nhiệm vụ học vụ &amp; bài về nhà</p>
             <div className="mt-1 flex flex-wrap items-center gap-2.5">
               <h2 className="serif text-2xl font-bold">Bài tập Thầy giao</h2>
-              <Badge tone={allPending.length > 0 ? 'warn' : 'olive'} className="tabular-nums">
-                {allPending.length > 0 ? `${allPending.length} bài cần làm` : 'Đã hoàn thành'}
-              </Badge>
+              {!homework.isPending && !homework.isError ? (
+                <Badge tone={allPending.length > 0 ? 'warn' : 'olive'} className="tabular-nums">
+                  {allPending.length > 0 ? `${allPending.length} bài cần làm` : 'Đã hoàn thành'}
+                </Badge>
+              ) : null}
             </div>
           </div>
           <Link to="/assignments" className="text-sm font-semibold text-navy underline-offset-4 hover:underline">
@@ -67,13 +69,21 @@ export function DashboardPage() {
 
         <div className="mt-4 border-t border-gold/25 pt-4">
           {homework.isPending ? <p className="text-sm text-ink-soft">Đang tải bài tập…</p> : null}
-          {!homework.isPending && due.length === 0 ? (
+          {homework.isError ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
+              <span>Không tải được danh sách bài tập.</span>
+              <Button variant="paper" className="px-3 py-1.5 text-xs" onClick={() => void homework.refetch()}>
+                Thử lại
+              </Button>
+            </div>
+          ) : null}
+          {!homework.isPending && !homework.isError && due.length === 0 ? (
             <div className="flex flex-wrap items-center justify-between gap-4">
               <p className="max-w-[68ch] text-sm text-ink-soft">
                 Hiện chưa có bài tập nào chưa hoàn thành. Khi giáo viên giao bài, bài sẽ xuất hiện tại đây kèm hạn nộp.
               </p>
-              <Link to="/practice" className="shrink-0">
-                <Button variant="navy">Tự luyện đề trong lúc chờ</Button>
+              <Link to="/practice" className={buttonClasses('navy', 'shrink-0')}>
+                Tự luyện đề trong lúc chờ
               </Link>
             </div>
           ) : null}
@@ -93,10 +103,8 @@ export function DashboardPage() {
                         {a.dueAt ? ` • Hạn ${new Date(a.dueAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}` : ''}
                       </p>
                     </div>
-                    <Link to="/assignments" className="shrink-0">
-                      <Button variant={inProgress ? 'gold' : 'navy'} className="w-full sm:w-auto">
-                        {inProgress ? 'Làm tiếp' : 'Làm bài ngay'}
-                      </Button>
+                    <Link to="/assignments" className={buttonClasses(inProgress ? 'gold' : 'navy', 'w-full shrink-0 sm:w-auto')}>
+                      {inProgress ? 'Làm tiếp' : 'Làm bài ngay'}
                     </Link>
                   </div>
                 )
@@ -124,8 +132,8 @@ export function DashboardPage() {
           <p className="mt-2 text-sm text-ink-soft tabular-nums">
             {study.data ? `Đã học ${study.data.grammarCompleted}/${study.data.grammarTotal} chuyên đề.` : 'Các chuyên đề ngữ pháp cốt lõi cho Part 5 và Part 6.'}
           </p>
-          <Link to="/study" className="mt-4 inline-block">
-            <Button variant="navy">Học ngữ pháp</Button>
+          <Link to="/study" className={buttonClasses('navy', 'mt-4')}>
+            Học ngữ pháp
           </Link>
         </Card>
         <Card className="p-6">
@@ -134,8 +142,8 @@ export function DashboardPage() {
           <p className="mt-2 text-sm text-ink-soft tabular-nums">
             {study.data ? `${study.data.notebookTotal} từ trong sổ tay • ${study.data.catalogNew} từ kho chưa học.` : 'Flashcard và sổ tay từ vựng của bạn.'}
           </p>
-          <Link to="/study/notebook" className="mt-4 inline-block">
-            <Button variant="ghost">Mở sổ tay</Button>
+          <Link to="/study/notebook" className={buttonClasses('ghost', 'mt-4')}>
+            Mở sổ tay
           </Link>
         </Card>
       </section>
@@ -172,8 +180,8 @@ function Hero({ d, name }: { d: StudentDashboardDto; name: string }) {
           <h1 className="serif mt-2 text-3xl font-bold sm:text-4xl">Xin chào, {name}! 👋</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft tabular-nums">{message}</p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/practice"><Button>Làm đề luyện tập</Button></Link>
-            <Link to="/study"><Button variant="navy">Ôn từ vựng</Button></Link>
+            <Link to="/practice" className={buttonClasses('gold')}>Làm đề luyện tập</Link>
+            <Link to="/study" className={buttonClasses('navy')}>Ôn từ vựng</Link>
           </div>
         </div>
         <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-2">
@@ -215,8 +223,8 @@ function ScoreChart({ d }: { d: StudentDashboardDto }) {
         <div className="mt-6 grid h-72 place-items-center rounded-2xl bg-paper p-6 text-center text-sm text-ink-soft">
           <div>
             <p>Điểm quy đổi 990 chỉ có sau khi bạn làm đủ 100 câu Listening và/hoặc 100 câu Reading của một đề đầy đủ.</p>
-            <Link to="/practice" className="mt-4 inline-block">
-              <Button variant="navy">Chọn đề thi thử</Button>
+            <Link to="/practice" className={buttonClasses('navy', 'mt-4')}>
+              Chọn đề thi thử
             </Link>
           </div>
         </div>
@@ -268,11 +276,11 @@ function SkillCard({ stat, kind }: { stat: SkillStatDto | undefined; kind: 'LIST
           ? `Đã làm ${stat.attempts} bài • ${stat.answered} câu${stat.accuracy !== null ? ` • Tỷ lệ đúng ${stat.accuracy}%` : ''}`
           : 'Bạn chưa làm bài nào ở kỹ năng này.'}
       </p>
-      <div className="mt-4 flex gap-3">
-        <Link to={listening ? '/practice/listening' : '/practice/reading'}>
-          <Button variant={listening ? 'teal' : 'navy'}>{done ? 'Luyện tiếp' : 'Bắt đầu luyện'}</Button>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Link to={listening ? '/practice/listening' : '/practice/reading'} className={buttonClasses(listening ? 'teal' : 'navy')}>
+          {done ? 'Luyện tiếp' : 'Bắt đầu luyện'}
         </Link>
-        <Link to="/practice"><Button variant="ghost">Toàn bộ kho đề</Button></Link>
+        <Link to="/practice" className={buttonClasses('ghost')}>Toàn bộ kho đề</Link>
       </div>
     </Card>
   )
@@ -290,7 +298,7 @@ function StreakFlame() {
 
 function Stat({ label, value, hint, to, flame, className }: { label: string; value: string; hint?: string; to?: string; flame?: boolean; className?: string }) {
   const body = (
-    <div className={`min-w-0 rounded-2xl border border-gold/40 bg-teal-soft p-4 ${className ?? ''}`}>
+    <div className={`min-w-0 rounded-2xl border border-gold/40 bg-teal-soft p-4 ${to ? 'transition hover:border-gold-deep' : (className ?? '')}`}>
       <p className="text-xs font-semibold leading-snug text-navy">{label}</p>
       <div className="mt-1 flex items-center gap-1.5">
         <p className="serif text-2xl font-bold tabular-nums">{value}</p>
@@ -299,5 +307,11 @@ function Stat({ label, value, hint, to, flame, className }: { label: string; val
       {hint ? <p className="mt-0.5 text-xs text-ink-soft tabular-nums">{hint}</p> : null}
     </div>
   )
-  return to ? <Link to={to} className={className}>{body}</Link> : body
+  return to ? (
+    <Link to={to} className={`block rounded-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 ${className ?? ''}`}>
+      {body}
+    </Link>
+  ) : (
+    body
+  )
 }

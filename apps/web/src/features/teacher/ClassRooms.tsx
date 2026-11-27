@@ -33,7 +33,7 @@ export function CreateClassButton() {
     <>
       <Button type="button" onClick={() => setOpen(true)}>+ Tạo lớp</Button>
       {open ? (
-        <Modal title="Tạo lớp" onClose={() => !create.isPending && setOpen(false)}>
+        <Modal title="Tạo lớp" dismissible={!create.isPending} onClose={() => !create.isPending && setOpen(false)}>
           <form onSubmit={(event) => void submit(event)} className="space-y-3">
             <p className="text-sm text-ink-soft">Đặt tên lớp, rồi gán giáo viên và thêm học viên ở thẻ lớp vừa tạo.</p>
             <div>
@@ -42,7 +42,7 @@ export function CreateClassButton() {
             </div>
             {error ? <p role="alert" className="rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p> : null}
             <div className="flex justify-end gap-3 pt-2">
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Hủy</Button>
+              <Button type="button" variant="ghost" disabled={create.isPending} onClick={() => setOpen(false)}>Hủy</Button>
               <Button type="submit" disabled={create.isPending || name.trim().length < 2}>{create.isPending ? 'Đang tạo…' : 'Tạo lớp'}</Button>
             </div>
           </form>
@@ -113,8 +113,9 @@ function ClassPill({ active, label, count, onClick }: { active: boolean; label: 
   return (
     <button
       type="button"
+      aria-pressed={active}
       className={cn(
-        'flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold whitespace-nowrap',
+        'flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
         active ? 'border-gold-deep bg-button text-button-ink' : 'border-ink/10 bg-cream text-ink-soft hover:border-gold-deep',
       )}
       onClick={onClick}
@@ -133,7 +134,13 @@ export function ClassRooms({ selectedId, onSelect }: { selectedId: string; onSel
   return (
     <section className="space-y-4">
       {classes.isPending ? <p className="text-sm text-ink-soft">Đang tải lớp…</p> : null}
-      {!classes.isPending && rooms.length === 0 ? (
+      {classes.isError ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-danger/25 bg-danger-soft px-4 py-3 text-sm text-danger" role="alert">
+          <span>Không tải được danh sách lớp.</span>
+          <Button type="button" variant="paper" onClick={() => void classes.refetch()}>Thử lại</Button>
+        </div>
+      ) : null}
+      {!classes.isPending && !classes.isError && rooms.length === 0 ? (
         <Card className="p-5">
           <p className="text-sm text-ink-soft">Chưa có lớp. Bấm Tạo lớp, rồi gán giáo viên và thêm học viên.</p>
         </Card>
@@ -210,7 +217,7 @@ function ClassWorkspace({ room }: { room: ClassSummaryDto }) {
         {room.teachers.map((teacher) => {
           const account = roster.find((item) => item.id === teacher.id)
           return (
-            <div key={teacher.id} className="flex items-center gap-3 rounded-2xl border border-gold/40 bg-cream px-3 py-3">
+            <div key={teacher.id} className="flex items-center gap-3 rounded-2xl border border-gold/40 bg-paper px-3 py-3">
               <AccountAvatar name={teacher.fullName} url={teacher.avatarUrl} frameId={teacher.avatarFrame} className="size-10 text-sm" />
               <div className="min-w-0">
                 <p className="truncate font-semibold">{teacher.fullName}</p>
@@ -324,6 +331,14 @@ export function TeacherClassPanels({
   const rooms = classes.data ?? []
   const room = rooms.find((item) => item.id === selectedId) ?? null
   if (classes.isPending) return <p className="text-sm text-ink-soft">Đang tải lớp…</p>
+  if (classes.isError) {
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-danger/25 bg-danger-soft px-4 py-3 text-sm text-danger" role="alert">
+        <span>Không tải được danh sách lớp được giao.</span>
+        <Button type="button" variant="paper" onClick={() => void classes.refetch()}>Thử lại</Button>
+      </div>
+    )
+  }
   if (rooms.length === 0) {
     return (
       <Card className="p-5">
@@ -367,7 +382,7 @@ export function ClassSelect({ userId, classId }: { userId: string; classId: stri
   const assign = useAssignClass()
   return (
     <select
-      className="mt-1 max-w-40 rounded-lg border border-gold/40 bg-cream px-2 py-1 text-xs"
+      className="mt-1 min-h-10 max-w-40 rounded-lg border border-gold/40 bg-cream px-2 py-1 text-xs outline-none focus-visible:border-button focus-visible:ring-2 focus-visible:ring-button/50"
       aria-label="Lớp của học viên"
       value={classId ?? ''}
       disabled={assign.isPending}

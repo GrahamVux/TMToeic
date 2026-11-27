@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/Button'
+import { Button, buttonClasses } from '@/components/ui/Button'
 import { Badge, Card } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { useAttempts, useExams, useStartAttempt } from '@/features/exams/exams.queries'
@@ -79,7 +79,7 @@ export function PracticePage() {
             <span className="sr-only">Tìm đề theo tên</span>
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-soft" />
             <input
-              className="h-11 w-full rounded-full border border-ink/10 bg-cream pr-4 pl-9 text-sm text-ink outline-none placeholder:text-ink/45 focus:ring-2 focus:ring-button/40"
+              className="h-11 w-full rounded-full border border-ink/10 bg-cream pr-4 pl-9 text-sm text-ink outline-none placeholder:text-ink/60 focus:ring-2 focus:ring-banner-ink/70"
               value={query}
               placeholder="Tìm đề theo tên..."
               onChange={(event) => setQuery(event.target.value)}
@@ -87,7 +87,7 @@ export function PracticePage() {
           </label>
           <button
             type="button"
-            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-cream px-4 text-sm font-semibold text-navy shadow-sm ring-1 ring-white/25 transition hover:bg-paper disabled:opacity-50 dark:bg-sky-400 dark:text-slate-950 dark:hover:bg-sky-300"
+            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-banner-ink px-4 text-sm font-semibold text-banner shadow-sm transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-banner-ink/80 disabled:opacity-50"
             disabled={start.isPending || visible.length === 0}
             onClick={startNewest}
           >
@@ -183,10 +183,8 @@ function ExamCard({
           <Play className="size-4 fill-current" /> Thi thử
         </Button>
         {practice ? (
-          <Link to={`/attempts/${practice.attempt.id}/play`} className="block">
-            <Button variant="navy" className="w-full">
-              Tiếp tục luyện tập
-            </Button>
+          <Link to={`/attempts/${practice.attempt.id}/play`} className={buttonClasses('navy', 'w-full')}>
+            Tiếp tục luyện tập
           </Link>
         ) : (
           <Button variant="navy" className="w-full" disabled={busy} onClick={() => onStart('PRACTICE')}>
@@ -196,7 +194,7 @@ function ExamCard({
         {review ? (
           <Link
             to={`/attempts/${review.attempt.id}/review`}
-            className="inline-flex min-h-9 w-full items-center justify-center rounded-full border border-gold/45 bg-paper px-4 py-1.5 text-sm font-semibold text-navy transition hover:border-button/50 hover:bg-teal-soft"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-gold/45 bg-paper px-4 py-1.5 text-sm font-semibold text-navy transition hover:border-button/50 hover:bg-teal-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
           >
             Chữa đề
           </Link>

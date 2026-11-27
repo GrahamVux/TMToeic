@@ -137,7 +137,7 @@ export function FillAssignForm({ roster }: { roster: RosterUser[] }) {
       <Input id="fill-title" className="mt-1" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="VD: Điền từ tuần 12" />
       <label className="mt-3 block text-sm font-medium" htmlFor="fill-desc">Ghi chú cho học viên</label>
       <Input id="fill-desc" className="mt-1" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Không bắt buộc" />
-      <div className="mt-3 grid grid-cols-2 gap-3">
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className="block text-sm font-medium" htmlFor="fill-min">Thời gian làm (phút)</label>
           <Input id="fill-min" className="mt-1" type="number" min={1} max={240} value={minutes} onChange={(e) => setMinutes(Number(e.target.value) || 1)} />
@@ -154,17 +154,22 @@ export function FillAssignForm({ roster }: { roster: RosterUser[] }) {
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-semibold">Câu {index + 1}</p>
               {items.length > 1 ? (
-                <button type="button" className="text-xs font-semibold text-coral" onClick={() => setItems((rows) => rows.filter((_, i) => i !== index))}>
+                <button
+                  type="button"
+                  className="min-h-10 rounded-lg px-2 py-1 text-xs font-semibold text-coral hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+                  onClick={() => setItems((rows) => rows.filter((_, i) => i !== index))}
+                >
                   Xóa câu
                 </button>
               ) : null}
             </div>
             <textarea
               value={item.prompt}
+              aria-label={`Nội dung câu ${index + 1}`}
               onChange={(e) => update(index, withPrompt(item, e.target.value))}
               rows={3}
               placeholder="The meeting was ___ because the train was late."
-              className="mt-2 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm outline-none focus:border-button focus:ring-2 focus:ring-button/30"
             />
             {item.answers.length === 0 ? <p className="mt-2 text-xs text-ink-soft">Chưa có chỗ trống.</p> : null}
             <div className="mt-2 grid gap-2">
@@ -181,7 +186,7 @@ export function FillAssignForm({ roster }: { roster: RosterUser[] }) {
                   onChange={(e) => update(index, { ...item, explanation: e.target.value })}
                   rows={2}
                   placeholder="Vì sao đáp án này đúng. Học viên thấy sau khi nộp bài."
-                  className="mt-1 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm outline-none focus:border-button focus:ring-2 focus:ring-button/30"
                 />
               </label>
             </div>

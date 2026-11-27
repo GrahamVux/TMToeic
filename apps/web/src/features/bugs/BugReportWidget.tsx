@@ -61,7 +61,7 @@ export function BugReportWidget() {
             </div>
             <button
               type="button"
-              className="flex size-8 items-center justify-center rounded-full text-ink-soft hover:bg-paper hover:text-ink"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full text-ink-soft transition hover:bg-paper hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
               aria-label="Đóng"
               onClick={() => setOpen(false)}
             >
@@ -72,7 +72,7 @@ export function BugReportWidget() {
             <label className="block text-xs font-medium text-ink-soft">
               Nhóm sự cố
               <select
-                className="mt-1 h-10 w-full rounded-xl border border-gold/40 bg-cream px-3 text-sm text-ink outline-none focus:border-button"
+                className="mt-1 h-10 w-full rounded-xl border border-gold/40 bg-cream px-3 text-sm text-ink outline-none focus:border-button focus:ring-2 focus:ring-button/30"
                 value={category}
                 onChange={(e) => setCategory(e.target.value as BugReportCategory)}
               >
@@ -100,12 +100,23 @@ export function BugReportWidget() {
               </p>
             ) : null}
             {sent ? <p className="text-sm text-olive">Đã gửi. Quản trị viên sẽ xem sớm.</p> : null}
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-ink-soft tabular-nums">
+                Tối thiểu 10 ký tự ({Math.min(10, message.trim().length)}/10)
+              </p>
               <Button disabled={send.isPending || message.trim().length < 10} onClick={() => void submit()}>
                 {send.isPending ? 'Đang gửi…' : 'Gửi báo lỗi'}
               </Button>
             </div>
-            {mine.data?.items.length ? (
+            {mine.isPending ? (
+              <div className="border-t border-gold/20 pt-3">
+                <p className="text-xs text-ink-soft">Đang tải báo cáo gần đây…</p>
+              </div>
+            ) : mine.isError ? (
+              <div className="border-t border-gold/20 pt-3">
+                <p className="text-xs text-danger" role="alert">Không tải được lịch sử báo lỗi.</p>
+              </div>
+            ) : mine.data?.items.length ? (
               <div className="border-t border-gold/20 pt-3">
                 <p className="text-xs font-semibold text-ink-soft">Báo cáo gần đây</p>
                 <ul className="mt-2 space-y-2">
@@ -128,7 +139,7 @@ export function BugReportWidget() {
       <button
         type="button"
         className={cn(
-          'pointer-events-auto flex items-center gap-2 rounded-full bg-button px-4 py-3 text-sm font-semibold text-button-ink shadow-[0_10px_28px_rgba(31,122,140,0.35)] transition hover:bg-button-hover',
+          'pointer-events-auto flex items-center gap-2 rounded-full bg-button px-4 py-3 text-sm font-semibold text-button-ink shadow-[0_10px_28px_rgba(31,122,140,0.35)] transition hover:bg-button-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 focus-visible:ring-offset-2',
           open && 'ring-2 ring-white/70',
         )}
         aria-expanded={open}

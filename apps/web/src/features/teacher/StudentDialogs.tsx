@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/Button'
 import { AccountAvatar } from '@/components/ui/AccountAvatar'
 import { FilePick } from '@/components/ui/FilePick'
 import { Modal } from '@/components/ui/Modal'
-import { Input } from '@/components/ui/Primitives'
+import { Card, Input } from '@/components/ui/Primitives'
 import { ApiError, downloadApiFile } from '@/lib/api'
 import { DEFAULT_NEW_ACCOUNT_PASSWORD, type CredentialsIssuedDto, type TeacherPermissions, type UserDto } from '@toeic/shared'
 import { useState, type FormEvent } from 'react'
@@ -65,7 +65,7 @@ export function ImportStudentsDialog({
   const [error, setError] = useState<string | null>(null)
 
   return (
-    <Modal title={`Thêm học viên vào ${className}`} onClose={onClose}>
+    <Modal title={`Thêm học viên vào ${className}`} dismissible={!importStudents.isPending} onClose={() => !importStudents.isPending && onClose()}>
       <p className="text-sm text-ink-soft">
         File gồm cột <span className="font-semibold">Họ tên</span> và <span className="font-semibold">Số điện thoại</span>. Học viên mới vào lớp {className}. Có thể tải file này nhiều lần.
       </p>
@@ -74,7 +74,7 @@ export function ImportStudentsDialog({
       </p>
       <button
         type="button"
-        className="mt-3 text-sm font-semibold text-gold-deep underline underline-offset-4"
+        className="mt-3 rounded-lg px-1 text-sm font-semibold text-gold-deep underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
         onClick={() => {
           setError(null)
           void downloadApiFile('/users/students/template', 'mau-hoc-vien.xlsx').catch((err: unknown) => {
@@ -102,7 +102,7 @@ export function ImportStudentsDialog({
       </div>
       {error ? <p role="alert" className="mt-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p> : null}
       <div className="mt-5 flex justify-end">
-        <Button type="button" variant="ghost" onClick={onClose}>Đóng</Button>
+        <Button type="button" variant="ghost" disabled={importStudents.isPending} onClick={onClose}>Đóng</Button>
       </div>
     </Modal>
   )
@@ -135,7 +135,7 @@ export function AddOneStudentDialog({
   }
 
   return (
-    <Modal title={`Thêm một học viên vào ${className}`} onClose={() => !create.isPending && onClose()}>
+    <Modal title={`Thêm một học viên vào ${className}`} dismissible={!create.isPending} onClose={() => !create.isPending && onClose()}>
       <form onSubmit={(event) => void submit(event)} className="space-y-3">
         <p className="text-sm text-ink-soft">
           Mật khẩu mặc định là <span className="font-mono font-semibold">{DEFAULT_NEW_ACCOUNT_PASSWORD}</span>. Có thể thêm tiếp sau khi đóng hộp thoại.
@@ -150,7 +150,7 @@ export function AddOneStudentDialog({
         </div>
         {error ? <p role="alert" className="rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p> : null}
         <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="ghost" onClick={onClose}>Hủy</Button>
+          <Button type="button" variant="ghost" disabled={create.isPending} onClick={onClose}>Hủy</Button>
           <Button type="submit" disabled={create.isPending}>{create.isPending ? 'Đang tạo…' : 'Tạo tài khoản'}</Button>
         </div>
       </form>
@@ -241,7 +241,7 @@ export function TeacherAccessPanel() {
   }
 
   return (
-    <section id="tai-khoan-giao-vien" className="rounded-2xl border border-gold/35 bg-cream p-5">
+    <Card id="tai-khoan-giao-vien" className="p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="serif text-2xl">Giáo viên</h2>
@@ -250,6 +250,15 @@ export function TeacherAccessPanel() {
         <Button onClick={() => setOpen(true)}>+ Thêm giáo viên</Button>
       </div>
       {teachers.isPending ? <p className="mt-4 text-sm text-ink-soft">Đang tải…</p> : null}
+      {teachers.isError ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2.5 text-sm text-danger" role="alert">
+          <span>Không tải được danh sách giáo viên.</span>
+          <Button type="button" variant="paper" onClick={() => void teachers.refetch()}>Thử lại</Button>
+        </div>
+      ) : null}
+      {!teachers.isPending && !teachers.isError && (teachers.data?.items.length ?? 0) === 0 ? (
+        <p className="mt-4 rounded-xl bg-paper px-4 py-3 text-sm text-ink-soft">Chưa có tài khoản giáo viên nào.</p>
+      ) : null}
       <ul className="mt-4 divide-y divide-gold/25">
         {(teachers.data?.items ?? []).map((teacher) => (
           <li key={teacher.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
@@ -281,7 +290,7 @@ export function TeacherAccessPanel() {
         ))}
       </ul>
       {open ? (
-        <Modal title="Thêm giáo viên" onClose={() => !create.isPending && setOpen(false)}>
+        <Modal title="Thêm giáo viên" dismissible={!create.isPending} onClose={() => !create.isPending && setOpen(false)}>
           <form onSubmit={(event) => void submit(event)} className="space-y-3">
             <div>
               <label className="text-sm font-medium" htmlFor="teacher-name">Họ và tên</label>
@@ -301,14 +310,14 @@ export function TeacherAccessPanel() {
             </div>
             {formError ? <p role="alert" className="rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger">{formError}</p> : null}
             <div className="flex justify-end gap-3 pt-2">
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Hủy</Button>
+              <Button type="button" variant="ghost" disabled={create.isPending} onClick={() => setOpen(false)}>Hủy</Button>
               <Button type="submit" disabled={create.isPending}>{create.isPending ? 'Đang tạo…' : 'Tạo tài khoản'}</Button>
             </div>
           </form>
         </Modal>
       ) : null}
       {issued ? <CredentialsDialog issued={issued} title="Đã tạo tài khoản giáo viên" onClose={() => setIssued(null)} /> : null}
-    </section>
+    </Card>
   )
 }
 

@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/Button'
+import { buttonClasses } from '@/components/ui/Button'
 import { Badge, Card, ProgressBar } from '@/components/ui/Primitives'
 import { partName } from '@/features/exams/exams.queries'
 import { MIN_ANSWERS_FOR_INSIGHT, type AttemptSummaryDto, type GoalDto, type PartStatDto, type ScorePointDto } from '@toeic/shared'
@@ -145,16 +145,25 @@ export function AttemptsTable({
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       {staffStudentId ? (
                         <>
-                          <Link to={`/admin/students/${staffStudentId}/attempts/${a.attemptId}`}>
-                            <Button variant="paper" className="px-3 py-1.5 text-xs">Kết quả</Button>
+                          <Link
+                            to={`/admin/students/${staffStudentId}/attempts/${a.attemptId}`}
+                            className={buttonClasses('paper', 'min-h-10 whitespace-nowrap px-3.5 py-2 text-xs')}
+                          >
+                            Kết quả
                           </Link>
-                          <Link to={`/admin/students/${staffStudentId}/attempts/${a.attemptId}/review`}>
-                            <Button className="px-3 py-1.5 text-xs">Bài làm</Button>
+                          <Link
+                            to={`/admin/students/${staffStudentId}/attempts/${a.attemptId}/review`}
+                            className={buttonClasses('gold', 'min-h-10 whitespace-nowrap px-3.5 py-2 text-xs')}
+                          >
+                            Bài làm
                           </Link>
                         </>
                       ) : (
-                        <Link to={`/attempts/${a.attemptId}/review`}>
-                          <Button variant="paper" className="px-3 py-1.5 text-xs">Chữa đề</Button>
+                        <Link
+                          to={`/attempts/${a.attemptId}/review`}
+                          className={buttonClasses('paper', 'min-h-10 whitespace-nowrap px-3.5 py-2 text-xs')}
+                        >
+                          Chữa đề
                         </Link>
                       )}
                     </div>

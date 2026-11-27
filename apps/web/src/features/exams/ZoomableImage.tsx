@@ -23,7 +23,12 @@ export function TextZoomBar({ scale, onChange }: { scale: number; onChange: (nex
       <ToolBtn label="Chữ nhỏ hơn" onClick={() => onChange(stepFrom(scale, -1))} disabled={scale <= MIN}>
         <Minus className="size-3.5" />
       </ToolBtn>
-      <button type="button" onClick={() => onChange(1)} className="min-w-12 rounded-full bg-paper px-2 py-1 text-xs font-semibold text-gold-deep" title="Về 100%">
+      <button
+        type="button"
+        onClick={() => onChange(1)}
+        className="min-h-10 min-w-12 rounded-full bg-paper px-2 py-1 text-xs font-semibold text-gold-deep transition hover:bg-paper-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 sm:min-h-8"
+        title="Về 100%"
+      >
         {Math.round(scale * 100)}%
       </button>
       <ToolBtn label="Chữ to hơn" onClick={() => onChange(stepFrom(scale, 1))} disabled={scale >= MAX}>
@@ -57,7 +62,12 @@ export function ZoomableImage({ src, alt, fit = 'frame' }: { src: string; alt: s
         onExpand={() => setOpen(true)}
       />
       <div className={cn('w-full min-w-0 rounded-2xl border border-ink/12 bg-cream', fitted ? 'overflow-hidden' : 'overflow-auto')}>
-        <button type="button" className="block w-full max-w-full cursor-zoom-in p-0" onClick={() => setOpen(true)} aria-label={`${alt} — mở phóng to`}>
+        <button
+          type="button"
+          className="block w-full max-w-full cursor-zoom-in rounded-2xl p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+          onClick={() => setOpen(true)}
+          aria-label={`${alt} — mở phóng to`}
+        >
           <img
             src={src}
             alt={alt}
@@ -79,27 +89,41 @@ function ZoomToolbar({
   onZoomIn,
   onReset,
   onExpand,
+  onDark = false,
 }: {
   scale: number
   onZoomOut: () => void
   onZoomIn: () => void
   onReset: () => void
   onExpand?: () => void
+  onDark?: boolean
 }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="mr-1 text-[13px] font-semibold tracking-wide text-ink-soft uppercase">Zoom đề</span>
-      <ToolBtn label="Thu nhỏ" onClick={onZoomOut} disabled={scale <= MIN}>
+      <span className={cn('mr-1 text-[13px] font-semibold tracking-wide uppercase', onDark ? 'text-white/90' : 'text-ink-soft')}>
+        Zoom đề
+      </span>
+      <ToolBtn label="Thu nhỏ" onClick={onZoomOut} disabled={scale <= MIN} onDark={onDark}>
         <Minus className="size-3.5" />
       </ToolBtn>
-      <button type="button" onClick={onReset} className="min-w-12 rounded-full bg-paper px-2 py-1 text-xs font-semibold text-gold-deep" title="Về 100%">
+      <button
+        type="button"
+        onClick={onReset}
+        className={cn(
+          'min-h-10 min-w-12 rounded-full px-2 py-1 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 sm:min-h-8',
+          onDark
+            ? 'bg-white/15 text-white hover:bg-white/25 focus-visible:ring-white/80'
+            : 'bg-paper text-gold-deep hover:bg-paper-2 focus-visible:ring-button/50',
+        )}
+        title="Về 100%"
+      >
         {Math.round(scale * 100)}%
       </button>
-      <ToolBtn label="Phóng to" onClick={onZoomIn} disabled={scale >= MAX}>
+      <ToolBtn label="Phóng to" onClick={onZoomIn} disabled={scale >= MAX} onDark={onDark}>
         <Plus className="size-3.5" />
       </ToolBtn>
       {onExpand ? (
-        <ToolBtn label="Xem toàn màn hình" onClick={onExpand}>
+        <ToolBtn label="Xem toàn màn hình" onClick={onExpand} onDark={onDark}>
           <Maximize2 className="size-3.5" />
         </ToolBtn>
       ) : null}
@@ -107,7 +131,19 @@ function ZoomToolbar({
   )
 }
 
-function ToolBtn({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
+function ToolBtn({
+  label,
+  onClick,
+  disabled,
+  onDark = false,
+  children,
+}: {
+  label: string
+  onClick: () => void
+  disabled?: boolean
+  onDark?: boolean
+  children: ReactNode
+}) {
   return (
     <button
       type="button"
@@ -115,7 +151,12 @@ function ToolBtn({ label, onClick, disabled, children }: { label: string; onClic
       title={label}
       disabled={disabled}
       onClick={onClick}
-      className="grid size-8 place-items-center rounded-full border border-ink/15 bg-cream text-ink hover:bg-paper-2 disabled:opacity-40"
+      className={cn(
+        'grid size-10 place-items-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 disabled:opacity-40 sm:size-8',
+        onDark
+          ? 'border-white/25 bg-white/15 text-white hover:bg-white/25 focus-visible:ring-white/80'
+          : 'border-ink/15 bg-cream text-ink hover:bg-paper-2 focus-visible:ring-button/50',
+      )}
     >
       {children}
     </button>
@@ -189,6 +230,7 @@ function ZoomLightbox({ src, alt, onClose }: { src: string; alt: string; onClose
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-white">
         <ZoomToolbar
           scale={scale}
+          onDark
           onZoomOut={() => setScale((s) => stepFrom(s, -1))}
           onZoomIn={() => setScale((s) => stepFrom(s, 1))}
           onReset={() => {
@@ -196,7 +238,11 @@ function ZoomLightbox({ src, alt, onClose }: { src: string; alt: string; onClose
             setPos({ x: 0, y: 0 })
           }}
         />
-        <button type="button" onClick={onClose} className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-semibold hover:bg-white/25">
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-white/15 px-3.5 py-1.5 text-sm font-semibold text-white transition hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+        >
           <X className="size-4" /> Đóng
         </button>
       </div>
@@ -222,7 +268,7 @@ function ZoomLightbox({ src, alt, onClose }: { src: string; alt: string; onClose
           style={{ transform: `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px)) scale(${scale})` }}
         />
       </div>
-      <p className="px-4 pb-3 text-center text-[13px] text-sky-100">Lăn chuột hoặc chụm ngón để zoom • Kéo để xem • Esc để đóng</p>
+      <p className="px-4 pb-3 text-center text-[13px] text-white/80">Lăn chuột hoặc chụm ngón để zoom • Kéo để xem • Esc để đóng</p>
     </div>
     ,
     document.body,

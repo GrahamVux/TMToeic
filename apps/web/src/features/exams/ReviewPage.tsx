@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/Button'
+import { buttonClasses } from '@/components/ui/Button'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Card } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
@@ -55,8 +55,8 @@ export function ReviewPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <TextZoomBar scale={textZoom} onChange={setTextZoom} />
-          <Link to={resultTo}>
-            <Button variant="navy">Về kết quả</Button>
+          <Link to={resultTo} className={buttonClasses('navy')}>
+            Về kết quả
           </Link>
         </div>
       </header>
@@ -64,7 +64,7 @@ export function ReviewPage() {
       {staffView ? <FocusNote focus={data.result.focus} /> : null}
 
       {data.audio.length > 0 ? (
-        <div className="sticky top-2 z-10 grid gap-2">
+        <div className="grid gap-2 md:sticky md:top-20 md:z-10 md:max-h-[34vh] md:overflow-y-auto">
           {data.audio.map((t) => (
             <AudioPlayer key={t.id} attemptId={data.result.attempt.id} tracks={[t]} partCode={t.partCodes[0]} mode="REVIEW" />
           ))}
@@ -82,8 +82,12 @@ export function ReviewPage() {
           <button
             key={id}
             type="button"
+            aria-pressed={filter === id}
             onClick={() => setFilter(id)}
-            className={cn('rounded-full px-4 py-2 text-sm font-semibold', filter === id ? 'bg-button text-button-ink' : 'bg-paper-2')}
+            className={cn(
+              'min-h-10 rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
+              filter === id ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink hover:bg-button-soft',
+            )}
           >
             {label}
           </button>

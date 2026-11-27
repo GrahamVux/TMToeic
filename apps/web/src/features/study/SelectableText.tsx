@@ -218,66 +218,76 @@ export function SelectableText({
 
       {picked && reading
         ? createPortal(
-            <div
-              ref={barRef}
-              className="fixed z-[80] rounded-2xl bg-slate-900/95 p-2 text-white shadow-xl"
-              style={{ top: picked.top, left: Math.max(8, Math.min(picked.left, window.innerWidth - 340)) }}
-              onMouseDown={(event) => event.preventDefault()}
-            >
-              {picked.existing?.note && !noting ? <p className="max-w-[320px] px-2 pb-2 text-sm text-white/90">{picked.existing.note}</p> : null}
-              <div className="flex items-center gap-1">
-                <ToolButton label="Ghi chú" onClick={() => setNoting(true)}>
-                  <Pencil className="size-5" />
-                </ToolButton>
-                <ToolButton label="Từ điển" onClick={() => void addToDictionary()}>
-                  <BookPlus className="size-5" />
-                </ToolButton>
-                <ToolButton label="Sao chép" onClick={() => void copy()}>
-                  <Copy className="size-5" />
-                </ToolButton>
-                <span className="mx-1 h-8 w-px bg-white/25" aria-hidden="true" />
-                {COLORS.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    title={COLOR_LABEL[color]}
-                    aria-label={COLOR_LABEL[color]}
-                    className={cn('size-9 rounded-lg', COLOR_CLASS[color], currentColor === color && 'ring-2 ring-white')}
-                    onClick={() => void saveMark(color, picked.existing?.note ?? '')}
-                  />
-                ))}
-                {picked.existing ? (
-                  <ToolButton label="Xóa" onClick={() => void removeMark()}>
-                    <Trash2 className="size-5" />
-                  </ToolButton>
-                ) : null}
-              </div>
-              {noting ? (
-                <form
-                  className="mt-2 flex gap-1"
-                  onSubmit={(event) => {
-                    event.preventDefault()
-                    const trimmed = note.trim()
-                    if (!trimmed && !picked.existing?.color) {
-                      setToast('Hãy nhập ghi chú hoặc chọn màu.')
-                      return
-                    }
-                    void saveMark(picked.existing?.color ?? null, trimmed)
-                  }}
+            (() => {
+              const clampedLeft = Math.max(8, Math.min(picked.left, window.innerWidth - 368))
+              const clampedTop = Math.max(8, Math.min(picked.top, window.innerHeight - 180))
+              return (
+                <div
+                  ref={barRef}
+                  className="fixed z-[80] max-w-[min(22.5rem,calc(100vw-16px))] rounded-2xl bg-slate-900/95 p-2 text-white shadow-xl"
+                  style={{ top: clampedTop, left: clampedLeft, maxWidth: Math.min(360, window.innerWidth - clampedLeft - 8) }}
+                  onMouseDown={(event) => event.preventDefault()}
                 >
-                  <input
-                    value={note}
-                    onChange={(event) => setNote(event.target.value)}
-                    placeholder="Ghi chú cho chỗ này"
-                    className="h-9 min-w-0 flex-1 rounded-lg bg-cream px-3 text-sm text-ink"
-                    autoFocus
-                  />
-                  <button type="submit" className="rounded-lg bg-button px-3 text-sm font-semibold text-button-ink">
-                    Lưu
-                  </button>
-                </form>
-              ) : null}
-            </div>,
+                  {picked.existing?.note && !noting ? <p className="max-w-[320px] px-2 pb-2 text-sm text-white/90">{picked.existing.note}</p> : null}
+                  <div className="flex flex-wrap items-center gap-1">
+                    <ToolButton label="Ghi chú" onClick={() => setNoting(true)}>
+                      <Pencil className="size-5" />
+                    </ToolButton>
+                    <ToolButton label="Từ điển" onClick={() => void addToDictionary()}>
+                      <BookPlus className="size-5" />
+                    </ToolButton>
+                    <ToolButton label="Sao chép" onClick={() => void copy()}>
+                      <Copy className="size-5" />
+                    </ToolButton>
+                    <span className="mx-1 h-8 w-px bg-white/25" aria-hidden="true" />
+                    {COLORS.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        title={COLOR_LABEL[color]}
+                        aria-label={COLOR_LABEL[color]}
+                        className={cn(
+                          'size-9 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900',
+                          COLOR_CLASS[color],
+                          currentColor === color && 'ring-2 ring-white',
+                        )}
+                        onClick={() => void saveMark(color, picked.existing?.note ?? '')}
+                      />
+                    ))}
+                    {picked.existing ? (
+                      <ToolButton label="Xóa" onClick={() => void removeMark()}>
+                        <Trash2 className="size-5" />
+                      </ToolButton>
+                    ) : null}
+                  </div>
+                  {noting ? (
+                    <form
+                      className="mt-2 flex gap-1"
+                      onSubmit={(event) => {
+                        event.preventDefault()
+                        const trimmed = note.trim()
+                        if (!trimmed && !picked.existing?.color) {
+                          setToast('Hãy nhập ghi chú hoặc chọn màu.')
+                          return
+                        }
+                        void saveMark(picked.existing?.color ?? null, trimmed)
+                      }}
+                    >
+                      <input
+                        value={note}
+                        onChange={(event) => setNote(event.target.value)}
+                        placeholder="Ghi chú cho chỗ này"
+                        className="h-9 min-w-0 flex-1 rounded-lg bg-cream px-3 text-sm text-ink"
+                        autoFocus
+                      />
+                      <button type="submit" className="rounded-lg bg-button px-3 text-sm font-semibold text-button-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+                        Lưu
+                      </button>
+                    </form>
+                  ) : null}
+                </div>
+              )
+            })(),
             document.body,
           )
         : null}
@@ -312,7 +322,11 @@ export function SelectableText({
 
 function ToolButton({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
   return (
-    <button type="button" className="flex min-w-14 flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold hover:bg-white/10" onClick={onClick}>
+    <button
+      type="button"
+      className="flex min-w-14 flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+      onClick={onClick}
+    >
       {children}
       {label}
     </button>

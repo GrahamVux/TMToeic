@@ -80,7 +80,7 @@ export function ViewAsPage() {
               setQ('')
             }}
             className={cn(
-              'flex items-start gap-3 rounded-2xl border p-4 text-left transition',
+              'flex items-start gap-3 rounded-2xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
               role === t.role ? 'border-gold-deep bg-teal-soft shadow-sm' : 'border-gold/30 bg-cream hover:border-gold-deep/60',
             )}
           >
@@ -107,13 +107,20 @@ export function ViewAsPage() {
           <input
             key={role}
             name="q"
-            className="h-10 min-w-0 flex-1 rounded-xl border border-ink/12 px-3 text-sm"
+            aria-label={role === 'STUDENT' ? 'Tìm theo tên hoặc mã học viên' : 'Tìm theo tên hoặc tên đăng nhập'}
+            className="h-10 min-w-0 flex-1 rounded-xl border border-ink/12 bg-cream px-3 text-sm outline-none focus:border-button focus:ring-2 focus:ring-button/30"
             placeholder={role === 'STUDENT' ? 'Tìm theo tên hoặc mã học viên' : 'Tìm theo tên hoặc tên đăng nhập'}
           />
           <Button type="submit" variant="navy">
             Tìm
           </Button>
         </form>
+
+        {list.error ? (
+          <p className="mt-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
+            Không tải được danh sách tài khoản mới nhất.
+          </p>
+        ) : null}
 
         {error ? <p className="mt-3 text-sm text-coral" role="alert">{error}</p> : null}
 

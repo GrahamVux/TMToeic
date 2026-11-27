@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/Button'
+import { Button, buttonClasses } from '@/components/ui/Button'
 import { CornerNotice, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { Modal } from '@/components/ui/Modal'
 import { Card } from '@/components/ui/Primitives'
@@ -42,7 +42,24 @@ export function DailyGoalsCard() {
   const [editing, setEditing] = useState(false)
   const [notice, setNotice] = useState<CornerNoticeState | null>(null)
 
-  if (isPending) return null
+  if (isPending) {
+    return (
+      <Card className="p-6" aria-busy="true" aria-label="Đang tải mục tiêu hôm nay">
+        <div className="space-y-4 animate-pulse">
+          <div className="space-y-2">
+            <div className="h-3 w-32 rounded-full bg-paper-2" />
+            <div className="h-7 w-48 rounded-lg bg-paper-2" />
+          </div>
+          <div className="h-20 rounded-2xl bg-paper-2" />
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="h-28 rounded-2xl bg-paper-2" />
+            <div className="h-28 rounded-2xl bg-paper-2" />
+            <div className="h-28 rounded-2xl bg-paper-2" />
+          </div>
+        </div>
+      </Card>
+    )
+  }
   if (error || !data) {
     return (
       <Card className="p-6">
@@ -181,7 +198,7 @@ function YesterdayCorner({ yesterday }: { yesterday: NonNullable<DailyGoalsDto['
               <Link
                 key={item.kind}
                 to={item.to}
-                className="flex items-center justify-between gap-3 rounded-xl border border-danger/30 bg-cream px-3.5 py-2.5 shadow-2xs transition hover:border-danger/60"
+                className="flex items-center justify-between gap-3 rounded-xl border border-danger/30 bg-cream px-3.5 py-2.5 shadow-2xs transition hover:border-danger/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
               >
                 <div className="min-w-0">
                   <span className="flex items-center gap-1.5 text-xs font-semibold text-ink-soft">
@@ -232,11 +249,9 @@ function GoalReminder({ next }: { next: (typeof KINDS)[DailyGoalKind] & { done: 
           </>
         )}
       </p>
-      <Link to={next.to}>
-        <Button>
-          {next.cta}
-          <ArrowRight className="size-4" aria-hidden />
-        </Button>
+      <Link to={next.to} className={buttonClasses('gold')}>
+        {next.cta}
+        <ArrowRight className="size-4" aria-hidden />
       </Link>
     </div>
   )
@@ -256,7 +271,7 @@ function GoalTile({ kind, done, target }: { kind: DailyGoalKind; done: number; t
   const off = target === 0
   const met = !off && done >= target
   return (
-    <Link to={to} className="group rounded-2xl border border-gold/50 bg-cream p-4 transition hover:border-gold-deep">
+    <Link to={to} className="group rounded-2xl border border-gold/50 bg-cream p-4 transition hover:border-gold-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 focus-visible:ring-offset-2 focus-visible:ring-offset-paper">
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-2 text-sm font-semibold">
           <Icon className="size-4 text-gold-deep" aria-hidden />
@@ -315,7 +330,7 @@ function GoalForm({ data, onClose, onSaved }: { data: DailyGoalsDto; onClose: ()
           const { field, hint, unit, step } = KINDS[kind]
           const max = DAILY_GOAL_LIMITS[kind].max
           return (
-            <div key={kind} className="flex items-center justify-between gap-4 py-3">
+            <div key={kind} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <p className="text-sm font-semibold">{field}</p>
                 <p className="text-xs text-ink-soft">
@@ -323,7 +338,7 @@ function GoalForm({ data, onClose, onSaved }: { data: DailyGoalsDto; onClose: ()
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
-                <button type="button" className={stepCls} aria-label={`Giảm ${field}`} disabled={targets[kind] <= 0} onClick={() => setKind(kind, targets[kind] - step)}>
+                <button type="button" className={stepCls} aria-label={`Giảm ${field}`} disabled={save.isPending || targets[kind] <= 0} onClick={() => setKind(kind, targets[kind] - step)}>
                   <Minus className="size-4" />
                 </button>
                 <input
@@ -332,11 +347,12 @@ function GoalForm({ data, onClose, onSaved }: { data: DailyGoalsDto; onClose: ()
                   min={0}
                   max={max}
                   aria-label={field}
+                  disabled={save.isPending}
                   value={targets[kind]}
                   onChange={(e) => setKind(kind, Number(e.target.value))}
-                  className="h-9 w-16 rounded-xl border border-gold/60 bg-cream text-center text-sm font-semibold tabular-nums outline-none focus:border-button focus:ring-2 focus:ring-button/30"
+                  className="h-11 w-16 rounded-xl border border-gold/60 bg-cream text-center text-sm font-semibold tabular-nums outline-none focus:border-button focus:ring-2 focus:ring-button/30 disabled:opacity-50"
                 />
-                <button type="button" className={stepCls} aria-label={`Tăng ${field}`} disabled={targets[kind] >= max} onClick={() => setKind(kind, targets[kind] + step)}>
+                <button type="button" className={stepCls} aria-label={`Tăng ${field}`} disabled={save.isPending || targets[kind] >= max} onClick={() => setKind(kind, targets[kind] + step)}>
                   <Plus className="size-4" />
                 </button>
               </div>
@@ -361,4 +377,4 @@ function GoalForm({ data, onClose, onSaved }: { data: DailyGoalsDto; onClose: ()
   )
 }
 
-const stepCls = 'grid size-9 place-items-center rounded-full border border-ink/12 bg-cream text-ink transition hover:bg-paper-2 disabled:opacity-40'
+const stepCls = 'grid size-11 place-items-center rounded-full border border-ink/12 bg-cream text-ink transition hover:bg-paper-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 disabled:opacity-40'

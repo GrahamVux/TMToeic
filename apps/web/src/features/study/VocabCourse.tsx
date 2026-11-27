@@ -24,7 +24,15 @@ export function VocabNav({ current }: { current: 'learn' | 'progress' | 'mine' |
   return (
     <div className="flex flex-wrap gap-2">
       {items.map((item) => (
-        <Link key={item.id} to={item.to} className={item.id === current ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full border border-ink/10 bg-cream px-4 py-2 text-sm font-semibold text-ink hover:border-gold-deep'}>
+        <Link
+          key={item.id}
+          to={item.to}
+          className={
+            item.id === current
+              ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
+              : 'rounded-full border border-ink/10 bg-cream px-4 py-2 text-sm font-semibold text-ink transition hover:border-gold-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
+          }
+        >
           {item.label}
         </Link>
       ))}
@@ -101,7 +109,7 @@ function SetCard({ set, index, active, onSelect }: { set: VocabSetCardDto; index
       type="button"
       onClick={onSelect}
       aria-pressed={active}
-      className={`w-44 shrink-0 overflow-hidden rounded-2xl border bg-cream text-left lg:w-full ${active ? 'border-olive shadow-[0_8px_24px_rgba(63,154,134,0.16)]' : 'border-ink/10'}`}
+      className={`w-44 shrink-0 overflow-hidden rounded-2xl border bg-cream text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 lg:w-full ${active ? 'border-olive shadow-[0_8px_24px_rgba(63,154,134,0.16)]' : 'border-ink/10'}`}
     >
       <div className={`relative h-24 bg-linear-to-br px-3 py-3 ${coverClass(index)}`}>
         <p className="serif text-lg leading-tight text-ink">{set.title}</p>
@@ -152,7 +160,7 @@ function UnitCard({ set, unit }: { set: VocabSetCardDto; unit: VocabUnitDto }) {
           <ProgressBar className="mt-3" value={percent} />
           <Link
             to={`/study/flashcards?deck=catalog&set=${encodeURIComponent(set.id)}&unit=${unit.index}`}
-            className="mt-4 flex h-10 items-center justify-center rounded-full bg-button text-sm font-semibold text-button-ink hover:bg-button-hover"
+            className="mt-4 flex h-10 items-center justify-center rounded-full bg-button text-sm font-semibold text-button-ink transition hover:bg-button-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
           >
             {action}
             <span aria-hidden> ›</span>
@@ -161,13 +169,13 @@ function UnitCard({ set, unit }: { set: VocabSetCardDto; unit: VocabUnitDto }) {
             <button
               type="button"
               onClick={() => setWordsOpen(true)}
-              className="flex h-9 items-center justify-center gap-1 rounded-full bg-paper-2 px-2 text-xs font-semibold text-ink hover:bg-teal-soft"
+              className="flex min-h-10 items-center justify-center gap-1 rounded-full bg-paper-2 px-2 text-xs font-semibold text-ink transition hover:bg-teal-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
             >
               <ListChecks className="size-3.5 text-gold-deep" /> Danh sách từ
             </button>
             <Link
               to={`/study/games?source=catalog&set=${encodeURIComponent(set.id)}&unit=${unit.index}`}
-              className="flex h-9 items-center justify-center gap-1 rounded-full bg-teal-soft px-2 text-xs font-semibold text-gold-deep hover:opacity-90"
+              className="flex min-h-10 items-center justify-center gap-1 rounded-full bg-teal-soft px-2 text-xs font-semibold text-gold-deep transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
             >
               <Gamepad2 className="size-3.5" /> Chơi game
             </Link>
@@ -198,7 +206,7 @@ function UnitWordListModal({ set, unit, onClose }: { set: VocabSetCardDto; unit:
   }
 
   return (
-    <Modal title={`${set.title} · Unit ${unit}`} onClose={onClose}>
+    <Modal title={`${set.title} · Unit ${unit}`} onClose={onClose} wide>
       <CornerNotice notice={notice} />
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gold/25 pb-3">
         <p className="text-xs text-ink-soft">
@@ -221,6 +229,12 @@ function UnitWordListModal({ set, unit, onClose }: { set: VocabSetCardDto; unit:
       <div className="mt-3 max-h-[60vh] space-y-2.5 overflow-y-auto pr-1">
         {detail.isPending ? (
           <p className="py-6 text-center text-sm text-ink-soft">Đang tải danh sách từ…</p>
+        ) : detail.error ? (
+          <p className="rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
+            Không tải được danh sách từ.
+          </p>
+        ) : items.length === 0 ? (
+          <p className="py-6 text-center text-sm text-ink-soft">Unit này chưa có từ nào.</p>
         ) : (
           items.map((item) => (
             <div key={item.id} className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-gold/25 bg-paper p-3">
@@ -258,15 +272,15 @@ function UnitWordListModal({ set, unit, onClose }: { set: VocabSetCardDto; unit:
 function Pager({ page, pages, onPage }: { page: number; pages: number; onPage: (page: number) => void }) {
   return (
     <div className="mt-5 flex items-center justify-center gap-2">
-      <button type="button" className="h-9 w-9 rounded-full border border-ink/10 bg-cream text-ink disabled:opacity-40" disabled={page === 1} onClick={() => onPage(page - 1)} aria-label="Trang trước">
+      <button type="button" className="h-10 w-10 rounded-full border border-ink/10 bg-cream text-ink transition hover:bg-paper-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 disabled:opacity-40" disabled={page === 1} onClick={() => onPage(page - 1)} aria-label="Trang trước">
         ‹
       </button>
       {pageWindow(page, pages).map((number) => (
-        <button key={number} type="button" className={number === page ? 'h-9 w-9 rounded-full bg-button text-sm font-semibold text-button-ink' : 'h-9 w-9 rounded-full border border-ink/10 bg-cream text-sm font-semibold text-ink'} onClick={() => onPage(number)}>
+        <button key={number} type="button" className={number === page ? 'h-10 w-10 rounded-full bg-button text-sm font-semibold text-button-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50' : 'h-10 w-10 rounded-full border border-ink/10 bg-cream text-sm font-semibold text-ink transition hover:bg-paper-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'} onClick={() => onPage(number)}>
           {number}
         </button>
       ))}
-      <button type="button" className="h-9 w-9 rounded-full border border-ink/10 bg-cream text-ink disabled:opacity-40" disabled={page === pages} onClick={() => onPage(page + 1)} aria-label="Trang sau">
+      <button type="button" className="h-10 w-10 rounded-full border border-ink/10 bg-cream text-ink transition hover:bg-paper-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 disabled:opacity-40" disabled={page === pages} onClick={() => onPage(page + 1)} aria-label="Trang sau">
         ›
       </button>
     </div>
@@ -327,6 +341,15 @@ function WordSearch() {
         <Button type="submit" variant="navy">Tìm</Button>
       </form>
       {note ? <p className="mt-3 text-sm text-olive">{note}</p> : null}
+      {vocab.isFetching ? <p className="mt-3 text-sm text-ink-soft">Đang tìm trong kho từ…</p> : null}
+      {vocab.error ? (
+        <p className="mt-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
+          Không tìm được từ vựng. Vui lòng thử lại.
+        </p>
+      ) : null}
+      {q && !vocab.isFetching && !vocab.error && (vocab.data?.items.length ?? 0) === 0 ? (
+        <p className="mt-3 text-sm text-ink-soft">Không tìm thấy từ nào khớp “{q}”.</p>
+      ) : null}
       <ul className="mt-4 divide-y divide-ink/8">
         {(vocab.data?.items ?? []).map((item) => (
           <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
@@ -337,7 +360,7 @@ function WordSearch() {
             </div>
             <button
               type="button"
-              className="text-sm font-semibold text-gold-deep underline decoration-2 underline-offset-4"
+              className="min-h-10 rounded-xl px-2 text-sm font-semibold text-gold-deep underline decoration-2 underline-offset-4 transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 disabled:opacity-50"
               disabled={save.isPending}
               onClick={() => {
                 void save.mutateAsync({ vocabEntryId: item.id }).then(

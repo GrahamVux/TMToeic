@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/Button'
+import { buttonClasses } from '@/components/ui/Button'
 import { CornerNotice, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Badge, Card, ProgressBar } from '@/components/ui/Primitives'
@@ -124,16 +124,16 @@ export function ResultPage() {
 
       <div className="flex flex-wrap gap-3">
         {staffView ? (
-          <Link to={`/admin/students/${studentId}`}>
-            <Button variant="navy">Hồ sơ học viên</Button>
+          <Link to={`/admin/students/${studentId}`} className={buttonClasses('navy')}>
+            Hồ sơ học viên
           </Link>
         ) : (
           <>
-            <Link to="/practice">
-              <Button variant="navy">Làm đề khác</Button>
+            <Link to="/practice" className={buttonClasses('navy')}>
+              Làm đề khác
             </Link>
-            <Link to="/progress">
-              <Button variant="ghost">Xem tiến độ cá nhân</Button>
+            <Link to="/progress" className={buttonClasses('ghost')}>
+              Xem tiến độ cá nhân
             </Link>
           </>
         )}
@@ -149,8 +149,8 @@ function MissedAnswers({ attemptId, staffView, reviewTo }: { attemptId: string; 
   if (isPending) return <p className="text-sm text-ink-soft">Đang tải câu sai và câu chưa làm…</p>
   if (!data) {
     return (
-      <Link to={reviewTo}>
-        <Button>Xem bài làm chi tiết</Button>
+      <Link to={reviewTo} className={buttonClasses('gold')}>
+        Xem bài làm chi tiết
       </Link>
     )
   }
@@ -172,8 +172,8 @@ function MissedAnswers({ attemptId, staffView, reviewTo }: { attemptId: string; 
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {missed.length > 0 ? <TextZoomBar scale={textZoom} onChange={setTextZoom} /> : null}
-          <Link to={reviewTo}>
-            <Button>Xem bài làm chi tiết</Button>
+          <Link to={reviewTo} className={buttonClasses('gold')}>
+            Xem bài làm chi tiết
           </Link>
         </div>
       </div>

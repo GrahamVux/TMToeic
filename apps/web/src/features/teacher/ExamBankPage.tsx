@@ -1,6 +1,6 @@
 import { useAuth } from '@/app/AuthContext'
 import { useImportAuthoredExam } from '@/features/assignments/assignments.queries'
-import { Button } from '@/components/ui/Button'
+import { Button, buttonClasses } from '@/components/ui/Button'
 import { CornerNotice, flashError, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { FilePick } from '@/components/ui/FilePick'
 import { Modal } from '@/components/ui/Modal'
@@ -29,10 +29,10 @@ export function ExamBankPage() {
       </div>
       <ExamBundlePanel />
       <div className="flex flex-wrap gap-2">
-        <button type="button" className={tabClass(skill === 'LISTENING')} onClick={() => setSkill('LISTENING')}>
+        <button type="button" aria-pressed={skill === 'LISTENING'} className={tabClass(skill === 'LISTENING')} onClick={() => setSkill('LISTENING')}>
           Import đề Listening
         </button>
-        <button type="button" className={tabClass(skill === 'READING')} onClick={() => setSkill('READING')}>
+        <button type="button" aria-pressed={skill === 'READING'} className={tabClass(skill === 'READING')} onClick={() => setSkill('READING')}>
           Import đề Reading
         </button>
       </div>
@@ -44,8 +44,8 @@ export function ExamBankPage() {
 
 function tabClass(active: boolean) {
   return active
-    ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink'
-    : 'rounded-full bg-cream px-4 py-2 text-sm font-semibold text-ink-soft ring-1 ring-ink/10'
+    ? 'min-h-10 rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
+    : 'min-h-10 rounded-full bg-cream px-4 py-2 text-sm font-semibold text-ink-soft ring-1 ring-ink/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
 }
 
 function newExamCode() {
@@ -334,7 +334,7 @@ function AuthoredImport({ skill }: { skill: Skill }) {
           Tên đề
         </label>
         <Input id="au-title" className="mt-1" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={skill === 'LISTENING' ? 'VD: Part 2 — hỏi đáp' : 'VD: Part 5 — mệnh đề quan hệ'} />
-        <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="block text-sm font-medium" htmlFor="au-part">
               Part
@@ -375,7 +375,8 @@ function AuthoredImport({ skill }: { skill: Skill }) {
                 ))}
               </div>
               <textarea
-                className="mt-2 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm"
+                aria-label="Lời giải thích"
+                className="mt-2 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm outline-none focus:border-button focus:ring-2 focus:ring-button/30"
                 rows={2}
                 placeholder="Lời giải thích"
                 value={r.explanation}
@@ -468,6 +469,11 @@ function ExamList() {
         </div>
       ) : null}
       {exams.isPending ? <p className="mt-3 text-sm text-ink-soft">Đang tải…</p> : null}
+      {!exams.isPending && (exams.data?.length ?? 0) === 0 ? (
+        <Card className="mt-3 p-6 text-center text-sm text-ink-soft">
+          Chưa có đề nào trong ngân hàng. Hãy import hoặc soạn nhanh ở phía trên.
+        </Card>
+      ) : null}
       <div className="mt-3 grid gap-3">
         {exams.data?.map((exam) => (
           <Card key={exam.id} className="p-5">
@@ -491,8 +497,8 @@ function ExamList() {
               </div>
               <div className="flex flex-wrap gap-2">
                 {exam.status === 'PUBLISHED' ? (
-                  <Link to={`/admin/assignments?examId=${exam.id}`}>
-                    <Button>Giao bài từ part</Button>
+                  <Link to={`/admin/assignments?examId=${exam.id}`} className={buttonClasses('gold')}>
+                    Giao bài từ part
                   </Link>
                 ) : null}
                 {exam.status === 'DRAFT' || exam.status === 'PENDING_REVIEW' || exam.status === 'REJECTED' || exam.status === 'ARCHIVED' ? (

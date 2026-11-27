@@ -163,8 +163,8 @@ function StarChart({ shine }: { shine: number }) {
       {DUST.map(([x, y], index) => (
         <span
           key={`d-${x}-${y}`}
-          className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-white"
-          style={{ left: `${x}%`, top: `${y}%`, width: index % 4 === 0 ? 2.4 : 1.6, height: index % 4 === 0 ? 2.4 : 1.6, opacity: 0.8 + shine * 0.2, boxShadow: '0 0 6px 2px rgba(255, 248, 220, 0.95), 0 0 12px 3px rgba(150, 198, 255, 0.55)' }}
+          className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
+          style={{ left: `${x}%`, top: `${y}%`, width: index % 4 === 0 ? 2.4 : 1.6, height: index % 4 === 0 ? 2.4 : 1.6, backgroundColor: '#ffffff', opacity: 0.8 + shine * 0.2, boxShadow: '0 0 6px 2px rgba(255, 248, 220, 0.95), 0 0 12px 3px rgba(150, 198, 255, 0.55)' }}
         />
       ))}
     </>
@@ -175,12 +175,13 @@ function GlowStar({ x, y, scale, shine }: { x: number; y: number; scale: number;
   const halo = 8 + scale * 14
   return (
     <span
-      className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-white"
+      className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
       style={{
         left: `${x}%`,
         top: `${y}%`,
         width: 3 + scale * 2.5,
         height: 3 + scale * 2.5,
+        backgroundColor: '#ffffff',
         opacity: 0.9,
         boxShadow: `0 0 ${halo * 0.35}px ${halo * 0.2}px rgba(255, 252, 240, ${0.85 + shine * 0.1}), 0 0 ${halo}px ${halo * 0.45}px rgba(255, 214, 120, ${0.35 + shine * 0.2}), 0 0 ${halo * 1.4}px ${halo * 0.7}px rgba(130, 186, 255, ${0.28 + shine * 0.22})`,
       }}

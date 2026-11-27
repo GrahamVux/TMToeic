@@ -305,7 +305,10 @@ function Player({ data }: { data: AttemptPlayerDto }) {
                                 if (!window.getSelection()?.isCollapsed) return
                                 choose(item.id, option.key)
                               }}
-                              className={cn('rounded-2xl border px-4 py-3 text-left transition', selected ? 'border-gold-deep bg-teal-soft' : 'border-ink/12 hover:bg-paper')}
+                              className={cn(
+                                'rounded-2xl border px-4 py-3 text-left transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 focus-visible:ring-offset-2 focus-visible:ring-offset-cream',
+                                selected ? 'border-gold-deep bg-teal-soft' : 'border-ink/12 hover:bg-paper',
+                              )}
                             >
                               <span className="mr-3 font-bold">{option.key}.</span>
                               {listening || !option.text ? (
@@ -345,8 +348,8 @@ function Player({ data }: { data: AttemptPlayerDto }) {
                   type="button"
                   onClick={() => setIndex(firstIndex)}
                   className={cn(
-                    'rounded-xl px-2 py-2 text-left',
-                    question.partCode === code ? 'bg-button text-button-ink' : 'bg-paper text-ink',
+                    'rounded-xl px-2 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
+                    question.partCode === code ? 'bg-button text-button-ink' : 'bg-paper text-ink hover:bg-paper-2',
                   )}
                 >
                   <span className="block text-xs font-semibold">{label}</span>
@@ -373,8 +376,14 @@ function Player({ data }: { data: AttemptPlayerDto }) {
                       ? `Nhóm câu ${items[0].number}–${items[items.length - 1].number}, câu ${item.number}${answered ? ', đã chọn' : ', chưa làm'}`
                       : `Câu ${item.number}${answered ? ', đã chọn' : ', chưa làm'}`}
                     className={cn(
-                      'h-9 min-w-9 rounded-lg px-1 text-sm font-semibold tabular-nums',
-                      onScreen && answered ? 'bg-gold text-ink ring-2 ring-gold-deep' : onScreen ? 'bg-button text-button-ink' : answered ? 'bg-gold text-ink' : 'bg-paper',
+                      'h-11 min-w-11 rounded-lg px-1 text-sm font-semibold tabular-nums transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 lg:h-9 lg:min-w-9',
+                      onScreen && answered
+                        ? 'bg-gold text-ink ring-2 ring-gold-deep'
+                        : onScreen
+                          ? 'bg-button text-button-ink'
+                          : answered
+                            ? 'bg-gold text-ink'
+                            : 'bg-paper hover:bg-paper-2',
                     )}
                   >
                     {item.number}
@@ -394,20 +403,23 @@ function Player({ data }: { data: AttemptPlayerDto }) {
       </div>
 
       {confirm ? (
-        <div className="fixed inset-0 z-40 grid place-items-center bg-slate-950/50 p-4 backdrop-blur-[2px]" role="dialog" aria-modal="true" aria-labelledby="submit-title">
-          <Card className="w-full max-w-md p-6">
-            <h2 id="submit-title" className="serif text-2xl">Nộp bài?</h2>
-            <p className="mt-2 text-sm text-ink-soft">
-              Bạn đã trả lời {answered}/{questions.length} câu. Câu chưa làm sẽ tính là bỏ trống. Sau khi nộp sẽ không sửa được đáp án.
-            </p>
-            <div className="mt-5 flex justify-end gap-3">
-              <Button variant="ghost" disabled={finishing} onClick={() => setConfirm(false)}>Tiếp tục làm</Button>
-              <Button variant="danger" disabled={finishing} onClick={() => void finish('manual')}>
-                {finishing ? 'Đang nộp…' : 'Nộp bài'}
-              </Button>
-            </div>
-          </Card>
-        </div>
+        <Modal
+          title="Nộp bài?"
+          onClose={() => {
+            if (!finishing) setConfirm(false)
+          }}
+          dismissible={!finishing}
+        >
+          <p className="text-sm text-ink-soft">
+            Bạn đã trả lời {answered}/{questions.length} câu. Câu chưa làm sẽ tính là bỏ trống. Sau khi nộp sẽ không sửa được đáp án.
+          </p>
+          <div className="mt-5 flex justify-end gap-3">
+            <Button variant="ghost" disabled={finishing} onClick={() => setConfirm(false)}>Tiếp tục làm</Button>
+            <Button variant="danger" disabled={finishing} onClick={() => void finish('manual')}>
+              {finishing ? 'Đang nộp…' : 'Nộp bài'}
+            </Button>
+          </div>
+        </Modal>
       ) : null}
 
       {finishing && !confirm ? (

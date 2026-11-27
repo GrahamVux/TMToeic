@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/Button'
+import { buttonClasses } from '@/components/ui/Button'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Card, ProgressBar } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
@@ -129,7 +129,7 @@ export function InactiveList({ items, total }: { items: InactiveStudentDto[]; to
                 {s.reasons.map((reason) => reasonText(s, reason)).join(' • ')}
               </p>
             </div>
-            <Link to={`/admin/students/${s.id}`}><Button variant="paper" className="px-3 py-1.5 text-xs">Xem hồ sơ</Button></Link>
+            <Link to={`/admin/students/${s.id}`} className={buttonClasses('paper', 'min-h-10 whitespace-nowrap px-3.5 py-2 text-xs')}>Xem hồ sơ</Link>
           </li>
         ))}
       </ul>

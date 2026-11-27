@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/Button'
+import { buttonClasses } from '@/components/ui/Button'
 import { Badge, Card, ProgressBar } from '@/components/ui/Primitives'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
@@ -32,22 +32,26 @@ function GrammarHome() {
       </div>
       <ProgressBar value={items.length === 0 ? 0 : (completed / items.length) * 100} />
       <div className="mt-4 space-y-3">
-        {items.map((lesson, index) => (
-          <Card key={lesson.id} className="grid gap-4 p-5 md:grid-cols-[64px_1fr_auto] md:items-center">
-            <div className="serif text-3xl text-gold-deep">{String(index + 1).padStart(2, '0')}</div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-semibold">{lesson.title}</h3>
-                {lesson.pdf ? <Badge tone="teal">Có PDF</Badge> : null}
-                {lesson.completed ? <Badge tone="olive">Đã học</Badge> : null}
+        {items.length === 0 ? (
+          <Card className="p-6 text-sm text-ink-soft">Chưa có chuyên đề ngữ pháp nào.</Card>
+        ) : (
+          items.map((lesson, index) => (
+            <Card key={lesson.id} className="grid gap-4 p-5 md:grid-cols-[64px_1fr_auto] md:items-center">
+              <div className="serif text-3xl text-gold-deep">{String(index + 1).padStart(2, '0')}</div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-semibold">{lesson.title}</h3>
+                  {lesson.pdf ? <Badge tone="teal">Có PDF</Badge> : null}
+                  {lesson.completed ? <Badge tone="olive">Đã học</Badge> : null}
+                </div>
+                <p className="mt-1 text-sm text-ink-soft">{lesson.summary}</p>
               </div>
-              <p className="mt-1 text-sm text-ink-soft">{lesson.summary}</p>
-            </div>
-            <Link to={`/grammar/${lesson.id}`}>
-              <Button variant="navy">{lesson.completed ? 'Xem lại' : 'Học'}</Button>
-            </Link>
-          </Card>
-        ))}
+              <Link to={`/grammar/${lesson.id}`} className={buttonClasses('navy')}>
+                {lesson.completed ? 'Xem lại' : 'Học'}
+              </Link>
+            </Card>
+          ))
+        )}
       </div>
     </section>
   )

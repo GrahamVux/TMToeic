@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/Button'
 import { Card, ProgressBar } from '@/components/ui/Primitives'
 import { PageLoading } from '@/components/ui/LoadingScreen'
+import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { cn } from '@/lib/cn'
 import { NOTEBOOK_CARD_COLORS, UNASSIGNED_VOCAB_SET, VOCAB_GAME_DAILY_XP_CAP, type NotebookCardColor, type VocabGameKind } from '@toeic/shared'
 import { Award, CheckCircle2, Flame, Gamepad2, HelpCircle, Keyboard, Layers, RotateCcw, Sparkles, Timer, Zap } from 'lucide-react'
@@ -106,6 +107,7 @@ export function VocabGamesPage() {
   const nbTopics = [...new Set((notebook.data?.items ?? []).map((i) => i.topic.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi'))
 
   if (course.isPending || notebook.isPending) return <PageLoading message="Đang chuẩn bị phòng chơi từ vựng…" />
+  if (course.error || notebook.error) return <QueryErrorRedirect error={course.error ?? notebook.error} />
 
   function finishSession(kind: VocabGameKind, score: number, totalItems: number, reviewedCards: ReviewOutcome[]) {
     void complete
@@ -153,15 +155,23 @@ export function VocabGamesPage() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
+                aria-pressed={source === 'catalog'}
                 onClick={() => { setSource('catalog'); restart() }}
-                className={cn('rounded-full px-4 py-1.5 text-xs font-semibold', source === 'catalog' ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft')}
+                className={cn(
+                  'min-h-10 rounded-full px-4 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
+                  source === 'catalog' ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft hover:bg-button-soft',
+                )}
               >
                 <Layers className="mr-1 inline size-3.5" /> Bộ từ & Unit có sẵn
               </button>
               <button
                 type="button"
+                aria-pressed={source === 'notebook'}
                 onClick={() => { setSource('notebook'); restart() }}
-                className={cn('rounded-full px-4 py-1.5 text-xs font-semibold', source === 'notebook' ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft')}
+                className={cn(
+                  'min-h-10 rounded-full px-4 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
+                  source === 'notebook' ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft hover:bg-button-soft',
+                )}
               >
                 <Sparkles className="mr-1 inline size-3.5" /> Sổ tay cá nhân
               </button>
@@ -170,7 +180,8 @@ export function VocabGamesPage() {
             {source === 'catalog' ? (
               <div className="flex flex-wrap gap-2.5">
                 <select
-                  className="h-9 rounded-xl border border-gold/35 bg-cream px-3 text-xs font-semibold"
+                  aria-label="Chọn bộ từ"
+                  className="h-10 rounded-xl border border-gold/35 bg-cream px-3 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
                   value={selectedSet?.id ?? ''}
                   onChange={(e) => { setSetId(e.target.value); setLastResult(null); setSessionId((s) => s + 1) }}
                 >
@@ -185,8 +196,12 @@ export function VocabGamesPage() {
                     <button
                       key={u.index}
                       type="button"
+                      aria-pressed={unit === u.index}
                       onClick={() => { setUnit(u.index); setLastResult(null); setSessionId((s) => s + 1) }}
-                      className={cn('rounded-full px-3 py-1 text-xs font-semibold', unit === u.index ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft')}
+                      className={cn(
+                        'min-h-10 rounded-full px-3 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
+                        unit === u.index ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft hover:bg-button-soft',
+                      )}
                     >
                       Unit {u.index} ({u.wordCount})
                     </button>
@@ -196,7 +211,8 @@ export function VocabGamesPage() {
             ) : (
               <div className="flex flex-wrap gap-2.5">
                 <select
-                  className="h-9 rounded-xl border border-gold/35 bg-cream px-3 text-xs font-semibold"
+                  aria-label="Lọc chủ đề sổ tay"
+                  className="h-10 rounded-xl border border-gold/35 bg-cream px-3 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
                   value={nbTopic}
                   onChange={(e) => { setNbTopic(e.target.value); setLastResult(null); setSessionId((s) => s + 1) }}
                 >
@@ -206,7 +222,8 @@ export function VocabGamesPage() {
                   ))}
                 </select>
                 <select
-                  className="h-9 rounded-xl border border-gold/35 bg-cream px-3 text-xs font-semibold"
+                  aria-label="Lọc màu ô sổ tay"
+                  className="h-10 rounded-xl border border-gold/35 bg-cream px-3 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
                   value={nbColor}
                   onChange={(e) => { setNbColor(e.target.value as NotebookCardColor | 'all'); setLastResult(null); setSessionId((s) => s + 1) }}
                 >
@@ -233,9 +250,10 @@ export function VocabGamesPage() {
               <button
                 key={id}
                 type="button"
+                aria-pressed={gameKind === id}
                 onClick={() => restart(id)}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-1 rounded-2xl border px-3 py-2.5 text-xs font-semibold transition',
+                  'flex flex-col items-center justify-center gap-1 rounded-2xl border px-3 py-2.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
                   gameKind === id ? 'border-button bg-button text-button-ink shadow-xs' : 'border-gold/30 bg-paper text-ink-soft hover:border-gold-deep',
                 )}
               >
@@ -247,8 +265,20 @@ export function VocabGamesPage() {
         </div>
       </Card>
 
-      {source === 'catalog' && unitDetail.isPending ? (
+      {complete.isError ? (
+        <p className="rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
+          Không lưu được kết quả ván chơi.
+        </p>
+      ) : null}
+
+      {source === 'catalog' && Boolean(selectedSet) && unitDetail.isPending ? (
         <PageLoading message="Đang nạp bộ từ cho trò chơi…" />
+      ) : source === 'catalog' && Boolean(selectedSet) && unitDetail.error ? (
+        <Card className="border-danger/30 bg-danger-soft p-6">
+          <p className="text-sm text-danger" role="alert">
+            Không tải được danh sách từ của Unit này.
+          </p>
+        </Card>
       ) : deckWords.length < 4 ? (
         <Card className="p-8 text-center">
           <h2 className="serif text-2xl">Cần ít nhất 4 từ có đủ nghĩa</h2>
@@ -375,7 +405,7 @@ function MatchGameBoard({
                   tryMatch(item.id, pickedMeaning)
                 }}
                 className={cn(
-                  'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition',
+                  'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
                   done
                     ? 'border-success/35 bg-success-soft text-success opacity-65'
                     : active
@@ -405,7 +435,7 @@ function MatchGameBoard({
                   tryMatch(pickedWord, item.id)
                 }}
                 className={cn(
-                  'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition',
+                  'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
                   done
                     ? 'border-success/35 bg-success-soft text-success opacity-65'
                     : active
@@ -492,7 +522,7 @@ function QuizGameBoard({
               disabled={Boolean(chosenId)}
               onClick={() => choose(opt.id)}
               className={cn(
-                'flex items-start gap-2.5 rounded-2xl border p-4 text-left text-sm font-medium transition',
+                'flex items-start gap-2.5 rounded-2xl border p-4 text-left text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
                 chosenId
                   ? isTarget
                     ? 'border-success/45 bg-success-soft text-ink'
@@ -584,7 +614,7 @@ function SpellGameBoard({
           onChange={(e) => setTyped(e.target.value)}
           placeholder="Gõ chính xác từ tiếng Anh…"
           className={cn(
-            'h-12 w-full rounded-2xl border-2 px-4 text-center text-lg font-bold outline-none',
+            'h-12 w-full rounded-2xl border-2 px-4 text-center text-lg font-bold outline-none focus:ring-2 focus:ring-button/40',
             feedback === 'correct'
               ? 'border-success/45 bg-success-soft text-ink'
               : feedback === 'wrong'

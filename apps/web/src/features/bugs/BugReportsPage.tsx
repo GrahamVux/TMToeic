@@ -1,5 +1,6 @@
 import { useAuth } from '@/app/AuthContext'
 import { Button } from '@/components/ui/Button'
+import { PageLoading } from '@/components/ui/LoadingScreen'
 import { Badge, Card } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { useAdminBugReports, useUpdateBugReport } from '@/features/bugs/bugs.queries'
@@ -71,14 +72,15 @@ export function BugReportsPage() {
           <button
             key={c.id || 'all'}
             type="button"
+            aria-pressed={status === c.id}
             onClick={() => {
               setStatus(c.id)
               setPage(1)
             }}
             className={
               status === c.id
-                ? 'rounded-full bg-button px-3 py-1.5 text-xs font-semibold text-button-ink'
-                : 'rounded-full border border-gold/40 bg-cream px-3 py-1.5 text-xs font-semibold text-ink-soft hover:bg-teal-soft'
+                ? 'min-h-10 rounded-full bg-button px-3.5 py-1.5 text-xs font-semibold text-button-ink transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
+                : 'min-h-10 rounded-full border border-gold/40 bg-cream px-3.5 py-1.5 text-xs font-semibold text-ink-soft transition hover:bg-teal-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
             }
           >
             {c.label}
@@ -93,7 +95,7 @@ export function BugReportsPage() {
         </p>
       ) : null}
 
-      {list.isPending ? <p className="text-sm text-ink-soft">Đang tải báo lỗi…</p> : null}
+      {list.isPending ? <PageLoading message="Đang tải báo lỗi…" /> : null}
 
       {!list.isPending && (list.data?.items.length ?? 0) === 0 ? (
         <Card className="p-6">
@@ -106,14 +108,14 @@ export function BugReportsPage() {
           <li key={item.id}>
             <Card className="p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="font-semibold">
-                    <Link className="text-gold-deep hover:underline" to={`/admin/students/${item.reporter.id}`}>
+                    <Link className="rounded text-gold-deep hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50" to={`/admin/students/${item.reporter.id}`}>
                       {item.reporter.fullName}
                     </Link>
                     {item.reporter.studentCode ? <span className="ml-2 text-xs font-normal text-ink-soft">{item.reporter.studentCode}</span> : null}
                   </p>
-                  <p className="mt-1 text-xs text-ink-soft">
+                  <p className="mt-1 break-all text-xs text-ink-soft">
                     {BUG_REPORT_CATEGORY_LABEL[item.category]} • {item.pagePath} • {dateFmt.format(new Date(item.createdAt))}
                   </p>
                 </div>
@@ -129,7 +131,7 @@ export function BugReportsPage() {
               <label className="mt-4 block text-xs font-medium text-ink-soft">
                 Ghi chú phản hồi (học viên sẽ thấy)
                 <textarea
-                  className="mt-1 min-h-16 w-full rounded-xl border border-gold/40 bg-cream px-3 py-2 text-sm outline-none focus:border-button"
+                  className="mt-1 min-h-16 w-full rounded-xl border border-gold/40 bg-cream px-3 py-2 text-sm outline-none focus:border-button focus:ring-2 focus:ring-button/30"
                   value={notes[item.id] ?? item.adminNote ?? ''}
                   onChange={(e) => setNotes((n) => ({ ...n, [item.id]: e.target.value }))}
                   placeholder="Đã sửa / cần thêm thông tin…"
