@@ -17,13 +17,16 @@ const ColorModeContext = createContext<{
   toggleColorMode: () => {},
 })
 
-const ThemeGateContext = createContext<Dispatch<SetStateAction<boolean>>>(() => {})
+export type ThemeSurface = 'gate' | 'shell' | 'plain'
+
+const ThemeGateContext = createContext<Dispatch<SetStateAction<ThemeSurface>>>(() => {})
 
 export function SiteSettingsProvider({ children }: { children: ReactNode }) {
   const q = useSiteSettings()
   const site = q.data ?? fallback
   const [colorMode, setColorModeState] = useState<ColorMode>(() => getStoredColorMode())
-  const [onGate, setOnGate] = useState(false)
+  const [surface, setSurface] = useState<ThemeSurface>('gate')
+  const onGate = surface === 'gate'
 
   function setColorMode(mode: ColorMode) {
     setStoredColorMode(mode)
@@ -41,15 +44,18 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     applySiteTheme(site, effectiveMode, onGate)
-  }, [site, effectiveMode, onGate])
+    document.documentElement.classList.toggle('shell-backdrop', surface === 'shell' && site.backgroundMode !== 'fixed')
+  }, [site, effectiveMode, onGate, surface])
+
+  const showTheme = site.backgroundMode === 'gradient' && surface !== 'plain'
 
   return (
-    <ThemeGateContext.Provider value={setOnGate}>
+    <ThemeGateContext.Provider value={setSurface}>
     <ColorModeContext.Provider value={{ colorMode, setColorMode, toggleColorMode }}>
       <SiteContext.Provider value={site}>
         {site.backgroundMode === 'sky' ? <SkyBackdrop /> : null}
-        {site.backgroundMode === 'gradient' && onGate ? <ThemeBackdrop /> : null}
-        {site.backgroundMode !== 'sky' && !(site.backgroundMode === 'gradient' && onGate) ? (
+        {showTheme ? <ThemeBackdrop /> : null}
+        {site.backgroundMode !== 'sky' && !showTheme ? (
           <div aria-hidden="true" className="site-wash pointer-events-none fixed inset-0 z-0 overflow-hidden" />
         ) : null}
         <div className="relative z-10">{children}</div>
@@ -67,7 +73,7 @@ export function useColorMode() {
   return useContext(ColorModeContext)
 }
 
-/** Login and the full-screen opening splash are the only places a seasonal theme is painted. */
+/** Controls surface mode: `gate` (login/splash), `shell` (logged-in margins), `plain` (study & exam). */
 export function useThemeGate() {
   return useContext(ThemeGateContext)
 }

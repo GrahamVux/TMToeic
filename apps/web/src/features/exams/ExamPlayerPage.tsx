@@ -8,7 +8,7 @@ import { cn } from '@/lib/cn'
 import { CSRF_HEADER, CSRF_HEADER_VALUE, FILL_QUESTION_TYPE, type AttemptPlayerDto } from '@toeic/shared'
 import { getViewAsId } from '@/lib/view-as'
 import { AlertTriangle, Headphones } from 'lucide-react'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { trackForPart } from './audio'
 import { AudioPlayer } from './AudioPlayer'
@@ -30,10 +30,6 @@ const MODE_LABEL: Record<string, string> = {
 }
 
 export function ExamPlayerPage() {
-  useLayoutEffect(() => {
-    document.documentElement.classList.add('exam-plain')
-    return () => document.documentElement.classList.remove('exam-plain')
-  }, [])
   const { attemptId } = useParams()
   const { data, isPending, error } = useAttemptPlayer(attemptId)
 
@@ -204,7 +200,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
 
       {focus.notice ? (
         <Modal title="Cảnh báo rời màn hình" onClose={focus.dismiss} dismissible={false}>
-          <p className="flex gap-2 text-sm text-ink/80">
+          <p className="flex gap-2 text-sm text-ink">
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-coral" />
             <span>{focus.notice}</span>
           </p>
@@ -222,7 +218,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
               <Headphones className="size-5 text-teal" />
               <div>
                 <p className="text-xs font-semibold text-teal uppercase">Listening</p>
-                <p className="text-sm text-ink/70">
+                <p className="text-sm text-ink-soft">
                   Phần này chưa có audio. Nếu bạn đang luyện riêng một part, hãy làm cả bài nghe (Part 1–4) để có audio đầy đủ, hoặc nhờ giáo viên gắn audio cho part này.
                 </p>
               </div>
@@ -428,7 +424,7 @@ function FillBlank({ prompt, blankIndex, value, onChange }: { prompt: string; bl
   const pieces = prompt.split(/_{3,}/)
   return (
     <div className="mt-3">
-      <p className="exam-copy font-medium">
+      <p className="exam-copy select-text cursor-text font-medium">
         {pieces.map((piece, index) => (
           <span key={index}>
             {piece}

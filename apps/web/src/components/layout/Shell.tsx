@@ -24,7 +24,7 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
       {!compact && (
         <div className="hidden sm:block">
           <p className="font-[family-name:var(--font-display)] text-[17px] font-bold leading-tight tracking-tight text-ink">{site.brandName}</p>
-          <p className="mt-0.5 text-[12px] font-semibold tracking-[0.18em] text-crimson uppercase">{site.slogan}</p>
+          <p className="mt-0.5 text-[13px] font-semibold tracking-[0.06em] text-crimson uppercase">{site.slogan}</p>
         </div>
       )}
     </div>
@@ -50,13 +50,13 @@ export function SiteFooter() {
           <p className="mt-4 max-w-sm text-sm leading-6 text-ink-soft">{site.footerAbout}</p>
         </div>
         <div>
-          <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">{site.supportHeading}</p>
+          <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">{site.supportHeading}</p>
           <p className="mt-3 whitespace-pre-line text-sm text-ink-soft">{site.supportDetail}</p>
           {site.phone ? <p className="mt-1 text-sm text-ink-soft">Hotline: {site.phone}{site.hours ? ` (${site.hours})` : ''}</p> : null}
           {site.address ? <p className="mt-1 text-sm text-ink-soft">{site.address}</p> : null}
         </div>
         <div>
-          <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">{site.channelHeading}</p>
+          <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">{site.channelHeading}</p>
           <p className="mt-3 whitespace-pre-line text-sm text-ink-soft">{site.channelDetail}</p>
           {site.legalNote ? <p className="mt-4 text-xs text-ink-soft">{site.legalNote}</p> : null}
         </div>
@@ -175,7 +175,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
                 className={({ isActive }) =>
                   cn(
                     'flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium',
-                    isActive ? 'bg-button text-button-ink' : 'text-ink/80 hover:bg-paper',
+                    isActive ? 'bg-button text-button-ink' : 'text-ink hover:bg-paper',
                   )
                 }
               >
@@ -186,7 +186,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
             <NavLink
               to="/settings"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-ink/80 hover:bg-paper"
+              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-ink hover:bg-paper"
             >
               <Settings className="size-4" /> Cài đặt cá nhân
             </NavLink>
@@ -201,7 +201,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
           </div>
         )}
       </header>
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">{children}</main>
+      <main className="shell-main mx-auto max-w-7xl px-4 py-8 sm:px-6">{children}</main>
       <SiteFooter />
       <BugReportWidget />
       <FrameWardrobeModal open={wardrobeOpen} initialTab="wallet" onClose={() => setWardrobeOpen(false)} />
@@ -281,7 +281,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <BrandMark />
           </Link>
           <div className="hidden h-6 w-px shrink-0 bg-gold/40 lg:block" />
-          <p className="hidden whitespace-nowrap text-[13px] font-semibold tracking-[0.18em] text-gold-deep uppercase 2xl:block">
+          <p className="hidden whitespace-nowrap text-sm font-semibold tracking-[0.06em] text-gold-deep uppercase 2xl:block">
             Cổng quản lý đào tạo
           </p>
           <nav className="ml-2 hidden min-w-0 items-center gap-0.5 lg:flex">
@@ -327,7 +327,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                           className={({ isActive }) =>
                             cn(
                               'flex items-center gap-2 rounded-xl px-3 py-2 text-[15px] font-medium',
-                              isActive ? 'bg-button text-button-ink' : 'text-ink/80 hover:bg-paper',
+                              isActive ? 'bg-button text-button-ink' : 'text-ink hover:bg-paper',
                             )
                           }
                         >
@@ -381,7 +381,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 className={({ isActive }) =>
                   cn(
                     'flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium',
-                    isActive ? 'bg-button text-button-ink' : 'text-ink/80 hover:bg-paper',
+                    isActive ? 'bg-button text-button-ink' : 'text-ink hover:bg-paper',
                   )
                 }
               >
@@ -402,7 +402,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         ) : null}
       </header>
 
-      <main className="mx-auto max-w-[1400px] px-4 py-6 pb-24 sm:px-6 sm:py-8 lg:pb-8">{children}</main>
+      <main className="shell-main mx-auto max-w-[1400px] px-4 py-6 pb-24 sm:px-6 sm:py-8 lg:pb-8">{children}</main>
 
       {moreOpen ? (
         <button type="button" className="fixed inset-0 z-20 bg-slate-950/35 lg:hidden" aria-label="Đóng xem thêm" onClick={() => setMoreOpen(false)} />
@@ -422,7 +422,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 className={({ isActive }) =>
                   cn(
                     'flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold',
-                    isActive ? 'bg-button text-button-ink' : 'text-ink/80 hover:bg-paper',
+                    isActive ? 'bg-button text-button-ink' : 'text-ink hover:bg-paper',
                   )
                 }
               >

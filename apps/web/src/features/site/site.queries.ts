@@ -5,6 +5,43 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 export const siteKey = ['site-settings'] as const
 export type ColorMode = 'light' | 'dark'
 const COLOR_MODE_KEY = 'tm_color_mode'
+const SITE_CACHE_KEY = 'tm_site_settings_v1'
+const GATE_BG_CACHE_KEY = 'tm_gate_bg_v1'
+
+export function getStoredSiteSettings(): SiteSettingsDto | null {
+  try {
+    const raw = window.localStorage.getItem(SITE_CACHE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<SiteSettingsDto>
+    if (!parsed || typeof parsed.brandName !== 'string' || !parsed.theme) return null
+    return parsed as SiteSettingsDto
+  } catch {
+    return null
+  }
+}
+
+function setStoredSiteSettings(s: SiteSettingsDto) {
+  try {
+    window.localStorage.setItem(SITE_CACHE_KEY, JSON.stringify(s))
+    const resolved = resolveThemePreset(s.themePreset)
+    const concreteId = resolved.id === 'auto' ? 'classic' : resolved.id
+    window.localStorage.setItem(
+      GATE_BG_CACHE_KEY,
+      JSON.stringify({
+        backgroundMode: s.backgroundMode,
+        photoFile: concreteId === 'classic' ? null : concreteId.replace(/_/g, '-'),
+        lightGradient: resolved.lightGradient,
+        darkGradient: resolved.darkGradient,
+        lightPaper: s.theme.paper,
+        brandName: s.brandName,
+        slogan: s.slogan,
+        logoUrl: s.logoUrl,
+      }),
+    )
+  } catch {
+    // ignore storage errors
+  }
+}
 
 export function getStoredColorMode(): ColorMode {
   try {
@@ -27,6 +64,8 @@ export function useSiteSettings() {
     queryKey: siteKey,
     queryFn: () => api<SiteSettingsDto>('/site-settings'),
     staleTime: 60_000,
+    initialData: () => getStoredSiteSettings() ?? undefined,
+    initialDataUpdatedAt: 0,
   })
 }
 
@@ -77,6 +116,7 @@ export function buttonColors(hex: string) {
 }
 
 export function applySiteTheme(s: SiteSettingsDto, colorMode: ColorMode = getStoredColorMode(), gate = false) {
+  setStoredSiteSettings(s)
   const root = document.documentElement
   // Sky is always light. A seasonal scene paints only the login and opening screens; light/dark still applies.
   const seasonal = s.backgroundMode === 'gradient' && gate
@@ -100,20 +140,20 @@ export function applySiteTheme(s: SiteSettingsDto, colorMode: ColorMode = getSto
   root.style.setProperty('--color-amber', button.background)
   root.style.setProperty('--color-amber-deep', button.hover)
   root.style.setProperty('--color-amber-soft', isDark ? mixHex(button.background, '#0b1218', 0.78) : button.soft)
-  const accentTextHex = isDark && luminance(primaryHex) < 0.25 ? mixHex(primaryHex, '#dbeafe', 0.7) : primaryHex
+  const accentTextHex = isDark && luminance(primaryHex) < 0.25 ? mixHex(primaryHex, '#7dd3fc', 0.82) : primaryHex
   root.style.setProperty('--color-gold-deep', accentTextHex)
   root.style.setProperty('--color-teal', accentTextHex)
   const banner = buttonColors(primaryHex)
   root.style.setProperty('--color-banner', banner.background)
   root.style.setProperty('--color-banner-ink', banner.ink)
-  root.style.setProperty('--color-navy', isDark ? '#bfdbfe' : mixHex(primaryHex, '#0f172a', 0.35))
+  root.style.setProperty('--color-navy', isDark ? '#93c5fd' : mixHex(primaryHex, '#0f172a', 0.35))
   root.style.setProperty('--color-gold', isDark ? mixHex(primaryHex, '#1b2833', 0.65) : s.theme.primarySoft)
   root.style.setProperty('--color-paper', paperHex)
   root.style.setProperty('--color-paper-2', isDark ? mixHex(primaryHex, '#141d26', 0.85) : mixHex(primaryHex, '#ffffff', 0.9))
   root.style.setProperty('--color-teal-soft', isDark ? mixHex(primaryHex, '#111b24', 0.82) : mixHex(primaryHex, '#ffffff', 0.88))
   root.style.setProperty('--color-cream', isDark ? '#141b24' : '#ffffff')
-  root.style.setProperty('--color-ink', isDark ? '#f1f5f9' : '#0f172a')
-  root.style.setProperty('--color-ink-soft', isDark ? '#cbd5e1' : '#334155')
+  root.style.setProperty('--color-ink', isDark ? '#f8fafc' : '#0f172a')
+  root.style.setProperty('--color-ink-soft', isDark ? '#dbeafe' : mixHex(primaryHex, '#1e293b', 0.52))
   root.style.setProperty('--ux-accent', button.background)
 
   document.title = `${s.brandName} — ${s.slogan}`

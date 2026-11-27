@@ -14,17 +14,58 @@
   </head>
   <body>
     <div id="root">
-      <div role="status" aria-live="polite" style="min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at top right,rgba(219,234,254,.8),transparent 42%),radial-gradient(circle at bottom left,rgba(234,240,251,.95),transparent 40%),#f6f8fc;color:#0f172a;font-family:Inter,ui-sans-serif,system-ui,sans-serif;text-align:center">
-        <div>
-          <div style="width:96px;height:96px;margin:0 auto;display:grid;place-items:center;position:relative">
-            <span style="position:absolute;inset:0;border-radius:999px;border:2px solid #dbeafe;border-top-color:#143899;animation:toeic-spin 1.1s linear infinite"></span>
-            <img src="/logo.png" alt="" width="64" height="64" style="width:64px;height:64px;border-radius:999px;background:#fff;object-fit:contain;box-shadow:0 8px 28px rgba(20,56,153,.22)" />
+      <div id="tm-splash" role="status" aria-live="polite" style="position:relative;min-height:100vh;display:grid;place-items:center;padding:32px 16px;overflow:hidden;background:radial-gradient(circle at top right,rgba(219,234,254,.8),transparent 42%),radial-gradient(circle at bottom left,rgba(234,240,251,.95),transparent 40%),#f6f8fc;color:#0f172a;font-family:Inter,ui-sans-serif,system-ui,sans-serif;text-align:center;user-select:none;cursor:default">
+        <div aria-hidden="true" style="position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,#143899,#1e3a8a,#d9232e)"></div>
+        <div id="tm-splash-card" style="position:relative;width:min(376px,90vw);min-height:376px;padding:36px 32px;border-radius:9999px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:2px solid rgba(219,234,254,.9);box-shadow:0 28px 80px rgba(15,23,42,.24);box-sizing:border-box">
+          <div style="width:128px;height:128px;display:grid;place-items:center;position:relative">
+            <span style="position:absolute;inset:0;border-radius:999px;border:3px solid rgba(20,56,153,.2);border-top-color:#143899;border-right-color:#d9232e;animation:toeic-spin 1.1s linear infinite"></span>
+            <img id="tm-splash-logo" src="/logo.png" alt="" width="96" height="96" style="width:96px;height:96px;padding:6px;border-radius:999px;background:#fff;object-fit:contain;box-shadow:0 10px 28px rgba(20,56,153,.22);box-sizing:border-box" />
           </div>
-          <p style="margin:24px 0 0;font-family:'Be Vietnam Pro',Inter,ui-sans-serif,system-ui,sans-serif;font-size:20px;font-weight:700;letter-spacing:-.02em">MR. MINH TOEIC</p>
-          <p style="margin:6px 0 0;font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:#d9232e">Lớp học nội bộ</p>
-          <p style="margin:24px 0 0;font-size:16px;color:#475569">Đang mở cổng học viên…</p>
+          <p id="tm-splash-brand" style="margin:20px 0 0;font-family:'Be Vietnam Pro',Inter,ui-sans-serif,system-ui,sans-serif;font-size:28px;font-weight:800;line-height:1.15;letter-spacing:-.02em;color:#1e3a8a">MR. MINH TOEIC</p>
+          <span id="tm-splash-slogan" style="margin-top:8px;display:inline-flex;align-items:center;border-radius:9999px;background:#d9232e;padding:4px 14px;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#fff">Lớp học nội bộ</span>
+          <p id="tm-splash-msg" style="margin:16px 0 0;font-size:18px;font-weight:600;color:#1c3564">Đang mở cổng học viên…</p>
         </div>
       </div>
+      <script>
+        (function () {
+          try {
+            var dark = localStorage.getItem('tm_color_mode') === 'dark';
+            var raw = localStorage.getItem('tm_gate_bg_v1');
+            var g = raw ? JSON.parse(raw) : null;
+            var root = document.getElementById('tm-splash');
+            var card = document.getElementById('tm-splash-card');
+            var brand = document.getElementById('tm-splash-brand');
+            var msg = document.getElementById('tm-splash-msg');
+            var logo = document.getElementById('tm-splash-logo');
+            var slogan = document.getElementById('tm-splash-slogan');
+            if (!root || !card) return;
+            if (g && g.backgroundMode === 'sky') dark = false;
+            if (dark) {
+              root.style.background = '#0b1218';
+              card.style.background = 'rgba(17,24,39,.94)';
+              card.style.borderColor = 'rgba(148,163,184,.3)';
+              if (brand) brand.style.color = '#93c5fd';
+              if (msg) msg.style.color = '#dbeafe';
+            } else if (g && g.lightPaper) {
+              root.style.background = g.lightPaper;
+            }
+            if (g) {
+              if (brand && g.brandName) brand.textContent = g.brandName;
+              if (slogan && g.slogan) slogan.textContent = g.slogan;
+              if (logo && g.logoUrl) logo.src = g.logoUrl;
+              if (g.backgroundMode === 'gradient') {
+                var grad = dark ? g.darkGradient : g.lightGradient;
+                if (g.photoFile) {
+                  var imgUrl = '/theme-backgrounds/' + g.photoFile + '-' + (dark ? 'dark' : 'light') + '.webp';
+                  root.style.background = 'url("' + imgUrl + '") center/cover no-repeat' + (grad ? ', ' + grad : '');
+                } else if (grad) {
+                  root.style.background = grad;
+                }
+              }
+            }
+          } catch (e) {}
+        })();
+      </script>
       <style>
         @keyframes toeic-spin { to { transform: rotate(360deg); } }
       </style>

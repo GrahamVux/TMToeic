@@ -56,7 +56,7 @@ export function ReviewQuestionCards({
                   {q.isCorrect === true ? <Badge tone="olive">Đúng</Badge> : q.isCorrect === false ? <Badge tone="danger">Sai</Badge> : <Badge tone="paper">Chưa làm</Badge>}
                 </div>
                 {q.type === FILL_QUESTION_TYPE ? (
-                  <div className="exam-copy mt-3 space-y-2">
+                  <div className="exam-copy mt-3 space-y-2 select-text cursor-text">
                     <p className="font-medium">{q.prompt}</p>
                     <p>
                       Đã điền: <strong>{q.answerText || '—'}</strong>
@@ -101,7 +101,7 @@ export function ReviewQuestionCards({
                 {q.explanation ? (
                   <div className="mt-4 max-w-[68ch] rounded-xl border border-warn/25 bg-warn-soft p-3.5 text-sm text-ink">
                     <p className="text-xs font-semibold tracking-wide text-warn uppercase">Giải thích</p>
-                    <p className="mt-1 leading-[1.7] whitespace-pre-line text-ink/90">{q.explanation}</p>
+                    <p className="mt-1 select-text cursor-text leading-[1.7] whitespace-pre-line text-ink">{q.explanation}</p>
                   </div>
                 ) : null}
               </div>

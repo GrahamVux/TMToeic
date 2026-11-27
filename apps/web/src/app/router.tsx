@@ -31,7 +31,7 @@ import { SiteSettingsPage } from '@/features/teacher/SiteSettingsPage'
 import { TeacherAssignmentsPage } from '@/features/teacher/TeacherAssignmentsPage'
 import { TeacherDashboardPage } from '@/features/teacher/TeacherDashboardPage'
 import { NotebookPage } from '@/features/vocabulary/NotebookPage'
-import { SiteSettingsProvider, useThemeGate } from '@/features/site/SiteSettingsProvider'
+import { SiteSettingsProvider, useThemeGate, type ThemeSurface } from '@/features/site/SiteSettingsProvider'
 import { LoadingScreen } from '@/components/ui/LoadingScreen'
 import { ApiError } from '@/lib/api'
 import { avatarListKeys } from '@/lib/account-avatars'
@@ -44,15 +44,19 @@ function FullPageSpinner() {
   return <LoadingScreen />
 }
 
-/** Seasonal artwork stays on the sign-in screen and the opening splash. */
+const PLAIN_ROUTE = /^\/(study|grammar)(\/|$)|^\/attempts\/|^\/admin\/students\/[^/]+\/attempts\//
+
+/** Switches surface: `gate` (login/splash), `plain` (study & exam, solid no backdrop), or `shell` (backdrop in margins). */
 function ThemeSurfaceSync() {
-  const setOnGate = useThemeGate()
+  const setSurface = useThemeGate()
   const { status, user } = useAuth()
   const { pathname } = useLocation()
-  const gate = status === 'loading' || (pathname === '/login' && !user)
+  const surface: ThemeSurface =
+    status === 'loading' || (pathname === '/login' && !user) ? 'gate' : PLAIN_ROUTE.test(pathname) ? 'plain' : 'shell'
   useLayoutEffect(() => {
-    setOnGate(gate)
-  }, [gate, setOnGate])
+    setSurface(surface)
+    document.documentElement.classList.toggle('exam-plain', surface === 'plain')
+  }, [surface, setSurface])
   return null
 }
 
