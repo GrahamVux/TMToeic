@@ -31,16 +31,29 @@ import { SiteSettingsPage } from '@/features/teacher/SiteSettingsPage'
 import { TeacherAssignmentsPage } from '@/features/teacher/TeacherAssignmentsPage'
 import { TeacherDashboardPage } from '@/features/teacher/TeacherDashboardPage'
 import { NotebookPage } from '@/features/vocabulary/NotebookPage'
-import { SiteSettingsProvider } from '@/features/site/SiteSettingsProvider'
+import { SiteSettingsProvider, useThemeGate } from '@/features/site/SiteSettingsProvider'
 import { LoadingScreen } from '@/components/ui/LoadingScreen'
 import { ApiError } from '@/lib/api'
 import { avatarListKeys } from '@/lib/account-avatars'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { homePathForRole } from '@toeic/shared'
+import { useLayoutEffect } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 
 function FullPageSpinner() {
   return <LoadingScreen />
+}
+
+/** Seasonal artwork stays on the sign-in screen and the opening splash. */
+function ThemeSurfaceSync() {
+  const setOnGate = useThemeGate()
+  const { status, user } = useAuth()
+  const { pathname } = useLocation()
+  const gate = status === 'loading' || (pathname === '/login' && !user)
+  useLayoutEffect(() => {
+    setOnGate(gate)
+  }, [gate, setOnGate])
+  return null
 }
 
 /**
@@ -156,6 +169,7 @@ export function App() {
         <AuthProvider>
           <BrowserRouter>
             <RouteErrorBoundary>
+              <ThemeSurfaceSync />
               <AppRoutes />
             </RouteErrorBoundary>
           </BrowserRouter>
