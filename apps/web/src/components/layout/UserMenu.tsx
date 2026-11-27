@@ -1,7 +1,8 @@
 import { cn } from '@/lib/cn'
 import { AccountAvatar } from '@/components/ui/AccountAvatar'
-import { Bell, ChevronDown, LogOut, Sparkles, Target, UserRound, type LucideIcon } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, Palette, Sparkles, Target, UserRound, type LucideIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 
 export type UserMenuItem = {
@@ -28,8 +29,12 @@ type Props = {
 export function UserMenu({ name, code, subtitle, avatarUrl, avatarFrame, settingsPath = '/settings', menuItems, onSignOut }: Props) {
   const [hovered, setHovered] = useState(false)
   const [pinned, setPinned] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 640px)').matches : true,
+  )
   const open = hovered || pinned
   const wrapRef = useRef<HTMLDivElement>(null)
+  const mobilePanelRef = useRef<HTMLDivElement>(null)
   const closeTimer = useRef<number | undefined>(undefined)
 
   function closeAll() {
@@ -39,8 +44,19 @@ export function UserMenu({ name, code, subtitle, avatarUrl, avatarFrame, setting
   }
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(min-width: 640px)')
+    const sync = () => setIsDesktop(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+
+  useEffect(() => {
     function onDown(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) closeAll()
+      const target = e.target as Node
+      if (wrapRef.current?.contains(target) || mobilePanelRef.current?.contains(target)) return
+      closeAll()
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') closeAll()
@@ -70,10 +86,61 @@ export function UserMenu({ name, code, subtitle, avatarUrl, avatarFrame, setting
   const subLabel = subtitle ?? (code ? `Mã HV: ${code}` : '')
   const items: UserMenuItem[] = menuItems ?? [
     { to: settingsPath, label: 'Thông tin cá nhân', icon: UserRound },
+    { to: `${settingsPath}#theme`, label: 'Giao diện & Chủ đề', icon: Palette },
     { to: `${settingsPath}#frames`, label: 'Kho khung viền & Điểm', icon: Sparkles },
     { to: `${settingsPath}#goal`, label: 'Mục tiêu điểm số', icon: Target },
     { to: `${settingsPath}#notify`, label: 'Thông báo & nhắc học', icon: Bell },
   ]
+
+  const menuPanel = (
+    <div
+      ref={isDesktop ? undefined : mobilePanelRef}
+      className={cn(
+        isDesktop ? 'absolute top-full right-0 z-40 w-64 pt-2' : 'fixed inset-x-3 top-[4.5rem] z-50 w-auto',
+      )}
+      role="menu"
+    >
+      <div className="overflow-hidden rounded-2xl border border-gold/30 bg-cream shadow-[0_16px_40px_rgba(15,23,42,0.18)]">
+        <div className="flex items-center gap-3 border-b border-gold/20 bg-teal-soft/60 px-4 py-3">
+          <AccountAvatar name={name} url={avatarUrl} frameId={avatarFrame} className="size-10 text-sm" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-ink">{name}</p>
+            {subLabel ? <p className="text-[13px] text-ink-soft">{subLabel}</p> : null}
+          </div>
+        </div>
+
+        <div className="p-1.5">
+          {items.map((item) => (
+            <Link
+              key={item.label}
+              to={item.to}
+              role="menuitem"
+              onClick={closeAll}
+              className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[15px] text-ink transition hover:bg-teal-soft hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+            >
+              <item.icon className="size-4 text-ink-soft" />
+              {item.label}
+            </Link>
+          ))}
+        </div>
+
+        <div className="border-t border-gold/20 p-1.5">
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              closeAll()
+              onSignOut()
+            }}
+            className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-danger-soft/75 px-3 py-2 text-[15px] font-semibold text-danger transition hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40"
+          >
+            <LogOut className="size-4" />
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <div ref={wrapRef} className="relative shrink-0" onMouseEnter={hoverOpen} onMouseLeave={hoverClose}>
@@ -84,7 +151,7 @@ export function UserMenu({ name, code, subtitle, avatarUrl, avatarFrame, setting
         aria-expanded={open}
         onClick={onToggleClick}
         className={cn(
-          'flex min-h-10 items-center gap-2 rounded-full border bg-cream py-1 pr-3 pl-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
+          'flex min-h-10 items-center gap-1.5 rounded-full border bg-cream p-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 sm:gap-2 sm:py-1 sm:pr-3 sm:pl-1.5',
           open ? 'border-gold-deep shadow-sm' : 'border-gold/35 hover:border-gold-deep/60',
         )}
       >
@@ -93,52 +160,10 @@ export function UserMenu({ name, code, subtitle, avatarUrl, avatarFrame, setting
           <span className="block whitespace-nowrap text-[14px] font-semibold text-ink">{name}</span>
           {subLabel ? <span className="mt-0.5 block whitespace-nowrap text-[12px] text-gold-deep">{subLabel}</span> : null}
         </span>
-        <ChevronDown className={cn('size-3.5 text-ink-soft transition-transform', open && 'rotate-180')} />
+        <ChevronDown className={cn('hidden size-3.5 text-ink-soft transition-transform sm:block', open && 'rotate-180')} />
       </button>
 
-      {open && (
-        <div className="absolute top-full right-0 z-40 w-64 pt-2" role="menu">
-          <div className="overflow-hidden rounded-2xl border border-gold/30 bg-cream shadow-[0_12px_32px_rgba(15,23,42,0.16)]">
-            <div className="flex items-center gap-3 border-b border-gold/20 bg-teal-soft/60 px-4 py-3">
-              <AccountAvatar name={name} url={avatarUrl} frameId={avatarFrame} className="size-10 text-sm" />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-ink">{name}</p>
-                {subLabel ? <p className="text-[13px] text-ink-soft">{subLabel}</p> : null}
-              </div>
-            </div>
-
-            <div className="p-1.5">
-              {items.map((item) => (
-                <Link
-                  key={item.label}
-                  to={item.to}
-                  role="menuitem"
-                  onClick={closeAll}
-                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[15px] text-ink transition hover:bg-teal-soft hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
-                >
-                  <item.icon className="size-4 text-ink-soft" />
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-
-            <div className="border-t border-gold/20 p-1.5">
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  closeAll()
-                  onSignOut()
-                }}
-                className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-danger-soft/75 px-3 py-2 text-[15px] font-semibold text-danger transition hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40"
-              >
-                <LogOut className="size-4" />
-                Đăng xuất
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {open ? (isDesktop || typeof document === 'undefined' ? menuPanel : createPortal(menuPanel, document.body)) : null}
     </div>
   )
 }

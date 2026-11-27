@@ -7,7 +7,7 @@ import { NOTEBOOK_CARD_COLORS, UNASSIGNED_VOCAB_SET, VOCAB_GAME_DAILY_XP_CAP, ty
 import { Award, CheckCircle2, Flame, Gamepad2, HelpCircle, Keyboard, Layers, RotateCcw, Sparkles, Timer, Zap } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { VocabNav } from './VocabCourse'
+import { UnitSliderBar, VocabNav } from './VocabCourse'
 import { useCompleteVocabGame, useNotebook, useVocabCourse, useVocabGameStatus, useVocabUnitDetail } from './study.queries'
 
 type GameWord = {
@@ -151,7 +151,7 @@ export function VocabGamesPage() {
       {/* Deck + Mode Picker */}
       <Card className="p-5">
         <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
-          <div className="space-y-3">
+          <div className="min-w-0 space-y-3">
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
@@ -178,10 +178,10 @@ export function VocabGamesPage() {
             </div>
 
             {source === 'catalog' ? (
-              <div className="flex flex-wrap gap-2.5">
+              <div className="min-w-0 space-y-2.5">
                 <select
                   aria-label="Chọn bộ từ"
-                  className="h-10 rounded-xl border border-gold/35 bg-cream px-3 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+                  className="h-10 w-full max-w-sm rounded-xl border border-gold/35 bg-cream px-3 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
                   value={selectedSet?.id ?? ''}
                   onChange={(e) => { setSetId(e.target.value); setLastResult(null); setSessionId((s) => s + 1) }}
                 >
@@ -191,22 +191,16 @@ export function VocabGamesPage() {
                     </option>
                   ))}
                 </select>
-                <div className="flex flex-wrap gap-1.5">
-                  {(selectedSet?.units ?? []).map((u) => (
-                    <button
-                      key={u.index}
-                      type="button"
-                      aria-pressed={unit === u.index}
-                      onClick={() => { setUnit(u.index); setLastResult(null); setSessionId((s) => s + 1) }}
-                      className={cn(
-                        'min-h-10 rounded-full px-3 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
-                        unit === u.index ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft hover:bg-button-soft',
-                      )}
-                    >
-                      Unit {u.index} ({u.wordCount})
-                    </button>
-                  ))}
-                </div>
+                <UnitSliderBar
+                  units={selectedSet?.units ?? []}
+                  activeUnit={unit}
+                  label="Trượt chọn Unit"
+                  onSelectUnit={(u) => {
+                    setUnit(u)
+                    setLastResult(null)
+                    setSessionId((s) => s + 1)
+                  }}
+                />
               </div>
             ) : (
               <div className="flex flex-wrap gap-2.5">

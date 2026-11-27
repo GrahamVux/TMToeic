@@ -6,8 +6,8 @@ import { PageLoading } from '@/components/ui/LoadingScreen'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { ApiError } from '@/lib/api'
 import type { VocabSetCardDto, VocabUnitDto } from '@toeic/shared'
-import { Bookmark, BookmarkCheck, Gamepad2, ListChecks } from 'lucide-react'
-import { useState } from 'react'
+import { Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Gamepad2, ListChecks } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { notebookSavedMessage, useBatchSaveNotebook, useSaveNotebookWord, useVocabCourse, useVocabSearch, useVocabUnitDetail } from './study.queries'
 
@@ -22,20 +22,115 @@ export function VocabNav({ current }: { current: 'learn' | 'progress' | 'mine' |
     { id: 'grammar', label: 'Ngữ pháp', to: '/study?view=grammar' },
   ] as const
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="ux-scroll flex gap-2 overflow-x-auto pb-1.5 sm:flex-wrap sm:overflow-visible sm:pb-0">
       {items.map((item) => (
         <Link
           key={item.id}
           to={item.to}
           className={
             item.id === current
-              ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
-              : 'rounded-full border border-ink/10 bg-cream px-4 py-2 text-sm font-semibold text-ink transition hover:border-gold-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
+              ? 'shrink-0 whitespace-nowrap rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
+              : 'shrink-0 whitespace-nowrap rounded-full border border-ink/10 bg-cream px-4 py-2 text-sm font-semibold text-ink transition hover:border-gold-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
           }
         >
           {item.label}
         </Link>
       ))}
+    </div>
+  )
+}
+
+/** Scrollable horizontal Unit pill bar with left/right step buttons and quick range slider. */
+export function UnitSliderBar({
+  units,
+  activeUnit,
+  onSelectUnit,
+  label = 'Chọn nhanh Unit',
+}: {
+  units: ReadonlyArray<{ index: number; wordCount: number }>
+  activeUnit: number | null
+  onSelectUnit: (unitIndex: number) => void
+  label?: string
+}) {
+  const railRef = useRef<HTMLDivElement>(null)
+  if (units.length === 0) return null
+  const foundIdx = units.findIndex((u) => u.index === activeUnit)
+  const activeIdx = foundIdx >= 0 ? foundIdx : 0
+
+  function scrollRail(dir: -1 | 1) {
+    const el = railRef.current
+    if (!el) return
+    el.scrollBy({ left: dir * Math.max(180, Math.round(el.clientWidth * 0.65)), behavior: 'smooth' })
+  }
+
+  function pickAt(idx: number) {
+    const target = units[idx]
+    if (!target) return
+    onSelectUnit(target.index)
+    const btn = railRef.current?.querySelector<HTMLElement>(`[data-unit-idx="${target.index}"]`)
+    btn?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' })
+  }
+
+  return (
+    <div className="min-w-0 space-y-2">
+      <div className="flex min-w-0 items-center gap-1.5">
+        <button
+          type="button"
+          aria-label="Trượt danh sách Unit sang trái"
+          onClick={() => scrollRail(-1)}
+          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-gold/35 bg-cream text-ink-soft hover:border-gold-deep hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+        >
+          <ChevronLeft className="size-4" />
+        </button>
+        <div ref={railRef} className="ux-scroll flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-1.5">
+          {units.map((u) => {
+            const active = u.index === (activeUnit ?? units[0]?.index)
+            return (
+              <button
+                key={u.index}
+                type="button"
+                data-unit-idx={u.index}
+                aria-pressed={active}
+                onClick={() => onSelectUnit(u.index)}
+                className={
+                  active
+                    ? 'shrink-0 whitespace-nowrap rounded-full bg-button px-3 py-1.5 text-xs font-semibold text-button-ink shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
+                    : 'shrink-0 whitespace-nowrap rounded-full border border-gold/30 bg-cream px-3 py-1.5 text-xs font-semibold text-ink-soft hover:border-gold-deep hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50'
+                }
+              >
+                Unit {u.index} ({u.wordCount})
+              </button>
+            )
+          })}
+        </div>
+        <button
+          type="button"
+          aria-label="Trượt danh sách Unit sang phải"
+          onClick={() => scrollRail(1)}
+          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-gold/35 bg-cream text-ink-soft hover:border-gold-deep hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+        >
+          <ChevronRight className="size-4" />
+        </button>
+      </div>
+
+      {units.length > 1 ? (
+        <div className="flex items-center gap-3 px-1">
+          <span className="shrink-0 text-[11px] font-semibold text-ink-soft">{label}:</span>
+          <input
+            type="range"
+            min={0}
+            max={units.length - 1}
+            step={1}
+            value={activeIdx}
+            aria-label={label}
+            onChange={(e) => pickAt(Number(e.target.value))}
+            className="h-2 min-w-0 flex-1 cursor-pointer accent-[var(--color-button)]"
+          />
+          <span className="w-16 shrink-0 text-right text-xs font-bold tabular-nums text-gold-deep">
+            Unit {units[activeIdx]?.index}
+          </span>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -63,17 +158,56 @@ export function VocabCourse({ view }: { view: 'learn' | 'progress' }) {
 function LearnBoard({ sets, selected, onSelect }: { sets: VocabSetCardDto[]; selected: VocabSetCardDto; onSelect: (id: string) => void }) {
   const [page, setPage] = useState(1)
   const [filter, setFilter] = useState('')
+  const [focusUnit, setFocusUnit] = useState<number | null>(null)
+  const setsRailRef = useRef<HTMLDivElement>(null)
   const query = filter.trim().toLowerCase()
   const visibleSets = query ? sets.filter((set) => `${set.topic} ${set.title}`.toLowerCase().includes(query)) : sets
   const pages = Math.max(1, Math.ceil(selected.units.length / PAGE_SIZE))
   const safePage = Math.min(page, pages)
   const units = selected.units.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  const activeUnit = focusUnit && selected.units.some((u) => u.index === focusUnit) ? focusUnit : units[0]?.index ?? null
+
+  function scrollSets(dir: -1 | 1) {
+    const el = setsRailRef.current
+    if (!el) return
+    el.scrollBy({ left: dir * 200, behavior: 'smooth' })
+  }
+
+  function jumpToUnit(unitIndex: number) {
+    const pos = selected.units.findIndex((u) => u.index === unitIndex)
+    if (pos >= 0) setPage(Math.floor(pos / PAGE_SIZE) + 1)
+    setFocusUnit(unitIndex)
+  }
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[17.5rem_1fr]">
-      <Card className="p-4">
-        <h2 className="font-semibold">Bộ từ vựng</h2>
-        <p className="mt-1 text-sm text-ink-soft">Chọn bộ bạn muốn học</p>
+      <Card className="min-w-0 p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h2 className="font-semibold">Bộ từ vựng</h2>
+            <p className="mt-0.5 text-sm text-ink-soft">Chọn bộ bạn muốn học</p>
+          </div>
+          {visibleSets.length > 1 ? (
+            <div className="flex items-center gap-1 lg:hidden">
+              <button
+                type="button"
+                aria-label="Trượt bộ từ vựng sang trái"
+                onClick={() => scrollSets(-1)}
+                className="flex size-8 items-center justify-center rounded-full border border-gold/35 bg-cream text-ink-soft"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              <button
+                type="button"
+                aria-label="Trượt bộ từ vựng sang phải"
+                onClick={() => scrollSets(1)}
+                className="flex size-8 items-center justify-center rounded-full border border-gold/35 bg-cream text-ink-soft"
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
+          ) : null}
+        </div>
         {sets.length > 6 ? (
           <input
             className="mt-3 h-10 w-full rounded-xl border border-ink/12 px-3 text-sm"
@@ -82,18 +216,33 @@ function LearnBoard({ sets, selected, onSelect }: { sets: VocabSetCardDto[]; sel
             onChange={(event) => setFilter(event.target.value)}
           />
         ) : null}
-        <div className="mt-3 flex gap-3 overflow-x-auto pb-1 lg:max-h-[70vh] lg:flex-col lg:overflow-y-auto lg:pr-1">
+        <div ref={setsRailRef} className="ux-scroll mt-3 flex gap-3 overflow-x-auto pb-2 lg:max-h-[70vh] lg:flex-col lg:overflow-x-visible lg:overflow-y-auto lg:pr-1.5">
           {visibleSets.map((set, index) => (
-            <SetCard key={set.id} set={set} index={index} active={set.id === selected.id} onSelect={() => { onSelect(set.id); setPage(1) }} />
+            <SetCard
+              key={set.id}
+              set={set}
+              index={index}
+              active={set.id === selected.id}
+              onSelect={() => {
+                onSelect(set.id)
+                setPage(1)
+                setFocusUnit(null)
+              }}
+            />
           ))}
           {visibleSets.length === 0 ? <p className="text-sm text-ink-soft">Không có bộ khớp.</p> : null}
         </div>
       </Card>
 
-      <div>
+      <div className="min-w-0 space-y-4">
+        {selected.units.length > 1 ? (
+          <Card className="min-w-0 p-3.5">
+            <UnitSliderBar units={selected.units} activeUnit={activeUnit} onSelectUnit={jumpToUnit} label="Kéo nhanh tới Unit" />
+          </Card>
+        ) : null}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {units.map((unit) => (
-            <UnitCard key={unit.index} set={selected} unit={unit} />
+            <UnitCard key={unit.index} set={selected} unit={unit} highlighted={focusUnit === unit.index} />
           ))}
         </div>
         {pages > 1 ? <Pager page={safePage} pages={pages} onPage={setPage} /> : null}
@@ -132,14 +281,14 @@ function SetCard({ set, index, active, onSelect }: { set: VocabSetCardDto; index
   )
 }
 
-function UnitCard({ set, unit }: { set: VocabSetCardDto; unit: VocabUnitDto }) {
+function UnitCard({ set, unit, highlighted = false }: { set: VocabSetCardDto; unit: VocabUnitDto; highlighted?: boolean }) {
   const [wordsOpen, setWordsOpen] = useState(false)
   const percent = unit.wordCount === 0 ? 0 : Math.round((unit.learnedCount / unit.wordCount) * 100)
   const status = unit.learnedCount === 0 ? 'Chưa học' : unit.learnedCount === unit.wordCount ? 'Đã học xong' : 'Đang học'
   const action = unit.learnedCount === 0 ? 'Bắt đầu học' : unit.learnedCount === unit.wordCount ? 'Ôn lại' : 'Học tiếp'
   return (
     <>
-      <Card className="overflow-hidden p-0">
+      <Card className={highlighted ? 'overflow-hidden p-0 ring-2 ring-button/60' : 'overflow-hidden p-0'}>
         <div className="flex min-h-28 flex-col items-center justify-between gap-2 bg-linear-to-br from-teal-soft to-paper px-4 py-3.5">
           <p className="line-clamp-2 text-center text-xs font-semibold tracking-[0.06em] text-gold-deep uppercase">{set.title}</p>
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-button text-sm font-semibold text-button-ink tabular-nums shadow-xs">

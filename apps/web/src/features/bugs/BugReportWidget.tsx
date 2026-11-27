@@ -148,15 +148,18 @@ export function BugReportWidget() {
       <button
         type="button"
         className={cn(
-          'pointer-events-auto flex items-center gap-2 rounded-full bg-button px-4 py-3 text-sm font-semibold text-button-ink shadow-[0_10px_28px_rgba(31,122,140,0.35)] transition hover:bg-button-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 focus-visible:ring-offset-2',
-          open && 'ring-2 ring-white/70',
+          'group pointer-events-auto relative flex size-9 items-center justify-center rounded-full bg-button text-button-ink opacity-85 shadow-[0_6px_18px_rgba(20,56,153,0.28)] transition hover:scale-105 hover:bg-button-hover hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 focus-visible:ring-offset-2',
+          open && 'opacity-100 ring-2 ring-white/70',
         )}
         aria-expanded={open}
         aria-label="Báo lỗi cho quản trị viên"
+        title="Báo lỗi cho quản trị viên"
         onClick={() => setOpen((v) => !v)}
       >
         <Bug className="size-4" />
-        Báo lỗi
+        <span className="pointer-events-none absolute right-full mr-2 hidden whitespace-nowrap rounded-full bg-ink px-2.5 py-1 text-[11px] font-semibold text-cream shadow-sm sm:group-hover:inline-block">
+          Báo lỗi
+        </span>
       </button>
     </div>
   )

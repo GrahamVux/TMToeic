@@ -2,6 +2,7 @@ import { useExams } from '@/features/exams/exams.queries'
 import { cn } from '@/lib/cn'
 import { Search, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 
 type Hit = { label: string; group: string; to: string }
@@ -29,8 +30,13 @@ function normalize(s: string) {
 export function HeaderSearch() {
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 640px)').matches : true,
+  )
   const wrapRef = useRef<HTMLDivElement>(null)
+  const mobilePanelRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const mobileInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
 
   // Real published exams, fetched only once the search box is opened.
@@ -44,12 +50,25 @@ export function HeaderSearch() {
   }, [q, index])
 
   useEffect(() => {
-    if (open) inputRef.current?.focus()
-  }, [open])
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(min-width: 640px)')
+    const sync = () => setIsDesktop(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+    const target = isDesktop ? inputRef.current : mobileInputRef.current
+    target?.focus()
+  }, [open, isDesktop])
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) close()
+      const target = e.target as Node
+      if (wrapRef.current?.contains(target) || mobilePanelRef.current?.contains(target)) return
+      close()
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') close()
@@ -72,21 +91,91 @@ export function HeaderSearch() {
     close()
   }
 
+  function onTriggerClick() {
+    if (!open) {
+      setOpen(true)
+      return
+    }
+    if (isDesktop) inputRef.current?.focus()
+    else close()
+  }
+
+  const resultsPanel = (
+    <div
+      ref={isDesktop ? undefined : mobilePanelRef}
+      role="dialog"
+      aria-label="Tìm kiếm nhanh"
+      className={cn(
+        'overflow-hidden rounded-2xl border border-gold/30 bg-cream shadow-[0_16px_40px_rgba(15,23,42,0.18)]',
+        isDesktop
+          ? 'absolute top-full right-0 z-40 mt-2 w-88'
+          : 'fixed inset-x-3 top-[4.5rem] z-50 w-auto',
+      )}
+    >
+      {!isDesktop ? (
+        <div className="flex items-center gap-2 border-b border-gold/20 p-2.5">
+          <Search className="size-4 shrink-0 text-gold-deep" />
+          <input
+            ref={mobileInputRef}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && results[0]) go(results[0])
+            }}
+            placeholder="Tìm trang, đề thi…"
+            className="h-9 min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink/55"
+          />
+          <button
+            type="button"
+            aria-label="Đóng tìm kiếm"
+            onClick={close}
+            className="flex size-8 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-paper hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+      ) : null}
+      <p className="px-4 pt-3 pb-1 text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">
+        {q.trim() ? 'Kết quả' : 'Gợi ý'}
+      </p>
+      <ul className="max-h-72 overflow-y-auto p-1.5">
+        {exams.isPending ? <li className="px-3 py-2 text-xs text-ink-soft">Đang tải danh sách đề thi…</li> : null}
+        {exams.isError ? <li className="px-3 py-2 text-xs text-danger">Không tải được danh sách đề thi.</li> : null}
+        {!exams.isPending && results.length === 0 && (
+          <li className="px-3 py-4 text-center text-sm text-ink-soft">Không tìm thấy “{q}”</li>
+        )}
+        {results.map((h) => (
+          <li key={h.group + h.label}>
+            <button
+              type="button"
+              onClick={() => go(h)}
+              className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-[15px] text-ink hover:bg-teal-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+            >
+              <span className="min-w-0 truncate">{h.label}</span>
+              <span className="shrink-0 rounded-full bg-paper-2 px-2 py-0.5 text-[12px] text-ink-soft">{h.group}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+
   return (
     <div ref={wrapRef} className="relative">
-      {open ? <div className="size-10 sm:hidden" aria-hidden="true" /> : null}
       <div
         className={cn(
-          'flex h-10 items-center overflow-hidden rounded-full border bg-cream transition-[width,border-color,box-shadow] duration-300 ease-out',
+          'flex h-10 w-10 items-center overflow-hidden rounded-full border bg-cream transition-[width,border-color,box-shadow] duration-300 ease-out',
           open
-            ? 'fixed inset-x-4 top-3 z-50 w-auto border-gold-deep ring-2 ring-button/20 sm:static sm:w-56 xl:w-72'
-            : 'w-10 border-gold/40 hover:border-gold-deep',
+            ? 'border-gold-deep ring-2 ring-button/20 sm:w-56 xl:w-72'
+            : 'border-gold/40 hover:border-gold-deep',
         )}
       >
         <button
           type="button"
           aria-label="Tìm kiếm"
-          onClick={() => (open ? inputRef.current?.focus() : setOpen(true))}
+          aria-expanded={open}
+          aria-haspopup="dialog"
+          onClick={onTriggerClick}
           className="flex size-10 shrink-0 items-center justify-center text-ink-soft hover:text-gold-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
         >
           <Search className="size-4" />
@@ -98,10 +187,10 @@ export function HeaderSearch() {
           onKeyDown={(e) => {
             if (e.key === 'Enter' && results[0]) go(results[0])
           }}
-          tabIndex={open ? 0 : -1}
+          tabIndex={open && isDesktop ? 0 : -1}
           placeholder="Tìm trang, đề thi…"
           className={cn(
-            'h-full min-w-0 flex-1 bg-transparent pr-1 text-[15px] text-ink outline-none placeholder:text-ink/60',
+            'hidden h-full min-w-0 flex-1 bg-transparent pr-1 text-[15px] text-ink outline-none placeholder:text-ink/60 sm:block',
             !open && 'pointer-events-none opacity-0',
           )}
         />
@@ -110,39 +199,14 @@ export function HeaderSearch() {
             type="button"
             aria-label="Đóng tìm kiếm"
             onClick={close}
-            className="mr-1 flex size-9 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-teal-soft hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+            className="mr-1 hidden size-9 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-teal-soft hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 sm:flex"
           >
             <X className="size-3.5" />
           </button>
         )}
       </div>
 
-      {open && (
-        <div className="fixed inset-x-4 top-[4.25rem] z-50 overflow-hidden rounded-2xl border border-gold/30 bg-cream shadow-[0_12px_32px_rgba(15,23,42,0.16)] sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:z-40 sm:mt-2 sm:w-88">
-          <p className="px-4 pt-3 pb-1 text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">
-            {q.trim() ? 'Kết quả' : 'Gợi ý'}
-          </p>
-          <ul className="max-h-72 overflow-y-auto p-1.5">
-            {exams.isPending ? <li className="px-3 py-2 text-xs text-ink-soft">Đang tải danh sách đề thi…</li> : null}
-            {exams.isError ? <li className="px-3 py-2 text-xs text-danger">Không tải được danh sách đề thi.</li> : null}
-            {!exams.isPending && results.length === 0 && (
-              <li className="px-3 py-4 text-center text-sm text-ink-soft">Không tìm thấy “{q}”</li>
-            )}
-            {results.map((h) => (
-              <li key={h.group + h.label}>
-                <button
-                  type="button"
-                  onClick={() => go(h)}
-                  className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-[15px] text-ink hover:bg-teal-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
-                >
-                  <span className="truncate">{h.label}</span>
-                  <span className="shrink-0 rounded-full bg-paper-2 px-2 py-0.5 text-[12px] text-ink-soft">{h.group}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {open ? (isDesktop || typeof document === 'undefined' ? resultsPanel : createPortal(resultsPanel, document.body)) : null}
     </div>
   )
 }
