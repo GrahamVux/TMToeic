@@ -65,7 +65,7 @@ export function PartDrills({ skill, title, subtitle }: { skill: Skill; title: st
       </section>
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[13px] font-semibold tracking-[0.14em] text-ink-soft uppercase">Bộ lọc nhanh</span>
+        <span className="text-sm font-semibold tracking-[0.06em] text-ink-soft uppercase">Bộ lọc nhanh</span>
         <FilterChip active={part === 'all'} onClick={() => setPart('all')}>
           Tất cả
         </FilterChip>
@@ -82,8 +82,8 @@ export function PartDrills({ skill, title, subtitle }: { skill: Skill; title: st
         </p>
       ) : null}
       {exams.isPending ? <p className="text-sm text-ink-soft">Đang tải…</p> : null}
-      {exams.data && cards.length === 0 ? <Card className="p-6 text-sm text-ink/60">Chưa có đề nào có phần này.</Card> : null}
-      {exams.data && cards.length > 0 && visible.length === 0 ? <Card className="p-6 text-sm text-ink/60">Không có bài khớp tên hoặc part này.</Card> : null}
+      {exams.data && cards.length === 0 ? <Card className="p-6 text-sm text-ink-soft">Chưa có đề nào có phần này.</Card> : null}
+      {exams.data && cards.length > 0 && visible.length === 0 ? <Card className="p-6 text-sm text-ink-soft">Không có bài khớp tên hoặc part này.</Card> : null}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {visible.map(({ exam, part: item }) => (
           <Card key={`${exam.id}-${item.code}`} className="flex h-full flex-col p-5">

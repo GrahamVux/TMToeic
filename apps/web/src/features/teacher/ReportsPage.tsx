@@ -26,7 +26,7 @@ export function ReportsPage() {
     <div className="space-y-6">
       <header>
         <h1 className="serif text-3xl sm:text-4xl">Báo cáo theo bộ đề</h1>
-        <p className="mt-2 text-sm text-ink/60">Mỗi bộ đề đã xuất bản: số lượt nộp, tỷ lệ đúng và part yếu nhất.</p>
+        <p className="mt-2 text-sm text-ink-soft">Mỗi bộ đề đã xuất bản: số lượt nộp, tỷ lệ đúng và part yếu nhất.</p>
       </header>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -45,7 +45,7 @@ export function ReportsPage() {
         {support.data ? <InactiveList items={support.data.inactive} total={support.data.inactiveCount} /> : null}
       </Card>
 
-      {exams.length === 0 ? <p className="rounded-2xl bg-paper p-4 text-sm text-ink/60">Chưa có bộ đề nào để báo cáo.</p> : null}
+      {exams.length === 0 ? <p className="rounded-2xl bg-paper p-4 text-sm text-ink-soft">Chưa có bộ đề nào để báo cáo.</p> : null}
 
       <div className="space-y-4">
         {exams.map((exam) => (
@@ -69,7 +69,7 @@ function ExamCard({ exam }: { exam: ExamReportItemDto }) {
           </p>
         </div>
         {exam.weakestPart ? (
-          <p className="rounded-full bg-paper px-3 py-1 text-xs text-ink/70">
+          <p className="rounded-full bg-paper px-3 py-1 text-xs text-ink-soft">
             Part yếu: {partName(exam.weakestPart.partCode)} • {exam.weakestPart.accuracy}%
           </p>
         ) : null}
@@ -116,7 +116,7 @@ function reasonText(student: InactiveStudentDto, reason: SupportReason) {
 }
 
 export function InactiveList({ items, total }: { items: InactiveStudentDto[]; total: number }) {
-  if (items.length === 0) return <p className="mt-3 rounded-2xl bg-paper p-4 text-sm text-ink/60">Không có học viên nào cần lưu tâm.</p>
+  if (items.length === 0) return <p className="mt-3 rounded-2xl bg-paper p-4 text-sm text-ink-soft">Không có học viên nào cần lưu tâm.</p>
   return (
     <>
       <ul className="mt-4 space-y-2">

@@ -46,7 +46,7 @@ export function DailyGoalsCard() {
   if (error || !data) {
     return (
       <Card className="p-6">
-        <p className="text-sm text-ink/60">Không tải được mục tiêu hôm nay. Hãy tải lại trang.</p>
+        <p className="text-sm text-ink-soft">Không tải được mục tiêu hôm nay. Hãy tải lại trang.</p>
       </Card>
     )
   }
@@ -59,7 +59,7 @@ export function DailyGoalsCard() {
       <CornerNotice notice={notice} />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">Mục tiêu mỗi ngày</p>
+          <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Mục tiêu mỗi ngày</p>
           <h2 className="serif mt-1 text-2xl font-bold">Mục tiêu hôm nay</h2>
           <p className="mt-1 text-sm text-ink-soft">{dayLabel(data.day)}</p>
         </div>
@@ -221,7 +221,7 @@ function GoalReminder({ next }: { next: (typeof KINDS)[DailyGoalKind] & { done: 
   const remaining = next.target - next.done
   return (
     <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-gold-deep/40 p-4">
-      <p className="text-sm text-ink/75">
+      <p className="text-sm text-ink-soft">
         {next.done === 0 ? (
           <>
             Hôm nay bạn chưa luyện <b>{next.label}</b>. Mục tiêu là <RemainCount value={remaining} unit={next.unit} />.
@@ -275,7 +275,7 @@ function GoalTile({ kind, done, target }: { kind: DailyGoalKind; done: number; t
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-paper-2">
         <div className={cn('h-full rounded-full', met ? 'bg-olive' : 'bg-gold-deep')} style={{ width: off ? '0%' : `${Math.min(100, (done / target) * 100)}%` }} />
       </div>
-      <div className="mt-3 flex items-center justify-between text-xs text-ink/60">
+      <div className="mt-3 flex items-center justify-between text-xs text-ink-soft">
         <span className={cn(met && 'font-semibold text-olive')}>{off ? 'Chưa đặt mục tiêu' : met ? 'Đạt mục tiêu' : `Còn ${target - done} ${unit}`}</span>
         <ArrowRight className="size-4 text-ink-soft transition group-hover:text-gold-deep" aria-hidden />
       </div>
@@ -309,7 +309,7 @@ function GoalForm({ data, onClose, onSaved }: { data: DailyGoalsDto; onClose: ()
 
   return (
     <Modal title="Mục tiêu mỗi ngày" onClose={onClose} dismissible={!save.isPending}>
-      <p className="text-sm text-ink/60">Chọn lượng bạn muốn hoàn thành mỗi ngày. Đặt 0 để tắt một mục.</p>
+      <p className="text-sm text-ink-soft">Chọn lượng bạn muốn hoàn thành mỗi ngày. Đặt 0 để tắt một mục.</p>
       <div className="mt-4 divide-y divide-gold/30">
         {DAILY_GOAL_KINDS.map((kind) => {
           const { field, hint, unit, step } = KINDS[kind]

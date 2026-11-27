@@ -42,7 +42,7 @@ export function AdminRecoveryDialog({ onClose, onDone }: { onClose: () => void; 
 
   return (
     <Modal title="Khôi phục mật khẩu quản trị" onClose={onClose}>
-      <p className="text-sm leading-6 text-ink/65">
+      <p className="text-sm leading-6 text-ink-soft">
         Dành cho tài khoản quản trị khi quên mật khẩu. Nhập mã khôi phục cùng mật khẩu mới.
       </p>
       <form noValidate className="mt-4 space-y-3" onSubmit={submit}>

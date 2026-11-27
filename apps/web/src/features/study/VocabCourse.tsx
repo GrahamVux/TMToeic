@@ -44,7 +44,7 @@ export function VocabCourse({ view }: { view: 'learn' | 'progress' }) {
     return (
       <Card className="p-8">
         <h2 className="serif text-2xl">Chưa có bộ từ vựng</h2>
-        <p className="mt-2 max-w-xl text-sm text-ink/60">Khi giáo viên tải một danh sách Excel và đặt chủ đề cùng tên bộ, bộ từ sẽ hiện ở đây để bạn học theo từng unit.</p>
+        <p className="mt-2 max-w-xl text-sm text-ink-soft">Khi giáo viên tải một danh sách Excel và đặt chủ đề cùng tên bộ, bộ từ sẽ hiện ở đây để bạn học theo từng unit.</p>
       </Card>
     )
   }
@@ -133,7 +133,7 @@ function UnitCard({ set, unit }: { set: VocabSetCardDto; unit: VocabUnitDto }) {
     <>
       <Card className="overflow-hidden p-0">
         <div className="relative h-28 bg-linear-to-br from-teal-soft to-paper px-4 py-4">
-          <p className="text-center text-xs font-semibold tracking-[0.14em] text-gold-deep uppercase">{set.title}</p>
+          <p className="text-center text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">{set.title}</p>
           <span className="absolute bottom-3 left-1/2 flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full bg-button text-sm font-semibold text-button-ink shadow-xs">
             {String(unit.index).padStart(2, '0')}
           </span>
@@ -146,7 +146,7 @@ function UnitCard({ set, unit }: { set: VocabSetCardDto; unit: VocabUnitDto }) {
             </div>
             <p className="text-right text-xs text-ink-soft">
               {status}
-              <span className="mt-0.5 block text-sm font-semibold text-ink/70">{percent}%</span>
+              <span className="mt-0.5 block text-sm font-semibold text-ink-soft">{percent}%</span>
             </p>
           </div>
           <ProgressBar className="mt-3" value={percent} />
@@ -201,7 +201,7 @@ function UnitWordListModal({ set, unit, onClose }: { set: VocabSetCardDto; unit:
     <Modal title={`${set.title} · Unit ${unit}`} onClose={onClose}>
       <CornerNotice notice={notice} />
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gold/25 pb-3">
-        <p className="text-xs text-ink/60">
+        <p className="text-xs text-ink-soft">
           Chủ đề: <strong className="text-gold-deep">{set.topic}</strong> • {items.length} từ
         </p>
         <div className="flex items-center gap-2">
@@ -228,7 +228,7 @@ function UnitWordListModal({ set, unit, onClose }: { set: VocabSetCardDto; unit:
                 <p className="text-sm font-bold text-ink">
                   {item.word} <span className="font-medium text-gold-deep">({item.partOfSpeech})</span>
                 </p>
-                <p className="mt-0.5 text-sm text-ink/80">{item.meaning}</p>
+                <p className="mt-0.5 text-sm text-ink">{item.meaning}</p>
                 {item.example ? <p className="mt-1 text-xs italic text-ink-soft">“{item.example}”</p> : null}
               </div>
               <button
@@ -296,7 +296,7 @@ function ProgressBoard({ sets }: { sets: VocabSetCardDto[] }) {
                     {set.topic} · {finishedUnits}/{set.units.length} tập · {set.learnedCount}/{set.wordCount} từ
                   </p>
                 </div>
-                <p className="text-sm font-semibold text-ink/70">{done}%</p>
+                <p className="text-sm font-semibold text-ink-soft">{done}%</p>
               </div>
               <ProgressBar className="mt-3" value={done} />
             </Card>

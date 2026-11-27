@@ -21,13 +21,13 @@ export function FocusNote({ focus }: { focus: FocusReportDto | null }) {
         {focus.leaveCount > 0 ? <Badge tone="warn">{focus.leaveCount} lần</Badge> : <Badge tone="paper">Không ghi nhận</Badge>}
       </div>
       {focus.leaveCount === 0 ? (
-        <p className="mt-2 text-sm text-ink/70">Không ghi nhận lần rời tab hay chuyển cửa sổ trong bài này.</p>
+        <p className="mt-2 text-sm text-ink-soft">Không ghi nhận lần rời tab hay chuyển cửa sổ trong bài này.</p>
       ) : (
         <>
-          <p className="mt-2 text-sm text-ink/75">
+          <p className="mt-2 text-sm text-ink-soft">
             Học viên rời tab hoặc chuyển sang cửa sổ khác {focus.leaveCount} lần, tổng {formatClock(focus.awaySeconds)}. Lần dài nhất {formatClock(focus.longestAwaySeconds)}.
           </p>
-          <ul className="mt-3 space-y-1 text-sm text-ink/70">
+          <ul className="mt-3 space-y-1 text-sm text-ink-soft">
             {focus.leaves.map((leave) => (
               <li key={leave.leftAt}>
                 {timeFmt.format(new Date(leave.leftAt))} · vắng {formatClock(leave.awaySeconds)}

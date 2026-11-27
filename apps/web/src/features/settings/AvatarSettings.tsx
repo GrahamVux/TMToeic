@@ -46,7 +46,7 @@ export function AvatarSettings() {
           <AccountAvatar name={user.fullName} url={user.avatarUrl} frameId={user.avatarFrame} className="size-16 text-xl" />
           <div className="min-w-0 flex-1">
             <h2 className="font-semibold">Ảnh đại diện & Khung viền</h2>
-            <p className="mt-1 text-xs text-ink/60">
+            <p className="mt-1 text-xs text-ink-soft">
               JPG, PNG hoặc WebP, tối đa 4 MB. Khung đang đeo: <strong>{frameDef.name}</strong> • Điểm thưởng: <strong>{user.rewardPoints.toLocaleString('vi-VN')} điểm</strong>.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -67,7 +67,7 @@ export function AvatarSettings() {
             </div>
           </div>
         </div>
-        <p role="status" className="empty:hidden mt-3 text-sm text-ink/70">{change.isPending ? 'Đang lưu ảnh…' : message}</p>
+        <p role="status" className="empty:hidden mt-3 text-sm text-ink-soft">{change.isPending ? 'Đang lưu ảnh…' : message}</p>
         {error && <p role="alert" className="mt-3 text-sm text-coral">{error}</p>}
       </Card>
       <FrameWardrobeModal open={wardrobeOpen} onClose={() => setWardrobeOpen(false)} />
@@ -81,7 +81,7 @@ export function StaffProfilePage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <header>
         <h1 className="serif text-3xl">Tài khoản cá nhân</h1>
-        <p className="mt-1 text-sm text-ink/60">{user?.fullName} · {user?.username}</p>
+        <p className="mt-1 text-sm text-ink-soft">{user?.fullName} · {user?.username}</p>
       </header>
       <AvatarSettings />
     </div>

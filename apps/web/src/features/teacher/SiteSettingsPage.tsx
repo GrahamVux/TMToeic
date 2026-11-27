@@ -84,7 +84,7 @@ export function SiteSettingsPage() {
     return (
       <Card className="p-6">
         <h1 className="serif text-2xl">Cài đặt giao diện</h1>
-        <p className="mt-2 text-sm text-ink/60">Chỉ quản trị viên mới được đổi logo, khẩu hiệu, footer và màu theme.</p>
+        <p className="mt-2 text-sm text-ink-soft">Chỉ quản trị viên mới được đổi logo, khẩu hiệu, footer và màu theme.</p>
       </Card>
     )
   }
@@ -145,7 +145,7 @@ export function SiteSettingsPage() {
     <div className="space-y-6">
       <CornerNotice notice={notice} />
       <header>
-        <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Cài đặt cổng học</p>
+        <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Cài đặt cổng học</p>
         <h1 className="serif mt-2 text-3xl font-bold sm:text-4xl">Logo, khẩu hiệu, footer & màu theme</h1>
         <p className="mt-2 text-sm text-ink-soft">Thay đổi được lưu vào hệ thống và hiện ngay trên trang học viên, không cần sửa database.</p>
       </header>
@@ -315,7 +315,7 @@ export function SiteSettingsPage() {
                 set('backgroundMode', id)
                 paintTheme(theme, id, themePreset)
               }}
-              className={cn('rounded-full px-4 py-2 text-sm font-semibold transition', backgroundMode === id ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/70')}
+              className={cn('rounded-full px-4 py-2 text-sm font-semibold transition', backgroundMode === id ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft')}
             >
               {label}
             </button>
@@ -339,7 +339,7 @@ export function SiteSettingsPage() {
               <div className="relative z-10 rounded-2xl border border-gold/35 bg-cream px-6 py-4 text-center shadow-sm backdrop-blur-md">
                 <p className="text-2xl">{resolvedPreset.emoji}</p>
                 <p className="serif mt-1 text-lg text-ink">{resolvedPreset.label}</p>
-                <p className="text-xs text-ink/65">{resolvedPreset.subtitle}</p>
+                <p className="text-xs text-ink-soft">{resolvedPreset.subtitle}</p>
               </div>
             </div>
           ) : (
@@ -357,7 +357,7 @@ export function SiteSettingsPage() {
               ] as const
             ).map(([groupId, groupLabel]) => (
               <div key={groupId}>
-                <p className="mb-2 text-xs font-bold tracking-[0.14em] text-gold-deep uppercase">{groupLabel}</p>
+                <p className="mb-2 text-[13px] font-bold tracking-[0.06em] text-gold-deep uppercase">{groupLabel}</p>
                 <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                   {THEME_PRESETS.filter((p) => p.group === groupId).map((preset) => {
                     const selected = themePreset === preset.id

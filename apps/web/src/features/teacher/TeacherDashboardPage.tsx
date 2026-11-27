@@ -60,9 +60,9 @@ export function TeacherDashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Cổng quản lý đào tạo</p>
+          <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Cổng quản lý đào tạo</p>
           <h1 className="serif mt-2 text-3xl sm:text-4xl">Quản lý Lớp & Học viên</h1>
-          <p className="mt-2 text-sm text-ink/60">Xem tất cả học viên, hoặc tìm đúng một lớp rồi mở lớp đó.</p>
+          <p className="mt-2 text-sm text-ink-soft">Xem tất cả học viên, hoặc tìm đúng một lớp rồi mở lớp đó.</p>
         </div>
         <div className="flex w-full flex-wrap gap-2 sm:w-auto">
           {isAdmin ? <CreateClassButton /> : null}
@@ -80,7 +80,7 @@ export function TeacherDashboardPage() {
       {isAdmin ? <TeacherAccessPanel /> : null}
       {!canSeeStudents ? (
         <Card className="p-6">
-          <p className="text-sm text-ink/70">Tài khoản này chưa được cấp quyền. Quản trị viên cần bật tạo học viên, giao bài hoặc xem tiến độ.</p>
+          <p className="text-sm text-ink-soft">Tài khoản này chưa được cấp quyền. Quản trị viên cần bật tạo học viên, giao bài hoặc xem tiến độ.</p>
         </Card>
       ) : null}
       {canSeeStudents ? <div className="grid gap-4 md:grid-cols-4">
@@ -96,7 +96,7 @@ export function TeacherDashboardPage() {
           {chips.map((c) => (
             <button
               key={c.id || 'all'}
-              className={`rounded-full px-4 py-2 text-sm ${status === c.id ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/70'}`}
+              className={`rounded-full px-4 py-2 text-sm ${status === c.id ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft'}`}
               onClick={() => {
                 setStatus(c.id)
                 setPage(1)
@@ -153,7 +153,7 @@ export function TeacherDashboardPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <p className="text-sm text-ink/70">{u.className ?? 'Chưa xếp lớp'}</p>
+                    <p className="text-sm text-ink-soft">{u.className ?? 'Chưa xếp lớp'}</p>
                     {isAdmin ? <ClassSelect userId={u.id} classId={u.classId} /> : null}
                   </td>
                   <td className="px-4 py-3">
@@ -166,7 +166,7 @@ export function TeacherDashboardPage() {
                     )}
                   </td>
                   <td className="px-4 py-3">{formatGoal(u.goal) ?? '—'}</td>
-                  <td className="px-4 py-3 text-ink/70">{u.lastLoginAt ? dateFmt.format(new Date(u.lastLoginAt)) : 'Chưa đăng nhập'}</td>
+                  <td className="px-4 py-3 text-ink-soft">{u.lastLoginAt ? dateFmt.format(new Date(u.lastLoginAt)) : 'Chưa đăng nhập'}</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <AccountActions user={u} compact />
@@ -180,7 +180,7 @@ export function TeacherDashboardPage() {
           </tbody>
         </table>
         {total > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gold/25 px-4 py-3 text-sm text-ink/60">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gold/25 px-4 py-3 text-sm text-ink-soft">
             <span>Hiển thị {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} / {total} học viên</span>
             {pages > 1 ? (
               <div className="flex gap-1">
@@ -189,7 +189,7 @@ export function TeacherDashboardPage() {
                   .map((n, index, list) => (
                     <span key={n} className="flex items-center gap-1">
                       {index > 0 && list[index - 1] !== n - 1 ? <span className="px-1">…</span> : null}
-                      <button type="button" className={`grid size-8 place-items-center rounded-full text-xs font-semibold ${n === page ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/70'}`} onClick={() => setPage(n)}>
+                      <button type="button" className={`grid size-8 place-items-center rounded-full text-xs font-semibold ${n === page ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft'}`} onClick={() => setPage(n)}>
                         {n}
                       </button>
                     </span>

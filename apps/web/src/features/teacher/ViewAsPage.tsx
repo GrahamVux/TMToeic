@@ -62,9 +62,9 @@ export function ViewAsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Quản trị</p>
+        <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Quản trị</p>
         <h1 className="serif mt-2 text-3xl sm:text-4xl">Giả lập góc nhìn</h1>
-        <p className="mt-2 max-w-2xl text-sm text-ink/60">
+        <p className="mt-2 max-w-2xl text-sm text-ink-soft">
           Chọn một tài khoản để xem hệ thống đúng như người đó thấy. Chế độ này chỉ để xem: mọi thao tác lưu, nộp bài hay chỉnh sửa đều bị chặn nên dữ liệu thật không bị thay đổi. Mỗi lần mở đều được ghi vào nhật ký.
         </p>
       </header>
@@ -89,7 +89,7 @@ export function ViewAsPage() {
             </span>
             <span>
               <span className="block text-sm font-semibold">{t.label}</span>
-              <span className="mt-0.5 block text-[15px] text-ink/60">{t.hint}</span>
+              <span className="mt-0.5 block text-[15px] text-ink-soft">{t.hint}</span>
             </span>
           </button>
         ))}

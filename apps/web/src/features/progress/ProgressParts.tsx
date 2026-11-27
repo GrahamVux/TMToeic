@@ -20,7 +20,7 @@ export function ScoreTrend({ history, target, subtitle }: { history: ScorePointD
       <h2 className="serif text-2xl">Xu hướng điểm mock test</h2>
       {subtitle ? <p className="text-sm text-ink-soft">{subtitle}</p> : null}
       {data.length === 0 ? (
-        <p className="mt-4 grid h-56 place-items-center rounded-2xl bg-paper p-6 text-center text-sm text-ink/60">
+        <p className="mt-4 grid h-56 place-items-center rounded-2xl bg-paper p-6 text-center text-sm text-ink-soft">
           Chưa có bài thi thử đủ 100 câu Listening và/hoặc 100 câu Reading, nên chưa có điểm quy đổi.
         </p>
       ) : (
@@ -103,7 +103,7 @@ export function AttemptsTable({
   /** Teacher view: link to that student’s result & detailed sitting. */
   staffStudentId?: string
 }) {
-  if (attempts.length === 0) return <p className="rounded-2xl bg-paper p-4 text-sm text-ink/60">Chưa có bài nào được nộp.</p>
+  if (attempts.length === 0) return <p className="rounded-2xl bg-paper p-4 text-sm text-ink-soft">Chưa có bài nào được nộp.</p>
   const showActions = Boolean(reviewLinks || staffStudentId)
   return (
     <div className="overflow-x-auto rounded-2xl border border-gold/35 bg-cream">
@@ -137,9 +137,9 @@ export function AttemptsTable({
                 </td>
                 <td className="px-4 py-3">
                   {a.totalScore !== null ? <span className="font-semibold">{a.totalScore}/990</span> : null}
-                  <span className="text-ink/60">{a.totalScore !== null ? ' • ' : ''}{a.correct}/{a.total} câu ({a.accuracy}%)</span>
+                  <span className="text-ink-soft">{a.totalScore !== null ? ' • ' : ''}{a.correct}/{a.total} câu ({a.accuracy}%)</span>
                 </td>
-                <td className="px-4 py-3 text-ink/70">{dateTime.format(new Date(a.at))}</td>
+                <td className="px-4 py-3 text-ink-soft">{dateTime.format(new Date(a.at))}</td>
                 {showActions ? (
                   <td className="px-4 py-3 text-right">
                     <div className="flex flex-wrap items-center justify-end gap-2">

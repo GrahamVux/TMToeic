@@ -101,7 +101,7 @@ export function FlashcardPage() {
       <CornerNotice notice={notice} />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Học tập / Flashcard</p>
+          <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Học tập / Flashcard</p>
           <h1 className="serif mt-2 text-3xl">{query.data?.title || 'Ôn từ vựng'}</h1>
         </div>
         <div className="flex items-center gap-4">
@@ -137,12 +137,12 @@ export function FlashcardPage() {
               <Card className="flex min-h-68 flex-col items-center justify-center p-8 text-center">
                 {flipped ? (
                   <>
-                    <p className="text-xs font-semibold tracking-[0.16em] text-ink-soft uppercase">
+                    <p className="text-[13px] font-semibold tracking-[0.06em] text-ink-soft uppercase">
                       Nghĩa • {card.partOfSpeech}
                     </p>
                     <p className="serif mt-3 text-3xl leading-snug text-ink">{card.meaning}</p>
                     {card.example ? (
-                      <p className="mt-4 max-w-md rounded-xl bg-paper px-4 py-2.5 text-sm italic leading-relaxed text-ink/75">
+                      <p className="mt-4 max-w-md rounded-xl bg-paper px-4 py-2.5 text-sm italic leading-relaxed text-ink-soft">
                         “{card.example}”
                       </p>
                     ) : null}
@@ -197,7 +197,7 @@ export function FlashcardPage() {
       ) : (
         <Card className="p-8 text-center">
           <h2 className="serif text-2xl">Hết thẻ trong lượt này</h2>
-          <p className="mt-2 text-sm text-ink/60">
+          <p className="mt-2 text-sm text-ink-soft">
             {deck === 'notebook'
               ? 'Từ chưa có nghĩa hoặc không khớp bộ lọc sẽ không hiện. Hãy kiểm tra lại trong sổ tay.'
               : 'Bạn có thể lấy thêm từ mới hoặc chơi Mini-game để ôn phản xạ.'}

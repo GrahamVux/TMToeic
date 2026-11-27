@@ -34,7 +34,7 @@ export function BugReportsPage() {
     return (
       <Card className="p-6">
         <h1 className="serif text-2xl">Báo lỗi từ học viên</h1>
-        <p className="mt-2 text-sm text-ink/60">Chỉ quản trị viên mới xem và xử lý các báo lỗi này.</p>
+        <p className="mt-2 text-sm text-ink-soft">Chỉ quản trị viên mới xem và xử lý các báo lỗi này.</p>
       </Card>
     )
   }
@@ -61,7 +61,7 @@ export function BugReportsPage() {
     <div className="space-y-6">
       <header>
         <h1 className="serif text-3xl sm:text-4xl">Báo lỗi từ học viên</h1>
-        <p className="mt-2 text-sm text-ink/60">
+        <p className="mt-2 text-sm text-ink-soft">
           Học viên gửi từ nút góc phải dưới. {list.data ? `${list.data.openCount} báo cáo chưa xử lý.` : null}
         </p>
       </header>
@@ -78,7 +78,7 @@ export function BugReportsPage() {
             className={
               status === c.id
                 ? 'rounded-full bg-button px-3 py-1.5 text-xs font-semibold text-button-ink'
-                : 'rounded-full border border-gold/40 bg-cream px-3 py-1.5 text-xs font-semibold text-ink/70 hover:bg-teal-soft'
+                : 'rounded-full border border-gold/40 bg-cream px-3 py-1.5 text-xs font-semibold text-ink-soft hover:bg-teal-soft'
             }
           >
             {c.label}
@@ -97,7 +97,7 @@ export function BugReportsPage() {
 
       {!list.isPending && (list.data?.items.length ?? 0) === 0 ? (
         <Card className="p-6">
-          <p className="text-sm text-ink/60">Chưa có báo lỗi nào trong mục này.</p>
+          <p className="text-sm text-ink-soft">Chưa có báo lỗi nào trong mục này.</p>
         </Card>
       ) : null}
 
@@ -119,14 +119,14 @@ export function BugReportsPage() {
                 </div>
                 <Badge tone={TONE[item.status]}>{BUG_REPORT_STATUS_LABEL[item.status]}</Badge>
               </div>
-              <p className="mt-3 whitespace-pre-wrap text-sm text-ink/80">{item.message}</p>
+              <p className="mt-3 whitespace-pre-wrap text-sm text-ink">{item.message}</p>
               {item.resolvedByName ? (
                 <p className="mt-2 text-xs text-ink-soft">
                   {BUG_REPORT_STATUS_LABEL[item.status]} bởi {item.resolvedByName}
                   {item.resolvedAt ? ` • ${dateFmt.format(new Date(item.resolvedAt))}` : ''}
                 </p>
               ) : null}
-              <label className="mt-4 block text-xs font-medium text-ink/60">
+              <label className="mt-4 block text-xs font-medium text-ink-soft">
                 Ghi chú phản hồi (học viên sẽ thấy)
                 <textarea
                   className="mt-1 min-h-16 w-full rounded-xl border border-gold/40 bg-cream px-3 py-2 text-sm outline-none focus:border-button"

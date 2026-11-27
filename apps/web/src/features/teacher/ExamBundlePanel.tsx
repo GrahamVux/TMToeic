@@ -46,7 +46,7 @@ function ExamColumn({
             onClick={() => onSelect(exam.id)}
           >
             <p className="truncate text-sm font-semibold">{exam.code}</p>
-            <p className="truncate text-sm text-ink/70">{exam.title}</p>
+            <p className="truncate text-sm text-ink-soft">{exam.title}</p>
             <p className="mt-1 truncate text-xs text-ink-soft">{exam.parts.map((part) => partName(part.code).split(' — ')[0]).join(' · ')} · {exam.totalQuestions} câu</p>
           </button>
         ))}
@@ -92,7 +92,7 @@ export function ExamBundlePanel() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="serif text-2xl">Bộ đề tổng hợp</h2>
-          <p className="mt-1 text-sm text-ink/60">Ghép một đề Listening đủ Part 1–4 với một đề Reading đủ Part 5–7. Mỗi cặp chỉ tạo một lần. Mã và tên bộ đề do bạn đặt.</p>
+          <p className="mt-1 text-sm text-ink-soft">Ghép một đề Listening đủ Part 1–4 với một đề Reading đủ Part 5–7. Mỗi cặp chỉ tạo một lần. Mã và tên bộ đề do bạn đặt.</p>
         </div>
         <Button
           variant="teal"
@@ -153,7 +153,7 @@ export function ExamBundlePanel() {
       {(bundles.data ?? []).length > 0 ? (
         <ul className="mt-4 space-y-2 border-t border-ink/10 pt-4">
           {bundles.data?.map((bundle) => (
-            <li key={bundle.id} className="text-sm text-ink/75">
+            <li key={bundle.id} className="text-sm text-ink-soft">
               <span className="font-semibold text-ink">{bundle.code}</span>
               <span> · {bundle.title}</span>
               <span> · {bundle.listeningCode} + {bundle.readingCode}</span>

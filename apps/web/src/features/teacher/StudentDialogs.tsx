@@ -26,7 +26,7 @@ export function CredentialsDialog({ issued, title, onClose }: { issued: Credenti
 
   return (
     <Modal title={title} onClose={onClose} dismissible={false}>
-      <p className="text-sm text-ink/65">
+      <p className="text-sm text-ink-soft">
         Gửi thông tin này cho <span className="font-semibold">{issued.user.fullName}</span>. Lần đăng nhập đầu tiên phải đổi mật khẩu.
       </p>
       <dl className="mt-4 space-y-3 rounded-xl bg-paper p-4 text-sm">
@@ -66,10 +66,10 @@ export function ImportStudentsDialog({
 
   return (
     <Modal title={`Thêm học viên vào ${className}`} onClose={onClose}>
-      <p className="text-sm text-ink/65">
+      <p className="text-sm text-ink-soft">
         File gồm cột <span className="font-semibold">Họ tên</span> và <span className="font-semibold">Số điện thoại</span>. Học viên mới vào lớp {className}. Có thể tải file này nhiều lần.
       </p>
-      <p className="mt-2 text-sm text-ink/65">
+      <p className="mt-2 text-sm text-ink-soft">
         Mật khẩu mặc định của mọi tài khoản mới là <span className="font-mono font-semibold">{DEFAULT_NEW_ACCOUNT_PASSWORD}</span>. Lần đăng nhập đầu phải đổi mật khẩu.
       </p>
       <button
@@ -137,7 +137,7 @@ export function AddOneStudentDialog({
   return (
     <Modal title={`Thêm một học viên vào ${className}`} onClose={() => !create.isPending && onClose()}>
       <form onSubmit={(event) => void submit(event)} className="space-y-3">
-        <p className="text-sm text-ink/65">
+        <p className="text-sm text-ink-soft">
           Mật khẩu mặc định là <span className="font-mono font-semibold">{DEFAULT_NEW_ACCOUNT_PASSWORD}</span>. Có thể thêm tiếp sau khi đóng hộp thoại.
         </p>
         <div>
@@ -245,7 +245,7 @@ export function TeacherAccessPanel() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="serif text-2xl">Giáo viên</h2>
-          <p className="mt-1 text-sm text-ink/60">Tạo tài khoản và bật từng quyền. Mật khẩu mặc định là {DEFAULT_NEW_ACCOUNT_PASSWORD}.</p>
+          <p className="mt-1 text-sm text-ink-soft">Tạo tài khoản và bật từng quyền. Mật khẩu mặc định là {DEFAULT_NEW_ACCOUNT_PASSWORD}.</p>
         </div>
         <Button onClick={() => setOpen(true)}>+ Thêm giáo viên</Button>
       </div>
@@ -346,7 +346,7 @@ export function AccountActions({ user, compact = false }: { user: UserDto; compa
 
       {confirm && (
         <Modal title={confirm === 'reset' ? 'Cấp lại mật khẩu?' : disabled ? 'Mở khóa tài khoản?' : 'Khóa tài khoản?'} onClose={() => !busy && setConfirm(null)}>
-          <p className="text-sm text-ink/65">
+          <p className="text-sm text-ink-soft">
             {confirm === 'reset'
               ? `Mật khẩu hiện tại của ${user.fullName} sẽ bị vô hiệu, mọi thiết bị đang đăng nhập bị đăng xuất, và học viên phải đổi lại mật khẩu khi vào.`
               : disabled

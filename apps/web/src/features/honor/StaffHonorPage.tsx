@@ -164,7 +164,7 @@ export function StaffHonorPage() {
                         <div className="mt-3 space-y-2.5">
                           {config[scope][p].map((tier) => (
                             <label key={tier.place} className="flex items-center justify-between gap-2 text-xs">
-                              <span className="truncate font-semibold text-ink/80">
+                              <span className="truncate font-semibold text-ink">
                                 Top {tier.place} • {getFrameDef(tier.frameId).name}
                               </span>
                               <span className="inline-flex shrink-0 items-center gap-1">
@@ -197,7 +197,7 @@ export function StaffHonorPage() {
               </div>
               <p className="mt-1 text-xs text-ink-soft">Ghi nhận trực tiếp vào sổ cái ví điểm của học viên.</p>
               <div className="mt-4 space-y-3">
-                <label className="block text-xs font-medium text-ink/70">
+                <label className="block text-xs font-medium text-ink-soft">
                   Tìm học viên (tên hoặc mã HV)
                   <Input
                     className="mt-1 h-9 text-sm"
@@ -209,7 +209,7 @@ export function StaffHonorPage() {
                     }}
                   />
                 </label>
-                <label className="block text-xs font-medium text-ink/70">
+                <label className="block text-xs font-medium text-ink-soft">
                   Chọn tài khoản
                   <select
                     className="mt-1 h-9 w-full rounded-xl border border-ink/12 bg-cream px-3 text-sm"
@@ -223,11 +223,11 @@ export function StaffHonorPage() {
                     ))}
                   </select>
                 </label>
-                <label className="block text-xs font-medium text-ink/70">
+                <label className="block text-xs font-medium text-ink-soft">
                   Số điểm thay đổi (nhập số âm để trừ, VD: -50)
                   <Input className="mt-1 h-9 text-sm font-bold" type="number" value={deltaStr} onChange={(e) => setDeltaStr(e.target.value)} />
                 </label>
-                <label className="block text-xs font-medium text-ink/70">
+                <label className="block text-xs font-medium text-ink-soft">
                   Lý do
                   <Input
                     className="mt-1 h-9 text-sm"
@@ -251,7 +251,7 @@ export function StaffHonorPage() {
                 <span className="text-xs text-ink-soft">{data.settlements.length} kỳ gần nhất</span>
               </div>
               {data.settlements.length === 0 ? (
-                <p className="mt-4 rounded-2xl bg-paper p-4 text-sm text-ink/60">
+                <p className="mt-4 rounded-2xl bg-paper p-4 text-sm text-ink-soft">
                   Chưa có kỳ nào được chốt kể từ khi bật hệ thống thưởng mới.
                 </p>
               ) : (

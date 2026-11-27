@@ -73,14 +73,14 @@ function ReviewDock({
       style={{ top: pos?.top ?? 72, left: pos?.left ?? 16, width: pos?.width ?? 148 }}
       aria-label="Đến từng part"
     >
-      <p className="px-1 pb-1 text-[12px] font-semibold tracking-[0.14em] text-gold-deep uppercase">Đến part</p>
+      <p className="px-1 pb-1 text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Đến part</p>
       {parts.map((code) => (
         <button
           key={code}
           type="button"
           className={cn(
             'rounded-xl px-2 py-1.5 text-left text-xs font-semibold sm:text-sm',
-            active === code ? 'bg-button text-button-ink' : 'text-ink/75 hover:bg-teal-soft',
+            active === code ? 'bg-button text-button-ink' : 'text-ink-soft hover:bg-teal-soft',
           )}
           onClick={() => onJump(code)}
         >
@@ -96,7 +96,7 @@ function ReviewDock({
         {busy ? 'Đang lưu…' : 'Lưu nhanh'}
       </Button>
       {showTop ? (
-        <button type="button" className="rounded-xl px-2 py-1.5 text-left text-xs font-semibold text-ink/70 hover:bg-paper sm:text-sm" onClick={onTop}>
+        <button type="button" className="rounded-xl px-2 py-1.5 text-left text-xs font-semibold text-ink-soft hover:bg-paper sm:text-sm" onClick={onTop}>
           Lên đầu
         </button>
       ) : null}
@@ -382,9 +382,9 @@ export function ListeningScanReview({
         />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Chưa lưu vào ngân hàng</p>
+          <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Chưa lưu vào ngân hàng</p>
           <h2 className="serif mt-1 text-3xl">Kiểm tra đề Listening trước khi lưu</h2>
-          <p className="mt-1 text-sm text-ink/60">Trang là trang Gemini đã chọn. Kéo khung trên trang đó để tự cắt. Ảnh bên dưới khung là ảnh sẽ gắn vào đề khi lưu.</p>
+          <p className="mt-1 text-sm text-ink-soft">Trang là trang Gemini đã chọn. Kéo khung trên trang đó để tự cắt. Ảnh bên dưới khung là ảnh sẽ gắn vào đề khi lưu.</p>
         </div>
         <Button type="button" variant="paper" onClick={onCancel}>
           Chọn file khác
@@ -417,7 +417,7 @@ export function ListeningScanReview({
       </Card>
 
       {form.warnings && form.warnings.length > 0 ? (
-        <ul className="rounded-xl bg-gold/10 p-3 text-sm text-ink/70">
+        <ul className="rounded-xl bg-gold/10 p-3 text-sm text-ink-soft">
           {form.warnings.map((warning) => (
             <li key={warning}>{warning}</li>
           ))}
@@ -429,7 +429,7 @@ export function ListeningScanReview({
         const questions = form.questions.map((question, index) => ({ question, index })).filter(({ question }) => question.partCode === code)
         return (
           <section key={code} id={partAnchorId(code)} className="scroll-mt-24 space-y-4">
-            <h3 className="text-sm font-semibold tracking-[0.12em] text-gold-deep uppercase">{partName(code)}</h3>
+            <h3 className="text-[15px] font-bold tracking-[0.04em] text-gold-deep uppercase">{partName(code)}</h3>
             {groups.map(({ group, groupIndex }) => {
               const crop = group.imageFile ? form.crops.find((item) => item.file === group.imageFile) : undefined
               return (
@@ -487,7 +487,7 @@ export function ListeningScanReview({
         )
       })}
 
-      {stale ? <p className="text-sm text-ink/70">Khung cắt đã đổi. Bấm Cắt lại ảnh để xem ảnh mới trước khi lưu.</p> : null}
+      {stale ? <p className="text-sm text-ink-soft">Khung cắt đã đổi. Bấm Cắt lại ảnh để xem ảnh mới trước khi lưu.</p> : null}
       {missingAnswer > 0 ? <p className="text-sm text-ink-soft">{missingAnswer} câu chưa có đáp án. Đề sẽ được lưu ở dạng bản nháp.</p> : null}
       {problems.length > 0 ? (
         <ul className="rounded-xl border border-danger/25 bg-danger-soft p-3 text-sm text-danger" role="alert">

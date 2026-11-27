@@ -22,7 +22,7 @@
   --text-9xl: 8.125rem;
 
   --color-ink: #0f172a;
-  --color-ink-soft: #334155;
+  --color-ink-soft: #1c3564;
   --color-navy: #1e3a8a;
   --color-gold: #dbeafe;
   --color-gold-deep: #143899;
@@ -100,9 +100,11 @@ html.gradient-mode:not(.exam-plain):not([data-theme="dark"]) .bg-paper-2 {
 
 html[data-theme="dark"] {
   color-scheme: dark;
-  --color-navy: #bfdbfe;
-  --color-gold-deep: #9fb5e0;
-  --color-teal: #9fb5e0;
+  --color-ink: #f8fafc;
+  --color-ink-soft: #dbeafe;
+  --color-navy: #93c5fd;
+  --color-gold-deep: #7dd3fc;
+  --color-teal: #7dd3fc;
   --color-coral: #fb7185;
   --color-olive: #2dd4bf;
   --color-warn: #fbbf24;
@@ -132,6 +134,17 @@ html[data-theme="dark"]:not(.exam-plain) .bg-paper-2 {
   background-color: rgba(28, 38, 52, 0.86);
 }
 
+.loading-medallion {
+  background-color: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+html[data-theme="dark"] .loading-medallion {
+  background-color: rgba(17, 24, 39, 0.94);
+  border-color: rgba(148, 163, 184, 0.30);
+}
+
 html[data-theme="dark"] :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="color"]) {
   background-color: rgba(16, 23, 32, 0.84);
   color: #f1f5f9;
@@ -159,6 +172,20 @@ html.surface-solid[data-theme="dark"] .bg-paper {
 
 html.surface-solid[data-theme="dark"] .bg-paper-2 {
   background-color: var(--color-paper-2);
+}
+
+/* Logged-in pages: seasonal/sky art shows in the margins, the page body stays a solid panel. */
+html.shell-backdrop:not(.exam-plain) body,
+html.shell-backdrop.surface-solid[data-theme="dark"]:not(.exam-plain) body {
+  background: transparent;
+}
+
+html.shell-backdrop:not(.exam-plain) .shell-main {
+  background-color: var(--color-paper);
+  border-radius: 1.75rem;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.14);
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 html.sky-mode.exam-plain body,
@@ -209,9 +236,9 @@ html[data-theme="dark"].exam-plain :is(.ui-card, .bg-white, .bg-cream, .bg-cream
   --ux-surface: #FFFFFF;
   --ux-surface-2: #F5F3EF;
   --ux-surface-3: #EAE7E1;
-  --ux-ink: #16151B;
-  --ux-ink-2: #57535F;
-  --ux-ink-3: #8E8A97;
+  --ux-ink: #0f172a;
+  --ux-ink-2: var(--color-navy, #1e3a8a);
+  --ux-ink-3: var(--color-ink-soft, #1c3564);
   --ux-line: rgba(22, 21, 27, .09);
   --ux-line-2: rgba(22, 21, 27, .17);
   --ux-accent: var(--color-button, #143899);
@@ -229,9 +256,9 @@ html[data-theme="dark"].exam-plain :is(.ui-card, .bg-white, .bg-cream, .bg-cream
   --ux-surface: #131922;
   --ux-surface-2: #1A222E;
   --ux-surface-3: #252E3D;
-  --ux-ink: #F1F5F9;
-  --ux-ink-2: rgba(241, 245, 249, .72);
-  --ux-ink-3: rgba(241, 245, 249, .45);
+  --ux-ink: #f8fafc;
+  --ux-ink-2: #93c5fd;
+  --ux-ink-3: #dbeafe;
   --ux-line: rgba(255, 255, 255, .09);
   --ux-line-2: rgba(255, 255, 255, .18);
   --ux-accent-ink: #0B1218;
@@ -380,27 +407,52 @@ html[data-theme="dark"].exam-plain :is(.ui-card, .bg-white, .bg-cream, .bg-cream
   .u432-ar, .u447-cl g, .u447-sr path, .u447-sr circle { animation: none !important; }
 }
 
-/* The blinking text caret belongs in fields only. Clicking empty space or a control never shows one. */
-body {
-  caret-color: transparent;
-}
-input,
-textarea,
-select,
-[contenteditable='true'] {
-  caret-color: auto;
-  user-select: text;
-}
-button,
-nav,
-label,
-[role='button'],
-[role='radio'] {
-  user-select: none;
-}
-
-/* Tailwind 4 resets buttons to the arrow cursor. Anything a person can press or choose uses the hand. */
+/* Lock UI copy against I-beam cursor and accidental selection; only fields and exam passages opt in. */
 @layer base {
+  html,
+  body {
+    cursor: default;
+    caret-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  :is(
+    input:not(
+      [type='button'],
+      [type='submit'],
+      [type='reset'],
+      [type='checkbox'],
+      [type='radio'],
+      [type='file'],
+      [type='color'],
+      [type='range']
+    ),
+    textarea,
+    [contenteditable='true']
+  ) {
+    caret-color: auto;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  :is(
+    input:not(
+      [type='button'],
+      [type='submit'],
+      [type='reset'],
+      [type='checkbox'],
+      [type='radio'],
+      [type='file'],
+      [type='color'],
+      [type='range']
+    ),
+    textarea,
+    [contenteditable='true']
+  ):not(:disabled, [aria-disabled='true']) {
+    cursor: text;
+  }
+
   :is(
     a[href],
     button,

@@ -68,14 +68,14 @@ function ReviewDock({
       style={{ top: pos?.top ?? 72, left: pos?.left ?? 16, width: pos?.width ?? 148 }}
       aria-label="Đến từng part"
     >
-      <p className="px-1 pb-1 text-[12px] font-semibold tracking-[0.14em] text-gold-deep uppercase">Đến part</p>
+      <p className="px-1 pb-1 text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Đến part</p>
       {parts.map((code) => (
         <button
           key={code}
           type="button"
           className={cn(
             'rounded-xl px-2 py-1.5 text-left text-xs font-semibold sm:text-sm',
-            active === code ? 'bg-button text-button-ink' : 'text-ink/75 hover:bg-teal-soft',
+            active === code ? 'bg-button text-button-ink' : 'text-ink-soft hover:bg-teal-soft',
           )}
           onClick={() => onJump(code)}
         >
@@ -86,7 +86,7 @@ function ReviewDock({
         {busy ? 'Đang lưu…' : 'Lưu nhanh'}
       </Button>
       {showTop ? (
-        <button type="button" className="rounded-xl px-2 py-1.5 text-left text-xs font-semibold text-ink/70 hover:bg-paper sm:text-sm" onClick={onTop}>
+        <button type="button" className="rounded-xl px-2 py-1.5 text-left text-xs font-semibold text-ink-soft hover:bg-paper sm:text-sm" onClick={onTop}>
           Lên đầu
         </button>
       ) : null}
@@ -187,9 +187,9 @@ export function ImportReview({
         />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Chưa lưu vào ngân hàng</p>
+          <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Chưa lưu vào ngân hàng</p>
           <h2 className="serif mt-1 text-3xl">Kiểm tra đề trước khi thêm</h2>
-          <p className="mt-1 text-sm text-ink/60">Sửa câu hỏi, đáp án và lời giải. Học viên chỉ thấy lời giải sau khi nộp bài.</p>
+          <p className="mt-1 text-sm text-ink-soft">Sửa câu hỏi, đáp án và lời giải. Học viên chỉ thấy lời giải sau khi nộp bài.</p>
         </div>
         <Button type="button" variant="paper" onClick={onCancel}>
           Chọn file khác
@@ -248,7 +248,7 @@ export function ImportReview({
         const questions = form.questions.map((question, index) => ({ question, index })).filter(({ question }) => question.partCode === code)
         return (
           <section key={code} id={partAnchorId(code)} className="scroll-mt-24 space-y-4">
-            <h3 className="text-sm font-semibold tracking-[0.12em] text-gold-deep uppercase">{partName(code)}</h3>
+            <h3 className="text-[15px] font-bold tracking-[0.04em] text-gold-deep uppercase">{partName(code)}</h3>
             {groups.map(({ group, groupIndex }) => (
               <Card key={group.key} className="p-5">
                 <p className="text-sm font-semibold">Nhóm {group.key} • {shortPart(group.partCode)}</p>

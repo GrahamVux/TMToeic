@@ -35,7 +35,7 @@ export function CreateClassButton() {
       {open ? (
         <Modal title="Tạo lớp" onClose={() => !create.isPending && setOpen(false)}>
           <form onSubmit={(event) => void submit(event)} className="space-y-3">
-            <p className="text-sm text-ink/65">Đặt tên lớp, rồi gán giáo viên và thêm học viên ở thẻ lớp vừa tạo.</p>
+            <p className="text-sm text-ink-soft">Đặt tên lớp, rồi gán giáo viên và thêm học viên ở thẻ lớp vừa tạo.</p>
             <div>
               <label className="text-sm font-medium" htmlFor="class-name">Tên lớp</label>
               <Input id="class-name" className="mt-1" value={name} onChange={(e) => setName(e.target.value)} placeholder="VD: K42 - TOEIC 850+" required minLength={2} autoFocus />
@@ -115,7 +115,7 @@ function ClassPill({ active, label, count, onClick }: { active: boolean; label: 
       type="button"
       className={cn(
         'flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold whitespace-nowrap',
-        active ? 'border-gold-deep bg-button text-button-ink' : 'border-ink/10 bg-cream text-ink/75 hover:border-gold-deep',
+        active ? 'border-gold-deep bg-button text-button-ink' : 'border-ink/10 bg-cream text-ink-soft hover:border-gold-deep',
       )}
       onClick={onClick}
     >
@@ -135,13 +135,13 @@ export function ClassRooms({ selectedId, onSelect }: { selectedId: string; onSel
       {classes.isPending ? <p className="text-sm text-ink-soft">Đang tải lớp…</p> : null}
       {!classes.isPending && rooms.length === 0 ? (
         <Card className="p-5">
-          <p className="text-sm text-ink/70">Chưa có lớp. Bấm Tạo lớp, rồi gán giáo viên và thêm học viên.</p>
+          <p className="text-sm text-ink-soft">Chưa có lớp. Bấm Tạo lớp, rồi gán giáo viên và thêm học viên.</p>
         </Card>
       ) : null}
       {rooms.length > 0 ? <ClassSwitcher rooms={rooms} selectedId={room?.id ?? ''} onSelect={onSelect} /> : null}
       {room ? <ClassWorkspace room={room} /> : rooms.length > 0 ? (
         <Card className="p-5">
-          <p className="text-sm text-ink/70">Đang xem học viên của mọi lớp. Tìm tên lớp bên phải, rồi bấm Quản lý lớp để xem số học viên và tài khoản trong lớp đó.</p>
+          <p className="text-sm text-ink-soft">Đang xem học viên của mọi lớp. Tìm tên lớp bên phải, rồi bấm Quản lý lớp để xem số học viên và tài khoản trong lớp đó.</p>
         </Card>
       ) : null}
     </section>
@@ -190,7 +190,7 @@ function ClassWorkspace({ room }: { room: ClassSummaryDto }) {
               {room.closedAt ? 'Đã đóng' : 'Đang mở'}
             </span>
           </div>
-          <p className="mt-1 text-sm text-ink/60">
+          <p className="mt-1 text-sm text-ink-soft">
             {room.memberCount} học viên · {room.teachers.length} giáo viên
           </p>
         </div>
@@ -327,7 +327,7 @@ export function TeacherClassPanels({
   if (rooms.length === 0) {
     return (
       <Card className="p-5">
-        <p className="text-sm text-ink/70">Admin chưa giao lớp nào cho tài khoản này. Bạn chỉ quản lý học viên của lớp được giao.</p>
+        <p className="text-sm text-ink-soft">Admin chưa giao lớp nào cho tài khoản này. Bạn chỉ quản lý học viên của lớp được giao.</p>
       </Card>
     )
   }
@@ -339,7 +339,7 @@ export function TeacherClassPanels({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="serif text-2xl">{room.name}</h2>
-              <p className="mt-1 text-sm text-ink/60">
+              <p className="mt-1 text-sm text-ink-soft">
                 {room.memberCount} học viên{room.closedAt ? ' · Đã đóng' : ''}
               </p>
             </div>
@@ -355,7 +355,7 @@ export function TeacherClassPanels({
         </Card>
       ) : (
         <Card className="p-5">
-          <p className="text-sm text-ink/70">Đang xem học viên của mọi lớp được giao. Tìm tên lớp, rồi bấm Quản lý lớp để xem tài khoản trong lớp đó.</p>
+          <p className="text-sm text-ink-soft">Đang xem học viên của mọi lớp được giao. Tìm tên lớp, rồi bấm Quản lý lớp để xem tài khoản trong lớp đó.</p>
         </Card>
       )}
     </section>

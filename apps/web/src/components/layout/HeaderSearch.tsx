@@ -111,7 +111,7 @@ export function HeaderSearch() {
 
       {open && (
         <div className="absolute top-full right-0 z-40 mt-2 w-[22rem] overflow-hidden rounded-2xl border border-gold/30 bg-cream shadow-[0_12px_32px_rgba(15,23,42,0.16)]">
-          <p className="px-4 pt-3 pb-1 text-[12px] font-semibold tracking-[0.16em] text-gold-deep uppercase">
+          <p className="px-4 pt-3 pb-1 text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">
             {q.trim() ? 'Kết quả' : 'Gợi ý'}
           </p>
           <ul className="max-h-72 overflow-y-auto p-1.5">
@@ -121,7 +121,7 @@ export function HeaderSearch() {
                 <button
                   type="button"
                   onClick={() => go(h)}
-                  className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-[15px] text-ink/85 hover:bg-teal-soft"
+                  className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-[15px] text-ink hover:bg-teal-soft"
                 >
                   <span className="truncate">{h.label}</span>
                   <span className="shrink-0 rounded-full bg-paper-2 px-2 py-0.5 text-[12px] text-ink-soft">{h.group}</span>

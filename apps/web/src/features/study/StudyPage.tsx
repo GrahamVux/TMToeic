@@ -41,7 +41,7 @@ function GrammarHome() {
                 {lesson.pdf ? <Badge tone="teal">Có PDF</Badge> : null}
                 {lesson.completed ? <Badge tone="olive">Đã học</Badge> : null}
               </div>
-              <p className="mt-1 text-sm text-ink/60">{lesson.summary}</p>
+              <p className="mt-1 text-sm text-ink-soft">{lesson.summary}</p>
             </div>
             <Link to={`/grammar/${lesson.id}`}>
               <Button variant="navy">{lesson.completed ? 'Xem lại' : 'Học'}</Button>

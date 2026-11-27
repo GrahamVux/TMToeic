@@ -23,9 +23,9 @@ export function ExamBankPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Kho đề & ngân hàng câu hỏi</p>
+        <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Kho đề & ngân hàng câu hỏi</p>
         <h1 className="serif mt-2 text-3xl sm:text-4xl">Ngân hàng đề — mỗi part là một nhóm giao bài</h1>
-        <p className="mt-2 text-sm text-ink/60">Import đề Listening và đề Reading riêng. Đề Listening có thể gắn file nghe sau khi vào ngân hàng.</p>
+        <p className="mt-2 text-sm text-ink-soft">Import đề Listening và đề Reading riêng. Đề Listening có thể gắn file nghe sau khi vào ngân hàng.</p>
       </div>
       <ExamBundlePanel />
       <div className="flex flex-wrap gap-2">
@@ -45,7 +45,7 @@ export function ExamBankPage() {
 function tabClass(active: boolean) {
   return active
     ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink'
-    : 'rounded-full bg-cream px-4 py-2 text-sm font-semibold text-ink/70 ring-1 ring-ink/10'
+    : 'rounded-full bg-cream px-4 py-2 text-sm font-semibold text-ink-soft ring-1 ring-ink/10'
 }
 
 function newExamCode() {
@@ -283,7 +283,7 @@ function AuthoredImport({ skill }: { skill: Skill }) {
       <Card className="border-dashed border-gold/30 p-6">
         <FileUp className="size-8 text-gold-deep" />
         <h2 className="serif mt-2 text-2xl">{skill === 'LISTENING' ? 'Import JSON đề Listening' : 'Import JSON đề Reading'}</h2>
-        <p className="mt-2 text-sm text-ink/60">
+        <p className="mt-2 text-sm text-ink-soft">
           {skill === 'LISTENING'
             ? 'File gồm Part 1–4. JSON có khung cắt thì chọn thêm PDF, xem ảnh và sửa câu trước khi lưu. File nghe chọn riêng bên dưới.'
             : 'File gồm Part 5–7. Mỗi đề chỉ thuộc một kỹ năng. Chọn file để xem lại câu hỏi, đáp án và lời giải trước khi lưu.'}
@@ -411,7 +411,7 @@ function AuthoredImport({ skill }: { skill: Skill }) {
       {skill === 'LISTENING' ? (
         <Card className="p-6 lg:col-span-2">
           <h2 className="serif text-2xl">File nghe cho lần import này</h2>
-          <p className="mt-2 text-sm text-ink/60">
+          <p className="mt-2 text-sm text-ink-soft">
             Chọn mp3, m4a hoặc wav trước khi import. File gắn cho cả phần nghe, và phát khi bài làm gồm mọi part Listening của đề. Muốn giao từng part, hãy gắn file theo part trên thẻ đề bên dưới.
           </p>
           <div className="mt-4">
@@ -483,7 +483,7 @@ function ExamList() {
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {exam.parts.map((p) => (
-                    <span key={p.code} className="rounded-full bg-paper-2 px-2.5 py-1 text-[13px] font-semibold text-ink/70">
+                    <span key={p.code} className="rounded-full bg-paper-2 px-2.5 py-1 text-[13px] font-semibold text-ink-soft">
                       {partName(p.code).split(' — ')[0]} · {p.questionCount} câu
                     </span>
                   ))}
@@ -517,7 +517,7 @@ function ExamList() {
       <CornerNotice notice={notice} />
       {pendingDelete ? (
         <Modal title="Xóa hẳn đề này?" onClose={() => (remove.isPending ? undefined : setPendingDelete(null))}>
-          <p className="text-sm text-ink/70">
+          <p className="text-sm text-ink-soft">
             Đề <span className="font-semibold">{pendingDelete.title}</span> sẽ biến khỏi hệ thống, cùng bài đã giao từ đề này và kết quả làm bài của học sinh. Không khôi phục được.
           </p>
           <div className="mt-5 flex justify-end gap-2">

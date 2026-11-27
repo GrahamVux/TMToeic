@@ -42,7 +42,7 @@ export function DashboardHonorSummaryCard({
     <Card className="p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">
+          <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">
             Đua Top Tuần & Tháng{honor.className ? ` • ${honor.className}` : ''}
           </p>
           <h2 className="serif mt-1 text-2xl">Vị trí vinh danh của bạn</h2>
@@ -79,7 +79,7 @@ export function DashboardHonorSummaryCard({
               <p className="mt-1 text-sm font-semibold text-ink">
                 {honor.me.weeklyXp} EXP tuần • {honor.me.monthlyXp} EXP tháng • {honor.me.yearlyXp} EXP năm
               </p>
-              <p className="text-xs text-ink/60">{honor.me.lifetimeXp.toLocaleString('vi-VN')} EXP tích lũy trọn đời</p>
+              <p className="text-xs text-ink-soft">{honor.me.lifetimeXp.toLocaleString('vi-VN')} EXP tích lũy trọn đời</p>
             </div>
           </div>
           <div className="hidden shrink-0 sm:block">
@@ -125,7 +125,7 @@ export function RivalsNeighborhoodPanel({ rivals, myPlace }: { rivals: HonorEntr
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-xs font-bold tracking-wider text-gold-deep uppercase">Góc đối thủ sát sườn quanh bạn</p>
-          <p className="mt-0.5 text-xs text-ink/65">
+          <p className="mt-0.5 text-xs text-ink-soft">
             {rivals.length === 0
               ? 'Chưa có học viên nào ghi nhận EXP trong kỳ này.'
               : diffAbove !== null && above
@@ -196,7 +196,7 @@ export function HonorBentoView({
 
   if (!honor.enabled) {
     return (
-      <Card className="p-6 text-center text-sm text-ink/65">
+      <Card className="p-6 text-center text-sm text-ink-soft">
         Bảng vinh danh đang tạm tắt bởi quản trị viên.
       </Card>
     )
@@ -218,7 +218,7 @@ export function HonorBentoView({
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">
+          <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">
             +{XP_PER_CORRECT} EXP mỗi câu đúng lần đầu • Cộng thêm EXP duy trì Streak ngày
           </p>
           <h1 className="serif mt-1 text-3xl">Bảng xếp hạng vinh danh</h1>
@@ -269,7 +269,7 @@ export function HonorBentoView({
             <div className="mt-4 rounded-2xl border border-gold/30 bg-paper p-3.5">
               <div className="flex items-center justify-between gap-2">
                 <RankBadge rank={honor.me.rank} size={28} />
-                <span className="text-xs text-ink/60">{honor.me.lifetimeXp.toLocaleString('vi-VN')} EXP trọn đời</span>
+                <span className="text-xs text-ink-soft">{honor.me.lifetimeXp.toLocaleString('vi-VN')} EXP trọn đời</span>
               </div>
               <ProgressBar value={rankPct} className="mt-2.5" />
               <p className="mt-1.5 text-[13px] text-ink-soft">
@@ -303,7 +303,7 @@ export function HonorBentoView({
                     onClick={() => setScope('class')}
                     className={cn(
                       'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition',
-                      scope === 'class' ? 'bg-button text-button-ink' : 'text-ink/65 hover:text-ink',
+                      scope === 'class' ? 'bg-button text-button-ink' : 'text-ink-soft hover:text-ink',
                     )}
                   >
                     <Users className="size-3.5" /> Bảng Lớp{honor.className ? ` (${honor.className})` : ''}
@@ -315,7 +315,7 @@ export function HonorBentoView({
                     onClick={() => setScope('center')}
                     className={cn(
                       'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition',
-                      scope === 'center' ? 'bg-button text-button-ink' : 'text-ink/65 hover:text-ink',
+                      scope === 'center' ? 'bg-button text-button-ink' : 'text-ink-soft hover:text-ink',
                     )}
                   >
                     <Crown className="size-3.5" /> Toàn Trung Tâm
@@ -332,7 +332,7 @@ export function HonorBentoView({
                       onClick={() => setPeriod(p)}
                       className={cn(
                         'rounded-lg px-3 py-1.5 text-xs font-semibold transition',
-                        period === p ? 'bg-button text-button-ink' : 'text-ink/65 hover:text-ink',
+                        period === p ? 'bg-button text-button-ink' : 'text-ink-soft hover:text-ink',
                       )}
                     >
                       {p === 'week' ? 'Tuần này' : p === 'month' ? 'Tháng này' : 'Năm nay'}
@@ -341,7 +341,7 @@ export function HonorBentoView({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-xs text-ink/60">
+              <div className="flex items-center gap-2 text-xs text-ink-soft">
                 <Clock className="size-3.5 text-gold-deep" />
                 <span className="font-semibold text-gold-deep">{formatCountdown(board.endsAt)}</span>
                 {scope === 'center' ? <span>• Sàn Top 3: ≥{board.minPodiumXp} EXP</span> : null}
@@ -349,7 +349,7 @@ export function HonorBentoView({
             </div>
 
             {scope === 'class' && !honor.className ? (
-              <p className="mt-5 rounded-2xl bg-paper p-4 text-sm text-ink/60">
+              <p className="mt-5 rounded-2xl bg-paper p-4 text-sm text-ink-soft">
                 Bạn chưa được xếp vào lớp nào. Hãy theo dõi bảng Toàn Trung Tâm trong lúc chờ xếp lớp.
               </p>
             ) : (
@@ -398,7 +398,7 @@ export function HonorBentoView({
                         <span className="inline-flex items-center gap-1 font-bold text-olive">
                           <Coins className="size-3 text-amber-500" /> +{reward.points}đ
                         </span>
-                        <span className="truncate text-ink/60">
+                        <span className="truncate text-ink-soft">
                           {getFrameDef(reward.frameId).name} ({period === 'week' ? '7N' : 'Vĩnh viễn'})
                         </span>
                       </div>
@@ -474,7 +474,7 @@ export function StaffHonorBoards({
   onEarlySettle?: (scope: HonorScope, classId?: string) => void
 }) {
   if (!honor.enabled) {
-    return <p className="rounded-2xl bg-paper p-4 text-sm text-ink/60">Bảng vinh danh đang tắt.</p>
+    return <p className="rounded-2xl bg-paper p-4 text-sm text-ink-soft">Bảng vinh danh đang tắt.</p>
   }
   const center = honor.center[period]
 
@@ -482,7 +482,7 @@ export function StaffHonorBoards({
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">
+          <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">
             +{XP_PER_CORRECT} EXP mỗi câu đúng lần đầu • Tự động chốt Tuần (Thứ Hai), Tháng (01) & Năm (01/01)
           </p>
           <h2 className="serif mt-1 text-2xl">Bảng xếp hạng học viên</h2>
@@ -495,7 +495,7 @@ export function StaffHonorBoards({
               onClick={() => onPeriodChange(p)}
               className={cn(
                 'rounded-lg px-3.5 py-1.5 text-xs font-semibold transition',
-                period === p ? 'bg-button text-button-ink' : 'text-ink/65 hover:text-ink',
+                period === p ? 'bg-button text-button-ink' : 'text-ink-soft hover:text-ink',
               )}
             >
               {p === 'week' ? 'Tuần này' : p === 'month' ? 'Tháng này' : 'Năm nay'}
@@ -507,7 +507,7 @@ export function StaffHonorBoards({
       <div className="grid gap-6 lg:grid-cols-2">
         {honor.classes.length === 0 ? (
           <StaffBoardCard title="Vinh danh trong lớp" hint="Lớp bạn được giao">
-            <p className="rounded-2xl bg-paper p-4 text-sm text-ink/60">Bạn chưa được giao lớp nào. Bảng tổng vẫn hiện bên cạnh.</p>
+            <p className="rounded-2xl bg-paper p-4 text-sm text-ink-soft">Bạn chưa được giao lớp nào. Bảng tổng vẫn hiện bên cạnh.</p>
           </StaffBoardCard>
         ) : (
           honor.classes.map((room) => {
@@ -533,7 +533,7 @@ export function StaffHonorBoards({
                 }
               >
                 {b.entries.length === 0 ? (
-                  <p className="rounded-2xl bg-paper p-4 text-sm text-ink/60">Chưa có học viên nào có EXP kỳ này.</p>
+                  <p className="rounded-2xl bg-paper p-4 text-sm text-ink-soft">Chưa có học viên nào có EXP kỳ này.</p>
                 ) : (
                   <ul className="space-y-2.5">
                     {b.entries.slice(0, 10).map((row) => (
@@ -564,7 +564,7 @@ export function StaffHonorBoards({
           }
         >
           {center.entries.length === 0 ? (
-            <p className="rounded-2xl bg-paper p-4 text-sm text-ink/60">Kỳ này chưa có học viên nào hoàn thành bài.</p>
+            <p className="rounded-2xl bg-paper p-4 text-sm text-ink-soft">Kỳ này chưa có học viên nào hoàn thành bài.</p>
           ) : (
             <ul className="space-y-2.5">
               {center.entries.slice(0, 10).map((row) => (

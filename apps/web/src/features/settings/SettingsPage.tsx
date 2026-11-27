@@ -130,7 +130,7 @@ export function SettingsPage() {
       <header>
         <p className="text-xs text-ink-soft">Trang chủ / Cài đặt cá nhân</p>
         <h1 className="serif mt-2 text-3xl">Cài đặt cá nhân</h1>
-        <p className="mt-1 text-sm text-ink/60">Quản lý thông tin, mục tiêu điểm số và nhắc học của bạn.</p>
+        <p className="mt-1 text-sm text-ink-soft">Quản lý thông tin, mục tiêu điểm số và nhắc học của bạn.</p>
       </header>
 
       <AvatarSettings />
@@ -138,19 +138,19 @@ export function SettingsPage() {
         <h2 className="text-base font-semibold">Thông tin cá nhân</h2>
         <p className="mt-1 text-xs text-ink-soft">Bạn có thể tự cập nhật họ tên, email và số điện thoại. Mã học viên do lớp cấp, không đổi được.</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <label className="text-xs font-medium text-ink/60">
+          <label className="text-xs font-medium text-ink-soft">
             Họ và tên
             <input className={fieldCls} value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" />
           </label>
-          <label className="text-xs font-medium text-ink/60">
+          <label className="text-xs font-medium text-ink-soft">
             Mã học viên
-            <input className={cn(fieldCls, 'bg-paper-2 text-ink/60')} value={user?.studentCode ?? user?.username ?? ''} readOnly />
+            <input className={cn(fieldCls, 'bg-paper-2 text-ink-soft')} value={user?.studentCode ?? user?.username ?? ''} readOnly />
           </label>
-          <label className="text-xs font-medium text-ink/60">
+          <label className="text-xs font-medium text-ink-soft">
             Email
             <input className={fieldCls} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Chưa cập nhật" autoComplete="email" />
           </label>
-          <label className="text-xs font-medium text-ink/60">
+          <label className="text-xs font-medium text-ink-soft">
             Số điện thoại
             <input className={fieldCls} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Chưa cập nhật" autoComplete="tel" />
           </label>
@@ -184,7 +184,7 @@ export function SettingsPage() {
             <p className="mt-1 text-xs text-ink-soft">
               Chọn 2 kỹ năng hoặc 4 kỹ năng (chỉ một nhóm), rồi kéo thanh để đặt một điểm mục tiêu.
             </p>
-            <p className="mt-2 text-sm text-ink/70">{goalStatus(currentGoal, latest)}</p>
+            <p className="mt-2 text-sm text-ink-soft">{goalStatus(currentGoal, latest)}</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Nhóm mục tiêu">
               {GOAL_TRACKS.map((t) => {
                 const b = GOAL_TRACK_BOUNDS[t]

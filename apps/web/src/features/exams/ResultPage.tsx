@@ -23,7 +23,7 @@ export function ResultPage() {
 
   if (isPending) return <PageLoading message="Đang tải kết quả…" />
   if (error instanceof ApiError && error.status === 409) {
-    if (staffView) return <p className="p-8 text-sm text-ink/60">Học viên chưa nộp bài này nên chưa có kết quả.</p>
+    if (staffView) return <p className="p-8 text-sm text-ink-soft">Học viên chưa nộp bài này nên chưa có kết quả.</p>
     return <Navigate to={`/attempts/${attemptId}/play`} replace />
   }
   if (error || !r) return <QueryErrorRedirect error={error} />
@@ -43,7 +43,7 @@ export function ResultPage() {
         <div aria-hidden="true" className="h-1.5 w-full bg-linear-to-r from-button via-navy to-crimson" />
         <div className="border-b border-gold/35 bg-paper px-6 py-4 sm:px-8">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[13px] font-bold tracking-[0.18em] text-gold-deep uppercase">
+            <p className="text-sm font-bold tracking-[0.06em] text-gold-deep uppercase">
               Phiếu kết quả TOEIC Listening &amp; Reading
             </p>
             <div className="flex flex-wrap items-center gap-2">
@@ -65,7 +65,7 @@ export function ResultPage() {
                 ).map((sec) => (
                   <div key={sec.label} className="rounded-2xl border border-gold/40 bg-paper/70 p-5">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold tracking-[0.16em] text-gold-deep uppercase">{sec.label}</span>
+                      <span className="text-[13px] font-bold tracking-[0.06em] text-gold-deep uppercase">{sec.label}</span>
                       <span className="text-xs text-ink-soft">Thang 5–495</span>
                     </div>
                     <p className="serif mt-2 text-4xl font-bold text-ink tabular-nums">
@@ -76,7 +76,7 @@ export function ResultPage() {
                 ))}
               </div>
               <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-button/35 bg-button-soft px-6 py-6 text-center">
-                <span className="text-xs font-bold tracking-[0.18em] text-gold-deep uppercase">Total Score</span>
+                <span className="text-[13px] font-bold tracking-[0.06em] text-gold-deep uppercase">Total Score</span>
                 <p className="serif mt-2 text-5xl font-extrabold tracking-tight text-ink tabular-nums">{r.totalScore}</p>
                 <p className="mt-1 text-xs font-semibold text-ink-soft tabular-nums">/ 990 điểm</p>
               </div>
@@ -164,7 +164,7 @@ function MissedAnswers({ attemptId, staffView, reviewTo }: { attemptId: string; 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="serif text-2xl">Câu sai và câu chưa làm</h2>
-          <p className="mt-1 text-sm text-ink/60">
+          <p className="mt-1 text-sm text-ink-soft">
             {missed.length === 0
               ? 'Không có câu sai hay câu chưa làm.'
               : `${wrongCount} câu sai, ${blankCount} câu chưa làm. Bài làm chi tiết có toàn bộ câu đúng và câu sai.`}

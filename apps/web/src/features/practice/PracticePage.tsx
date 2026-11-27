@@ -98,7 +98,7 @@ export function PracticePage() {
 
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[13px] font-semibold tracking-[0.14em] text-ink-soft uppercase">Bộ lọc nhanh</span>
+          <span className="text-sm font-semibold tracking-[0.06em] text-ink-soft uppercase">Bộ lọc nhanh</span>
           <FilterChip active={activeKind === 'all'} onClick={() => setKind('all')}>
             Tất cả
           </FilterChip>
@@ -110,7 +110,7 @@ export function PracticePage() {
         </div>
         {showSeries ? (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[13px] font-semibold tracking-[0.14em] text-ink-soft uppercase">Bộ đề</span>
+            <span className="text-sm font-semibold tracking-[0.06em] text-ink-soft uppercase">Bộ đề</span>
             <FilterChip active={series === 'all'} onClick={() => setSeries('all')}>
               Tất cả
             </FilterChip>

@@ -52,7 +52,7 @@ export function DashboardPage() {
       <Card className={due.length > 0 ? 'border-l-4 border-l-crimson p-6' : 'p-6'}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">Nhiệm vụ học vụ &amp; bài về nhà</p>
+            <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Nhiệm vụ học vụ &amp; bài về nhà</p>
             <div className="mt-1 flex flex-wrap items-center gap-2.5">
               <h2 className="serif text-2xl font-bold">Bài tập Thầy giao</h2>
               <Badge tone={allPending.length > 0 ? 'warn' : 'olive'} className="tabular-nums">
@@ -168,7 +168,7 @@ function Hero({ d, name }: { d: StudentDashboardDto; name: string }) {
       <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px] bg-linear-to-r from-button via-navy to-crimson" />
       <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:gap-8">
         <div className="min-w-0">
-          <p className="text-xs font-semibold tracking-[0.16em] text-navy uppercase">Tổng quan của bạn</p>
+          <p className="text-[13px] font-semibold tracking-[0.06em] text-navy uppercase">Tổng quan của bạn</p>
           <h1 className="serif mt-2 text-3xl font-bold sm:text-4xl">Xin chào, {name}! 👋</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft tabular-nums">{message}</p>
           <div className="mt-6 flex flex-wrap gap-3">
@@ -201,7 +201,7 @@ function ScoreChart({ d }: { d: StudentDashboardDto }) {
   const data = d.scoreHistory.map((p) => ({ label: dayMonth(p.at), score: p.totalScore }))
   return (
     <Card className="p-6">
-      <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">Tiến độ cá nhân</p>
+      <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Tiến độ cá nhân</p>
       <h2 className="serif mt-1 text-2xl font-bold">Đường tăng trưởng điểm thi mock test</h2>
       <p className="mt-1 text-sm text-ink-soft tabular-nums">
         {data.length === 0

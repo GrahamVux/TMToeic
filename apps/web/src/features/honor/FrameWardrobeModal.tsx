@@ -108,14 +108,14 @@ export function FrameWardrobeModal({
             <Sparkles className="size-5 text-gold-deep" />
             <div>
               <h2 className="serif text-xl">Kho Khung Viền & Ví Điểm Thưởng</h2>
-              <p className="text-xs text-ink/60">Khung đang đeo sẽ hiển thị đồng bộ trên thanh điều hướng, bảng xếp hạng và hồ sơ tài khoản.</p>
+              <p className="text-xs text-ink-soft">Khung đang đeo sẽ hiển thị đồng bộ trên thanh điều hướng, bảng xếp hạng và hồ sơ tài khoản.</p>
             </div>
           </div>
           <button
             type="button"
             aria-label="Đóng hộp thoại"
             onClick={onClose}
-            className="grid size-8 place-items-center rounded-full border border-ink/12 bg-cream text-ink/70 hover:bg-paper-2"
+            className="grid size-8 place-items-center rounded-full border border-ink/12 bg-cream text-ink-soft hover:bg-paper-2"
           >
             <X className="size-4" />
           </button>
@@ -157,7 +157,7 @@ export function FrameWardrobeModal({
                 <p className="mt-0.5 text-xs font-semibold text-gold-deep">
                   {activeDef.badgeLabel} • {activeDef.durationHint}
                 </p>
-                <p className="mt-1.5 text-xs leading-relaxed text-ink/65">{activeDef.unlockCondition}</p>
+                <p className="mt-1.5 text-xs leading-relaxed text-ink-soft">{activeDef.unlockCondition}</p>
                 {previewExpiry ? (
                   <p className="mt-2 inline-flex items-center gap-1 rounded-xl border border-warn/25 bg-warn-soft px-2.5 py-1 text-[13px] font-medium text-warn">
                     <Clock className="size-3.5 shrink-0" />
@@ -257,12 +257,12 @@ export function FrameWardrobeModal({
             <Card className="bg-paper p-5">
               <p className="text-xs font-semibold tracking-wider text-gold-deep uppercase">Số dư tích lũy</p>
               <p className="serif mt-2 text-4xl text-ink">{points.toLocaleString('vi-VN')}</p>
-              <p className="text-xs text-ink/60">Điểm thưởng vinh danh</p>
+              <p className="text-xs text-ink-soft">Điểm thưởng vinh danh</p>
               <div className="mt-5 rounded-2xl border border-dashed border-gold-deep/40 bg-cream p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-gold-deep">
                   <Gift className="size-4" /> Cửa hàng Đổi quà
                 </div>
-                <p className="mt-1 text-xs leading-relaxed text-ink/65">
+                <p className="mt-1 text-xs leading-relaxed text-ink-soft">
                   Tính năng đổi quà, tài liệu VIP và voucher bằng Điểm thưởng đang được chuẩn bị. Điểm của bạn được ghi nhận và bảo lưu đầy đủ!
                 </p>
                 <Badge tone="gold" className="mt-3">Đổi quà sắp mở</Badge>
@@ -277,7 +277,7 @@ export function FrameWardrobeModal({
                 </span>
               </div>
               {ledger.length === 0 ? (
-                <p className="rounded-2xl border border-gold/30 bg-cream p-4 text-sm text-ink/60">
+                <p className="rounded-2xl border border-gold/30 bg-cream p-4 text-sm text-ink-soft">
                   Chưa có giao dịch điểm thưởng nào. Đạt Top 3 Tuần/Tháng hoặc các mốc Streak để nhận điểm!
                 </p>
               ) : (

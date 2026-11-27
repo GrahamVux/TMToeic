@@ -51,9 +51,9 @@ export function AdminStudyPage() {
     <div className="space-y-8">
       <CornerNotice notice={notice} />
       <header>
-        <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Quản lý học liệu</p>
+        <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Quản lý học liệu</p>
         <h1 className="serif mt-2 text-3xl sm:text-4xl">Từ vựng theo Unit & Ngữ pháp</h1>
-        <p className="mt-2 max-w-2xl text-sm text-ink/60">
+        <p className="mt-2 max-w-2xl text-sm text-ink-soft">
           Kiểm tra và chỉnh sửa từng từ theo từng Unit ngay trên web trước khi đẩy vào Database, hoặc duyệt sửa trực tiếp kho từ hiện có.
         </p>
       </header>
@@ -68,7 +68,7 @@ export function AdminStudyPage() {
               onClick={() => setTab('staging')}
               className={cn(
                 'inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-semibold transition',
-                tab === 'staging' ? 'bg-button text-button-ink' : 'text-ink/70 hover:text-ink',
+                tab === 'staging' ? 'bg-button text-button-ink' : 'text-ink-soft hover:text-ink',
               )}
             >
               <UploadCloud className="size-3.5" /> Nhập Excel & Kiểm duyệt
@@ -80,7 +80,7 @@ export function AdminStudyPage() {
               onClick={() => setTab('browse')}
               className={cn(
                 'inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-semibold transition',
-                tab === 'browse' ? 'bg-button text-button-ink' : 'text-ink/70 hover:text-ink',
+                tab === 'browse' ? 'bg-button text-button-ink' : 'text-ink-soft hover:text-ink',
               )}
             >
               <Layers className="size-3.5" /> Duyệt & Sửa theo Unit (DB)
@@ -109,7 +109,7 @@ export function AdminStudyPage() {
 
       <Card className="p-6">
         <h2 className="serif text-2xl">Chuyên đề ngữ pháp</h2>
-        <p className="mt-2 text-sm text-ink/60">Mỗi chuyên đề gắn được một file PDF. Học viên mở file ngay trong bài học.</p>
+        <p className="mt-2 text-sm text-ink-soft">Mỗi chuyên đề gắn được một file PDF. Học viên mở file ngay trong bài học.</p>
         <form
           className="mt-4 space-y-2"
           onSubmit={(event) => {
@@ -303,7 +303,7 @@ function VocabStagingPanel({ onNotice, onSwitchBrowse }: { onNotice: (n: CornerN
               <h3 className="font-bold text-ink">
                 Bảng nháp kiểm duyệt ({rows.length} từ · {unitList.length} Unit)
               </h3>
-              <p className="text-xs text-ink/60">
+              <p className="text-xs text-ink-soft">
                 <span className="font-semibold text-olive">{newCount} từ mới</span> ·{' '}
                 <span className="font-semibold text-gold-deep">{updateCount} cập nhật nghĩa/câu mẫu</span>
                 {skipped > 0 ? ` · bỏ qua ${skipped} dòng lỗi` : ''}
@@ -337,7 +337,7 @@ function VocabStagingPanel({ onNotice, onSwitchBrowse }: { onNotice: (n: CornerN
                   key={u}
                   type="button"
                   onClick={() => setActiveUnit(u)}
-                  className={cn('rounded-full px-3 py-1 text-xs font-semibold', activeUnit === u ? 'bg-button text-button-ink' : 'bg-cream text-ink/70')}
+                  className={cn('rounded-full px-3 py-1 text-xs font-semibold', activeUnit === u ? 'bg-button text-button-ink' : 'bg-cream text-ink-soft')}
                 >
                   Unit {u} ({count})
                 </button>
@@ -347,7 +347,7 @@ function VocabStagingPanel({ onNotice, onSwitchBrowse }: { onNotice: (n: CornerN
 
           <div className="max-h-[480px] overflow-auto rounded-xl border border-gold/25 bg-cream">
             <table className="w-full min-w-[780px] border-collapse text-left text-xs">
-              <thead className="sticky top-0 z-10 bg-paper-2 text-[13px] font-bold text-ink/70 uppercase">
+              <thead className="sticky top-0 z-10 bg-paper-2 text-[13px] font-bold text-ink-soft uppercase">
                 <tr>
                   <th className="w-20 px-2.5 py-2.5">Unit</th>
                   <th className="w-40 px-2.5 py-2.5">Từ vựng</th>
@@ -425,7 +425,7 @@ function VocabStagingPanel({ onNotice, onSwitchBrowse }: { onNotice: (n: CornerN
           </div>
         </div>
       ) : (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-dashed border-gold/45 bg-paper/60 px-4 py-3 text-xs text-ink/60">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-dashed border-gold/45 bg-paper/60 px-4 py-3 text-xs text-ink-soft">
           <span>Chưa tải file? Bạn cũng có thể tạo nhanh bảng nháp trống để tự nhập từng Unit ngay trên web.</span>
           <button type="button" onClick={addDraftRow} className="font-semibold text-gold-deep underline underline-offset-4">
             + Tạo bảng nháp thủ công
@@ -485,7 +485,7 @@ function VocabUnitBrowserPanel({ onNotice }: { onNotice: (n: CornerNoticeState) 
   return (
     <div className="mt-5 space-y-6">
       {sets.length === 0 ? (
-        <p className="rounded-2xl bg-paper p-5 text-sm text-ink/60">Chưa có bộ từ nào trong Database. Hãy nhập Excel ở tab bên cạnh.</p>
+        <p className="rounded-2xl bg-paper p-5 text-sm text-ink-soft">Chưa có bộ từ nào trong Database. Hãy nhập Excel ở tab bên cạnh.</p>
       ) : (
         <>
           <div className="grid gap-3 md:grid-cols-[260px_1fr]">
@@ -514,7 +514,7 @@ function VocabUnitBrowserPanel({ onNotice }: { onNotice: (n: CornerNoticeState) 
                     onClick={() => setUnitIndex(u.index)}
                     className={cn(
                       'rounded-full px-3 py-1.5 text-xs font-semibold transition',
-                      unitIndex === u.index ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/75 hover:text-ink',
+                      unitIndex === u.index ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft hover:text-ink',
                     )}
                   >
                     Unit {u.index} ({u.wordCount})

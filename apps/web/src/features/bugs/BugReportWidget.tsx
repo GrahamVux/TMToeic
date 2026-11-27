@@ -69,7 +69,7 @@ export function BugReportWidget() {
             </button>
           </div>
           <div className="max-h-[min(70vh,32rem)] space-y-3 overflow-y-auto p-4">
-            <label className="block text-xs font-medium text-ink/60">
+            <label className="block text-xs font-medium text-ink-soft">
               Nhóm sự cố
               <select
                 className="mt-1 h-10 w-full rounded-xl border border-gold/40 bg-cream px-3 text-sm text-ink outline-none focus:border-button"
@@ -83,7 +83,7 @@ export function BugReportWidget() {
                 ))}
               </select>
             </label>
-            <label className="block text-xs font-medium text-ink/60">
+            <label className="block text-xs font-medium text-ink-soft">
               Mô tả
               <textarea
                 className="mt-1 min-h-24 w-full rounded-xl border border-gold/40 bg-cream px-3 py-2 text-sm text-ink outline-none focus:border-button focus:ring-2 focus:ring-button/30"
@@ -115,7 +115,7 @@ export function BugReportWidget() {
                         <p className="truncate text-xs font-medium text-ink">{BUG_REPORT_CATEGORY_LABEL[item.category]}</p>
                         <Badge tone={STATUS_TONE[item.status]}>{BUG_REPORT_STATUS_LABEL[item.status]}</Badge>
                       </div>
-                      <p className="mt-1 line-clamp-2 text-xs text-ink/60">{item.message}</p>
+                      <p className="mt-1 line-clamp-2 text-xs text-ink-soft">{item.message}</p>
                       {item.adminNote ? <p className="mt-1 text-xs text-olive">Phản hồi: {item.adminNote}</p> : null}
                     </li>
                   ))}

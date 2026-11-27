@@ -72,7 +72,7 @@ export function AssignmentsPage() {
     <div className="space-y-6">
       <header>
         <h1 className="serif text-3xl sm:text-4xl">Bài tập Thầy giao</h1>
-        <p className="mt-2 text-sm text-ink/60">Làm đúng part được giao, nộp trước hạn. Kết quả vào tiến độ lớp.</p>
+        <p className="mt-2 text-sm text-ink-soft">Làm đúng part được giao, nộp trước hạn. Kết quả vào tiến độ lớp.</p>
       </header>
       <div className="flex flex-wrap gap-2">
         {TABS.map((t) => (
@@ -92,7 +92,7 @@ export function AssignmentsPage() {
         </p>
       ) : null}
       {items.length === 0 ? (
-        <Card className="p-6 text-sm text-ink/60">Chưa có bài tập trong mục này.</Card>
+        <Card className="p-6 text-sm text-ink-soft">Chưa có bài tập trong mục này.</Card>
       ) : (
         <div className="space-y-4">
           {items.map((a) => {
@@ -107,7 +107,7 @@ export function AssignmentsPage() {
                 <p className="mt-1 text-sm text-ink-soft">
                   {a.examTitle} • {a.parts.map((p) => partName(p.code).split(' — ')[0]).join(', ')} • {total} câu • {Math.round(a.durationSeconds / 60)} phút
                 </p>
-                {a.description ? <p className="mt-2 text-sm leading-6 text-ink/65">{a.description}</p> : null}
+                {a.description ? <p className="mt-2 text-sm leading-6 text-ink-soft">{a.description}</p> : null}
                 <p className="mt-3 text-sm font-medium">{dueText(a.dueAt)}</p>
                 <ProgressBar className="mt-2" value={pct} />
                 <Button

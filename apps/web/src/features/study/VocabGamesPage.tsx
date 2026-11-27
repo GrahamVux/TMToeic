@@ -128,9 +128,9 @@ export function VocabGamesPage() {
 
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Học tập qua trò chơi</p>
+          <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Học tập qua trò chơi</p>
           <h1 className="serif mt-2 text-3xl sm:text-4xl">Đấu trường Từ vựng TOEIC</h1>
-          <p className="mt-1.5 text-sm text-ink/60">
+          <p className="mt-1.5 text-sm text-ink-soft">
             Chơi ghép cặp, phản xạ 4 đáp án hoặc chính tả để ghi nhớ từ vựng và nhận tối đa {VOCAB_GAME_DAILY_XP_CAP} EXP/ngày cho Bảng xếp hạng.
           </p>
         </div>
@@ -154,14 +154,14 @@ export function VocabGamesPage() {
               <button
                 type="button"
                 onClick={() => { setSource('catalog'); restart() }}
-                className={cn('rounded-full px-4 py-1.5 text-xs font-semibold', source === 'catalog' ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/75')}
+                className={cn('rounded-full px-4 py-1.5 text-xs font-semibold', source === 'catalog' ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft')}
               >
                 <Layers className="mr-1 inline size-3.5" /> Bộ từ & Unit có sẵn
               </button>
               <button
                 type="button"
                 onClick={() => { setSource('notebook'); restart() }}
-                className={cn('rounded-full px-4 py-1.5 text-xs font-semibold', source === 'notebook' ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/75')}
+                className={cn('rounded-full px-4 py-1.5 text-xs font-semibold', source === 'notebook' ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft')}
               >
                 <Sparkles className="mr-1 inline size-3.5" /> Sổ tay cá nhân
               </button>
@@ -186,7 +186,7 @@ export function VocabGamesPage() {
                       key={u.index}
                       type="button"
                       onClick={() => { setUnit(u.index); setLastResult(null); setSessionId((s) => s + 1) }}
-                      className={cn('rounded-full px-3 py-1 text-xs font-semibold', unit === u.index ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/70')}
+                      className={cn('rounded-full px-3 py-1 text-xs font-semibold', unit === u.index ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft')}
                     >
                       Unit {u.index} ({u.wordCount})
                     </button>
@@ -236,7 +236,7 @@ export function VocabGamesPage() {
                 onClick={() => restart(id)}
                 className={cn(
                   'flex flex-col items-center justify-center gap-1 rounded-2xl border px-3 py-2.5 text-xs font-semibold transition',
-                  gameKind === id ? 'border-button bg-button text-button-ink shadow-xs' : 'border-gold/30 bg-paper text-ink/75 hover:border-gold-deep',
+                  gameKind === id ? 'border-button bg-button text-button-ink shadow-xs' : 'border-gold/30 bg-paper text-ink-soft hover:border-gold-deep',
                 )}
               >
                 <Icon className="size-4" />
@@ -252,7 +252,7 @@ export function VocabGamesPage() {
       ) : deckWords.length < 4 ? (
         <Card className="p-8 text-center">
           <h2 className="serif text-2xl">Cần ít nhất 4 từ có đủ nghĩa</h2>
-          <p className="mt-2 text-sm text-ink/60">
+          <p className="mt-2 text-sm text-ink-soft">
             Bộ lọc “{deckLabel}” hiện chỉ có {deckWords.length} từ đủ nghĩa & loại từ. Hãy chọn Unit khác hoặc bổ sung nghĩa trong Sổ tay cá nhân.
           </p>
         </Card>
@@ -262,7 +262,7 @@ export function VocabGamesPage() {
             <Award className="size-7" />
           </div>
           <h2 className="serif mt-4 text-3xl text-ink">Hoàn thành ván chơi!</h2>
-          <p className="mt-2 text-sm text-ink/65">
+          <p className="mt-2 text-sm text-ink-soft">
             Bộ từ: <strong>{deckLabel}</strong> • Đạt <strong>{lastResult.score}/{lastResult.total}</strong> điểm chính xác
           </p>
           <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-warn/30 bg-warn-soft px-4 py-2 text-sm font-bold text-warn">
@@ -467,7 +467,7 @@ function QuizGameBoard({
 
   return (
     <Card className="mx-auto max-w-2xl p-6">
-      <div className="flex items-center justify-between text-xs font-semibold text-ink/60">
+      <div className="flex items-center justify-between text-xs font-semibold text-ink-soft">
         <span>Câu {idx + 1} / {questions.length}</span>
         <span className="text-gold-deep">Đúng: {score}</span>
       </div>
@@ -556,7 +556,7 @@ function SpellGameBoard({
 
   return (
     <Card className="mx-auto max-w-xl p-6">
-      <div className="flex items-center justify-between text-xs font-semibold text-ink/60">
+      <div className="flex items-center justify-between text-xs font-semibold text-ink-soft">
         <span>Chính tả {idx + 1} / {queue.length}</span>
         <span className="text-gold-deep">Đúng: {score}</span>
       </div>
@@ -566,7 +566,7 @@ function SpellGameBoard({
         <p className="text-xs font-bold tracking-wider text-gold-deep uppercase">{current.partOfSpeech}</p>
         <h2 className="serif mt-2 text-2xl text-ink">{current.meaning}</h2>
         {current.example ? (
-          <p className="mt-3 text-sm italic text-ink/65">“{maskWordInSentence(current.example, targetClean)}”</p>
+          <p className="mt-3 text-sm italic text-ink-soft">“{maskWordInSentence(current.example, targetClean)}”</p>
         ) : null}
         {hintLevel > 0 ? (
           <p className="mt-3 font-mono text-sm font-bold tracking-widest text-olive">

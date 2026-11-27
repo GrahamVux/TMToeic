@@ -261,7 +261,7 @@ export function CalendarDateTimePicker({
 
           <div className="mt-2.5 border-t border-gold/25 pt-2.5">
             <div className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink/75">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-soft">
                 <Clock className="size-3.5 text-gold-deep" /> Giờ hạn nộp
               </span>
               <div className="flex items-center gap-1">
@@ -305,7 +305,7 @@ export function CalendarDateTimePicker({
                       onClick={() => pickTime(hh!, mm!)}
                       className={cn(
                         'rounded-lg px-2 py-1 text-[13px] font-semibold tabular-nums transition',
-                        active ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/70 hover:text-ink',
+                        active ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft hover:text-ink',
                       )}
                     >
                       {preset}

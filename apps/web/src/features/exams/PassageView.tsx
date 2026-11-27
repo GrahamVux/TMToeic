@@ -16,7 +16,7 @@ export function PassageView({ group, showImage = true }: { group: GroupDto; show
             {p.title ? ` • ${p.title}` : ''}
           </p>
           <SelectableText
-            className="exam-passage mt-2.5 max-w-[68ch] text-[17px] leading-[1.72] whitespace-pre-line text-ink/90"
+            className="exam-passage mt-2.5 max-w-[68ch] text-[17px] leading-[1.72] whitespace-pre-line text-ink"
             text={p.content}
             markTarget={isListeningPart(group.partCode) ? undefined : { kind: 'passage', id: group.id, passageLabel: p.label }}
           />

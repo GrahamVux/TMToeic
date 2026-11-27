@@ -27,7 +27,7 @@ export function ReviewPage() {
 
   if (isPending) return <PageLoading message="Đang tải bài chữa…" />
   if (error instanceof ApiError && error.status === 409) {
-    if (staffView) return <p className="p-8 text-sm text-ink/60">Học viên chưa nộp bài này nên chưa xem được bài làm chi tiết.</p>
+    if (staffView) return <p className="p-8 text-sm text-ink-soft">Học viên chưa nộp bài này nên chưa xem được bài làm chi tiết.</p>
     return <Navigate to={`/attempts/${attemptId}/play`} replace />
   }
   if (error || !data) return <QueryErrorRedirect error={error} />
@@ -49,7 +49,7 @@ export function ReviewPage() {
         <div>
           <p className="text-xs text-ink-soft">{staffView ? 'Bài làm chi tiết của học viên' : 'Bài làm chi tiết'}</p>
           <h1 className="serif mt-1 text-3xl">{data.result.attempt.examTitle}</h1>
-          <p className="mt-1 text-sm text-ink/60">
+          <p className="mt-1 text-sm text-ink-soft">
             Đúng {data.result.correctCount} • Sai {data.result.incorrectCount} • Chưa làm {data.result.unansweredCount}
           </p>
         </div>

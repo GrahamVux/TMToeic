@@ -19,7 +19,7 @@ export function ChangePasswordPage() {
         <BrandMark />
         <div className="relative mt-8 overflow-hidden rounded-3xl border border-gold/40 bg-cream p-8 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
           <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px] bg-linear-to-r from-button via-navy to-crimson" />
-          <p className="inline-flex items-center gap-1.5 rounded-full border border-button/20 bg-button-soft px-3 py-1 text-[13px] font-semibold tracking-[0.14em] text-navy uppercase dark:border-sky-400/25">
+          <p className="inline-flex items-center gap-1.5 rounded-full border border-button/20 bg-button-soft px-3 py-1 text-sm font-semibold tracking-[0.06em] text-navy uppercase dark:border-sky-400/25">
             <span className="size-1.5 rounded-full bg-crimson" aria-hidden="true" />
             Lần đăng nhập đầu tiên
           </p>

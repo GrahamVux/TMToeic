@@ -17,7 +17,7 @@ export function Badge({
     danger: 'bg-danger-soft text-danger border-danger/25',
     ink: 'bg-button text-button-ink border-gold-deep',
     olive: 'bg-success-soft text-olive border-olive/25',
-    paper: 'bg-paper-2 text-ink-soft border-ink/12',
+    paper: 'bg-paper-2 text-ink-soft border-gold/40',
   }
   return (
     <span className={cn('inline-flex items-center rounded-full border px-2.5 py-0.5 text-[13px] font-semibold uppercase tracking-wide', tones[tone], className)}>

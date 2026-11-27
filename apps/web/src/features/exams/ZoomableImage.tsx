@@ -222,7 +222,7 @@ function ZoomLightbox({ src, alt, onClose }: { src: string; alt: string; onClose
           style={{ transform: `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px)) scale(${scale})` }}
         />
       </div>
-      <p className="px-4 pb-3 text-center text-[13px] text-white/55">Lăn chuột hoặc chụm ngón để zoom • Kéo để xem • Esc để đóng</p>
+      <p className="px-4 pb-3 text-center text-[13px] text-sky-100">Lăn chuột hoặc chụm ngón để zoom • Kéo để xem • Esc để đóng</p>
     </div>
     ,
     document.body,

@@ -133,9 +133,9 @@ export function TeacherAssignmentsPage() {
   return (
     <div className="space-y-8">
       <header>
-        <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Giao bài từ ngân hàng đề</p>
+        <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Giao bài từ ngân hàng đề</p>
         <h1 className="serif mt-2 text-3xl sm:text-4xl">Bài tập về nhà</h1>
-        <p className="mt-2 text-sm text-ink/60">
+        <p className="mt-2 text-sm text-ink-soft">
           {canManage
             ? 'Giao part hoặc cả bộ đề từ ngân hàng, hoặc soạn bài điền từ. Bài điền từ có thể lưu vào bộ đề sau khi giao.'
             : 'Danh sách bài đã giao và tiến độ nộp bài của học viên.'}
@@ -144,10 +144,10 @@ export function TeacherAssignmentsPage() {
 
       {canManage ? (
         <div className="flex flex-wrap gap-2">
-          <button type="button" className={composer === 'bank' ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-cream px-4 py-2 text-sm font-semibold text-ink/70 ring-1 ring-ink/10'} onClick={() => setComposer('bank')}>
+          <button type="button" className={composer === 'bank' ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-cream px-4 py-2 text-sm font-semibold text-ink-soft ring-1 ring-ink/10'} onClick={() => setComposer('bank')}>
             Từ bộ đề
           </button>
-          <button type="button" className={composer === 'fill' ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-cream px-4 py-2 text-sm font-semibold text-ink/70 ring-1 ring-ink/10'} onClick={() => setComposer('fill')}>
+          <button type="button" className={composer === 'fill' ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-cream px-4 py-2 text-sm font-semibold text-ink-soft ring-1 ring-ink/10'} onClick={() => setComposer('fill')}>
             Điền từ
           </button>
         </div>
@@ -160,7 +160,7 @@ export function TeacherAssignmentsPage() {
           <h2 className="serif text-2xl">1. Chọn đề & part</h2>
           {exams.isPending ? <p className="mt-3 text-sm text-ink-soft">Đang tải ngân hàng…</p> : null}
           {published.length === 0 && !exams.isPending ? (
-            <p className="mt-3 text-sm text-ink/60">
+            <p className="mt-3 text-sm text-ink-soft">
               Chưa có đề xuất bản.{' '}
               <Link to="/admin/exams" className="text-gold-deep">
                 Vào kho đề để import
@@ -348,7 +348,7 @@ function AssignmentCheckModal({ assignmentId, onClose }: { assignmentId: string;
       {q.error ? <p className="text-sm text-coral">Không tải được danh sách bài làm.</p> : null}
       {q.data ? (
         <>
-          <p className="text-sm text-ink/60">
+          <p className="text-sm text-ink-soft">
             {q.data.examTitle} · {done}/{students.length} học viên đã nộp
           </p>
           {students.length === 0 ? (
@@ -361,7 +361,7 @@ function AssignmentCheckModal({ assignmentId, onClose }: { assignmentId: string;
                     <p className="font-medium">
                       {s.fullName} <span className="text-xs font-normal text-ink-soft">{s.studentCode}</span>
                     </p>
-                    <p className="text-sm text-ink/60">{scoreLabel(s)}</p>
+                    <p className="text-sm text-ink-soft">{scoreLabel(s)}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge tone={STATUS_TONE[s.status]}>{STATUS_LABEL[s.status]}</Badge>
@@ -520,7 +520,7 @@ function ExamPick({
             <button
               key={p.code}
               type="button"
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${on ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/70'}`}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${on ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft'}`}
               onClick={() => {
                 if (!selected) {
                   onSelect(exam.id)

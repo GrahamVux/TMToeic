@@ -74,13 +74,13 @@ export function LoginPage() {
               <p className="font-[family-name:var(--font-display)] text-2xl font-extrabold leading-tight tracking-tight text-navy sm:text-3xl">
                 {site.brandName}
               </p>
-              <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-crimson px-3 py-0.5 text-xs font-bold tracking-[0.16em] text-white uppercase shadow-2xs dark:bg-red-600">
+              <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-crimson px-3 py-0.5 text-[13px] font-bold tracking-[0.06em] text-white uppercase shadow-2xs dark:bg-red-600">
                 {site.slogan}
               </span>
             </div>
           </div>
 
-          <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-button/25 bg-button-soft px-3.5 py-1 text-xs font-bold tracking-[0.14em] text-navy uppercase dark:border-sky-400/25">
+          <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-button/25 bg-button-soft px-3.5 py-1 text-[13px] font-bold tracking-[0.06em] text-navy uppercase dark:border-sky-400/25">
             <span className="size-2 rounded-full bg-crimson" aria-hidden="true" />
             <span>Cổng học viên nội bộ</span>
           </div>
@@ -88,7 +88,7 @@ export function LoginPage() {
           <h1 className="serif mt-4 text-3xl font-extrabold leading-[1.18] break-words text-ink sm:text-4xl">
             {site.loginHeadline}
           </h1>
-          <p className="mt-4 text-base leading-relaxed font-medium break-words text-ink/90">
+          <p className="mt-4 text-base leading-relaxed font-medium break-words text-ink">
             {site.loginIntro}
           </p>
         </section>
@@ -99,7 +99,7 @@ export function LoginPage() {
           onSubmit={submit}
         >
           <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px] bg-linear-to-r from-button via-navy to-crimson" />
-          <p className="inline-flex items-center gap-1.5 rounded-full border border-crimson/20 bg-crimson-soft px-3 py-1 text-[13px] font-semibold tracking-[0.14em] text-crimson uppercase">
+          <p className="inline-flex items-center gap-1.5 rounded-full border border-crimson/20 bg-crimson-soft px-3 py-1 text-sm font-semibold tracking-[0.06em] text-crimson uppercase">
             Đăng nhập nội bộ
           </p>
           <h2 className="serif mt-3 text-3xl font-bold break-words">Xin chào trở lại</h2>

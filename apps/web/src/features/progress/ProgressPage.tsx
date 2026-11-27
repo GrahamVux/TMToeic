@@ -23,7 +23,7 @@ export function ProgressPage() {
         <div>
           <p className="text-xs text-ink-soft">Trang chủ / Tiến độ & phân tích năng lực</p>
           <h1 className="serif mt-2 text-4xl">Báo cáo tiến độ & năng lực cá nhân</h1>
-          <p className="mt-2 text-sm text-ink/60">
+          <p className="mt-2 text-sm text-ink-soft">
             {formatGoal(p.goal) ? `Mục tiêu ${formatGoal(p.goal)}` : <>Chưa đặt mục tiêu • <Link to="/settings#goal" className="font-semibold text-gold-deep underline">Đặt mục tiêu</Link></>}
             {p.remainingToTarget !== null ? ` • Còn ${p.remainingToTarget} điểm` : ''}
           </p>
@@ -35,7 +35,7 @@ export function ProgressPage() {
         <Card className="p-5">
           <p className="text-xs text-ink-soft">Điểm thi thử gần nhất</p>
           <p className="serif text-4xl">{p.latestScore?.totalScore ?? '—'}</p>
-          <p className="text-sm text-ink/60">
+          <p className="text-sm text-ink-soft">
             {p.improvement === null ? (p.latestScore ? 'Bài thi thử đầu tiên' : 'Chưa có bài đủ 200 câu') : `${p.improvement >= 0 ? '+' : ''}${p.improvement} so với lần đầu`}
           </p>
         </Card>
@@ -50,7 +50,7 @@ export function ProgressPage() {
         <Card className="p-5">
           <p className="text-xs text-ink-soft">Tỷ lệ đúng chung</p>
           <p className="serif text-4xl">{p.totals.accuracy === null ? '—' : `${p.totals.accuracy}%`}</p>
-          <p className="text-sm text-ink/60">
+          <p className="text-sm text-ink-soft">
             {p.totals.answered} câu • {p.totals.attemptsFinished} bài
             {p.totals.avgSeconds !== null ? ` • ${p.totals.avgSeconds}s/câu` : ''}
           </p>
@@ -97,21 +97,21 @@ export function ProgressPage() {
             <Card className="p-5">
               <Badge tone="danger">Khắc phục {weak.partCode.replace('PART_', 'Part ')}</Badge>
               <p className="mt-3 font-semibold">Luyện tập {partName(weak.partCode)}</p>
-              <p className="mt-2 text-sm text-ink/60">Tỷ lệ đúng hiện tại {weak.accuracy}%.</p>
+              <p className="mt-2 text-sm text-ink-soft">Tỷ lệ đúng hiện tại {weak.accuracy}%.</p>
               <Link to={drillPath} className="mt-4 inline-block"><Button variant="navy">Luyện ngay</Button></Link>
             </Card>
           ) : (
             <Card className="p-5">
               <Badge>Bắt đầu</Badge>
               <p className="mt-3 font-semibold">Làm một bài luyện để hệ thống hiểu năng lực của bạn</p>
-              <p className="mt-2 text-sm text-ink/60">Sau vài bài, phần phân tích điểm yếu sẽ xuất hiện ở đây.</p>
+              <p className="mt-2 text-sm text-ink-soft">Sau vài bài, phần phân tích điểm yếu sẽ xuất hiện ở đây.</p>
               <Link to="/practice" className="mt-4 inline-block"><Button variant="navy">Chọn đề</Button></Link>
             </Card>
           )}
           <Card className="p-5">
             <Badge tone="warn">Thi thử</Badge>
             <p className="mt-3 font-semibold">Làm một đề đủ 200 câu tính giờ</p>
-            <p className="mt-2 text-sm text-ink/60">Có điểm quy đổi Listening/Reading để theo dõi xu hướng.</p>
+            <p className="mt-2 text-sm text-ink-soft">Có điểm quy đổi Listening/Reading để theo dõi xu hướng.</p>
             <Link to="/practice" className="mt-4 inline-block"><Button variant="gold">Vào kho đề</Button></Link>
           </Card>
         </div>

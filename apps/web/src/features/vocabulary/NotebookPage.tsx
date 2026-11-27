@@ -74,9 +74,9 @@ export function NotebookPage() {
 
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Học tập / Sổ tay cá nhân</p>
+          <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Học tập / Sổ tay cá nhân</p>
           <h1 className="serif mt-2 text-3xl sm:text-4xl">Sổ tay từ vựng theo Chủ đề & Màu sắc</h1>
-          <p className="mt-2 text-sm text-ink/60">
+          <p className="mt-2 text-sm text-ink-soft">
             Phân nhóm theo Chủ đề, Unit và tô màu từng ô từ vựng để nhớ lâu hơn khi ôn tập & chơi Mini-game.
           </p>
         </div>
@@ -112,7 +112,7 @@ export function NotebookPage() {
             <button
               key={id}
               type="button"
-              className={cn('rounded-full px-3.5 py-1.5 text-xs font-semibold transition', filter === id ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/75')}
+              className={cn('rounded-full px-3.5 py-1.5 text-xs font-semibold transition', filter === id ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft')}
               onClick={() => setFilter(id)}
             >
               {label}
@@ -121,7 +121,7 @@ export function NotebookPage() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_180px_auto] lg:items-end">
-          <label className="block text-xs font-semibold text-ink/70">
+          <label className="block text-xs font-semibold text-ink-soft">
             Lọc theo Chủ đề
             <select
               className="mt-1 h-9 w-full rounded-xl border border-gold/35 bg-cream px-3 text-sm font-medium"
@@ -138,7 +138,7 @@ export function NotebookPage() {
             </select>
           </label>
 
-          <label className="block text-xs font-semibold text-ink/70">
+          <label className="block text-xs font-semibold text-ink-soft">
             Lọc theo Unit
             <select
               className="mt-1 h-9 w-full rounded-xl border border-gold/35 bg-cream px-3 text-sm font-medium"
@@ -156,13 +156,13 @@ export function NotebookPage() {
           </label>
 
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 inline-flex items-center gap-1 text-xs font-semibold text-ink/60">
+            <span className="mr-1 inline-flex items-center gap-1 text-xs font-semibold text-ink-soft">
               <Palette className="size-3.5" /> Màu ô:
             </span>
             <button
               type="button"
               onClick={() => setColorFilter('all')}
-              className={cn('rounded-full px-2.5 py-1 text-xs font-semibold', colorFilter === 'all' ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/70')}
+              className={cn('rounded-full px-2.5 py-1 text-xs font-semibold', colorFilter === 'all' ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft')}
             >
               Tất cả
             </button>
@@ -266,7 +266,7 @@ function AddTakeNote({ existingTopics, onNotice }: { existingTopics: string[]; o
         <input type="number" min={1} max={500} className="h-10 rounded-xl border border-ink/12 px-3 text-sm" value={unitStr} placeholder="Số Unit (VD: 1)" onChange={(e) => setUnitStr(e.target.value)} />
 
         <div className="flex flex-wrap items-center gap-2 sm:col-span-2 lg:col-span-4">
-          <span className="text-xs font-semibold text-ink/65">Chọn màu ô:</span>
+          <span className="text-xs font-semibold text-ink-soft">Chọn màu ô:</span>
           {CARD_PALETTE.map((c) => (
             <button
               key={c.id}
@@ -306,7 +306,7 @@ function ExcelList() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="font-semibold">Thêm cả danh sách từ Excel</h3>
-          <p className="mt-0.5 text-sm text-ink/60">Hỗ trợ cột Chủ đề, Unit, Từ vựng, Loại từ, Nghĩa, Câu mẫu.</p>
+          <p className="mt-0.5 text-sm text-ink-soft">Hỗ trợ cột Chủ đề, Unit, Từ vựng, Loại từ, Nghĩa, Câu mẫu.</p>
         </div>
         <button
           type="button"
@@ -382,7 +382,7 @@ function NoteCard({ item, onNotice }: { item: NotebookEntryDto; onNotice: (n: Co
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
             {item.topic ? <span className="rounded-full bg-cream/80 px-2.5 py-0.5 text-[13px] font-semibold text-gold-deep dark:bg-slate-900/60">{item.topic}</span> : null}
-            {item.unit != null ? <span className="rounded-full bg-cream/80 px-2.5 py-0.5 text-[13px] font-semibold text-ink/80 dark:bg-slate-900/60">Unit {item.unit}</span> : null}
+            {item.unit != null ? <span className="rounded-full bg-cream/80 px-2.5 py-0.5 text-[13px] font-semibold text-ink dark:bg-slate-900/60">Unit {item.unit}</span> : null}
             <span className="rounded-full bg-cream/70 px-2 py-0.5 text-[13px] font-semibold text-ink-soft dark:bg-slate-900/55">
               {item.source === 'CATALOG' ? 'Từ kho' : item.source === 'MANUAL' ? 'Tự thêm' : 'Bài đọc'}
             </span>
@@ -420,7 +420,7 @@ function NoteCard({ item, onNotice }: { item: NotebookEntryDto; onNotice: (n: Co
       {!editing && item.meaning ? (
         <div className="mt-3">
           <p className="text-sm font-medium leading-6 text-ink">{item.meaning}</p>
-          {item.example ? <p className="mt-1.5 rounded-xl bg-cream/75 px-3 py-2 text-xs italic text-ink/85 dark:bg-slate-900/55">“{item.example}”</p> : null}
+          {item.example ? <p className="mt-1.5 rounded-xl bg-cream/75 px-3 py-2 text-xs italic text-ink dark:bg-slate-900/55">“{item.example}”</p> : null}
           <button type="button" className="mt-2.5 text-xs font-semibold text-gold-deep underline underline-offset-4" onClick={() => setEditing(true)}>
             Chỉnh sửa nghĩa, câu mẫu, Unit
           </button>
