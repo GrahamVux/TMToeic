@@ -66,22 +66,30 @@ export function SiteFooter() {
   )
 }
 
-const studentNav = [
+const studentMainNav = [
   { to: '/dashboard', label: 'Tổng Quan' },
   { to: '/study', label: 'Học Tập' },
   { to: '/practice', label: 'Luyện Tập ETS L&R' },
   { to: '/assignments', label: 'Bài Tập' },
-  { to: '/honor', label: 'Xếp Hạng' },
-  { to: '/progress', label: 'Tiến Độ' },
 ]
+
+const studentMoreNav = [
+  { to: '/honor', label: 'Xếp Hạng', icon: Trophy },
+  { to: '/progress', label: 'Tiến Độ', icon: BarChart3 },
+]
+
+const studentAllNav = [...studentMainNav, ...studentMoreNav]
 
 export function StudentShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth()
   const site = useSite()
   const { colorMode, toggleColorMode } = useColorMode()
   const navigate = useNavigate()
+  const location = useLocation()
   const [open, setOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
   const [wardrobeOpen, setWardrobeOpen] = useState(false)
+  const moreActive = studentMoreNav.some((item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`))
 
   async function signOut() {
     await logout()
@@ -105,7 +113,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
 
           {/* Nav links – nowrap to stop text wrapping */}
           <nav className="hidden min-w-0 items-center gap-0.5 lg:flex">
-            {studentNav.map((item) => (
+            {studentMainNav.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -121,6 +129,46 @@ export function StudentShell({ children }: { children: ReactNode }) {
                 {item.label}
               </NavLink>
             ))}
+            <div
+              className="relative"
+              onMouseEnter={() => setMoreOpen(true)}
+              onMouseLeave={() => setMoreOpen(false)}
+            >
+              <button
+                type="button"
+                aria-expanded={moreOpen}
+                className={cn(
+                  'flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[15px] font-medium transition-colors xl:px-3',
+                  moreActive || moreOpen ? 'bg-button text-button-ink' : 'text-ink-soft hover:bg-teal-soft hover:text-ink',
+                )}
+                onClick={() => setMoreOpen((v) => !v)}
+              >
+                Thành tích
+                <ChevronDown className={cn('size-3.5 transition-transform', moreOpen && 'rotate-180')} />
+              </button>
+              {moreOpen ? (
+                <div className="absolute top-full left-0 z-40 pt-2">
+                  <div className="w-48 rounded-2xl border border-gold/30 bg-cream p-1.5 shadow-[0_12px_32px_rgba(15,23,42,0.16)]">
+                    {studentMoreNav.map((item) => (
+                      <NavLink
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setMoreOpen(false)}
+                        className={({ isActive }) =>
+                          cn(
+                            'flex items-center gap-2 rounded-xl px-3 py-2 text-[15px] font-medium',
+                            isActive ? 'bg-button text-button-ink' : 'text-ink hover:bg-paper',
+                          )
+                        }
+                      >
+                        <item.icon className="size-4" />
+                        {item.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </nav>
 
           {/* Right side */}
@@ -167,7 +215,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
         {/* ─── Mobile drawer ─── */}
         {open && (
           <div className="border-t border-gold/25 bg-cream px-4 pb-3 pt-2 lg:hidden">
-            {studentNav.map((item) => (
+            {studentAllNav.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
