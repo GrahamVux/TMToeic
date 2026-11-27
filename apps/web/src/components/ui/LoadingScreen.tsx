@@ -15,19 +15,19 @@ export function LoadingScreen({ message = 'Đang mở cổng học viên…' }: 
         <div className="relative grid size-28 place-items-center sm:size-32">
           <span
             aria-hidden="true"
-            className="absolute inset-0 animate-spin rounded-full border-[3px] border-button/20 border-t-button border-r-crimson"
+            className="absolute inset-0 animate-spin motion-reduce:animate-none rounded-full border-[3px] border-button/20 border-t-button border-r-crimson"
             style={{ animationDuration: '1.1s' }}
           />
           <img
             src={site.logoUrl || '/logo.png'}
             alt=""
-            className="size-20 rounded-full bg-[#ffffff] p-1.5 object-contain ring-2 ring-button/15 shadow-[0_10px_28px_rgba(20,56,153,0.22)] sm:size-24"
+            className="size-20 rounded-full bg-cream object-contain ring-2 ring-button/15 shadow-[0_10px_28px_rgba(20,56,153,0.22)] sm:size-24"
           />
         </div>
         <p className="mt-5 max-w-full font-[family-name:var(--font-display)] text-2xl font-extrabold leading-tight tracking-tight break-words text-navy sm:text-[28px]">
           {site.brandName}
         </p>
-        <span className="mt-2 inline-flex max-w-full items-center rounded-full bg-crimson px-3.5 py-1 text-xs font-bold tracking-[0.16em] break-words text-white uppercase shadow-2xs dark:bg-red-600">
+        <span className="mt-2 inline-flex max-w-full items-center rounded-full bg-crimson-fill px-3.5 py-1 text-xs font-bold tracking-[0.16em] break-words text-white uppercase shadow-2xs">
           {site.slogan}
         </span>
         <p className="mt-4 text-base font-semibold text-ink">{message}</p>
@@ -41,7 +41,7 @@ export function PageLoading({ message }: { message: string }) {
   return (
     <div className="grid min-h-[46vh] place-items-center px-6" role="status" aria-live="polite">
       <div className="flex flex-col items-center text-center">
-        <span className="size-12 animate-spin rounded-full border-[3px] border-button/20 border-t-button border-r-crimson" style={{ animationDuration: '1.1s' }} />
+        <span aria-hidden="true" className="size-12 animate-spin motion-reduce:animate-none rounded-full border-[3px] border-button/20 border-t-button border-r-crimson" style={{ animationDuration: '1.1s' }} />
         <p className="mt-4 text-base font-medium text-ink-soft">{message}</p>
       </div>
     </div>

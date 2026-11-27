@@ -140,9 +140,9 @@ function UnitCard({ set, unit }: { set: VocabSetCardDto; unit: VocabUnitDto }) {
   return (
     <>
       <Card className="overflow-hidden p-0">
-        <div className="relative h-28 bg-linear-to-br from-teal-soft to-paper px-4 py-4">
-          <p className="text-center text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">{set.title}</p>
-          <span className="absolute bottom-3 left-1/2 flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full bg-button text-sm font-semibold text-button-ink shadow-xs">
+        <div className="flex min-h-28 flex-col items-center justify-between gap-2 bg-linear-to-br from-teal-soft to-paper px-4 py-3.5">
+          <p className="line-clamp-2 text-center text-xs font-semibold tracking-[0.06em] text-gold-deep uppercase">{set.title}</p>
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-button text-sm font-semibold text-button-ink tabular-nums shadow-xs">
             {String(unit.index).padStart(2, '0')}
           </span>
         </div>

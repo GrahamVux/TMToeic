@@ -376,6 +376,7 @@ html[data-theme="dark"].exam-plain :is(.ui-card, .bg-white, .bg-cream, .bg-cream
   transition: transform .45s var(--ux-spring);
 }
 .u447-b:active { transform: scale(.97); }
+.u447-b:focus-visible { outline: 3px solid var(--color-button); outline-offset: 4px; }
 .u447-b > * { position: absolute; pointer-events: none; }
 .u447-sky { inset: 0; background: linear-gradient(180deg, #3E97EC, #86C8FF); transition: opacity .6s; }
 .u447-ngt { inset: 0; opacity: 0; background: linear-gradient(180deg, #151840, #2C3170); transition: opacity .6s; }
@@ -661,8 +662,9 @@ html[data-theme="dark"].exam-plain :is(.ui-card, .bg-white, .bg-cream, .bg-cream
 .exam-scale .exam-blank {
   font-size: inherit;
   line-height: 1.4;
-  width: 8em;
-  min-width: 6.5em;
+  width: min(8em, 100%);
+  min-width: min(6.5em, 100%);
+  max-width: 100%;
   padding: 0.12em 0.4em;
   vertical-align: baseline;
 }

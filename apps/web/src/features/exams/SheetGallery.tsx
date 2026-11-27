@@ -14,13 +14,21 @@ export function SheetGallery({ images, embedded = false, fit = 'frame' }: { imag
         <p className="text-sm font-semibold">Ảnh đề</p>
         {images.length > 1 ? (
           <div className="flex items-center gap-2 text-sm">
-            <button type="button" className="rounded-full bg-paper px-3 py-1 font-semibold" onClick={() => setIndex((i) => (i - 1 + images.length) % images.length)}>
+            <button
+              type="button"
+              className="min-h-10 rounded-full bg-paper px-3.5 py-1 font-semibold transition hover:bg-paper-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+              onClick={() => setIndex((i) => (i - 1 + images.length) % images.length)}
+            >
               Trước
             </button>
-            <span className="text-ink-soft">
+            <span className="text-ink-soft tabular-nums">
               {Math.min(index, images.length - 1) + 1}/{images.length}
             </span>
-            <button type="button" className="rounded-full bg-paper px-3 py-1 font-semibold" onClick={() => setIndex((i) => (i + 1) % images.length)}>
+            <button
+              type="button"
+              className="min-h-10 rounded-full bg-paper px-3.5 py-1 font-semibold transition hover:bg-paper-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+              onClick={() => setIndex((i) => (i + 1) % images.length)}
+            >
               Sau
             </button>
           </div>

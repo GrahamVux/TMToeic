@@ -150,7 +150,7 @@ export function SiteSettingsPage() {
     <div className="space-y-6">
       <CornerNotice notice={notice} />
       <header>
-        <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Cài đặt cổng học</p>
+        <p className="text-xs font-semibold tracking-[0.06em] text-gold-deep uppercase">Cài đặt cổng học</p>
         <h1 className="serif mt-2 text-3xl font-bold sm:text-4xl">Logo, khẩu hiệu, footer & màu theme</h1>
         <p className="mt-2 text-sm text-ink-soft">Thay đổi được lưu vào hệ thống và hiện ngay trên trang học viên, không cần sửa database.</p>
       </header>
@@ -299,7 +299,7 @@ export function SiteSettingsPage() {
           </div>
           {backgroundMode === 'sky' ? null : (
             <div className="flex shrink-0 items-center gap-3 self-start sm:self-center">
-              <span className="w-36 whitespace-nowrap text-xs font-semibold text-ink-soft sm:text-right">{colorMode === 'dark' ? 'Đang xem chế độ Tối' : 'Đang xem chế độ Sáng'}</span>
+              <span className="whitespace-nowrap text-xs font-semibold text-ink-soft">{colorMode === 'dark' ? 'Đang xem chế độ Tối' : 'Đang xem chế độ Sáng'}</span>
               <DarkModeSwitch checked={colorMode === 'dark'} onToggle={toggleColorMode} scale={0.72} />
             </div>
           )}
@@ -366,7 +366,7 @@ export function SiteSettingsPage() {
               ] as const
             ).map(([groupId, groupLabel]) => (
               <div key={groupId}>
-                <p className="mb-2 text-[13px] font-bold tracking-[0.06em] text-gold-deep uppercase">{groupLabel}</p>
+                <p className="mb-2 text-xs font-bold tracking-[0.06em] text-gold-deep uppercase">{groupLabel}</p>
                 <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                   {THEME_PRESETS.filter((p) => p.group === groupId).map((preset) => {
                     const selected = themePreset === preset.id
@@ -390,7 +390,7 @@ export function SiteSettingsPage() {
                         </span>
                         <span className="min-w-0">
                           <span className="block truncate text-sm font-semibold text-ink">{preset.label}</span>
-                          <span className="block truncate text-[13px] text-ink-soft">{preset.subtitle}</span>
+                          <span className="block truncate text-xs text-ink-soft">{preset.subtitle}</span>
                         </span>
                       </button>
                     )
@@ -456,7 +456,7 @@ function SectionSave({
         {saving === section ? 'Đang lưu…' : 'Lưu'}
       </Button>
       {error?.section === section ? (
-        <p className="text-sm text-coral" role="alert">
+        <p className="rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
           {error.text}
         </p>
       ) : null}

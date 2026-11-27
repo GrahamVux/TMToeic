@@ -1,6 +1,7 @@
 import { useAuth } from '@/app/AuthContext'
 import { Button, buttonClasses } from '@/components/ui/Button'
 import { BrandMark } from '@/components/layout/Shell'
+import { useSite } from '@/features/site/SiteSettingsProvider'
 import { ApiError } from '@/lib/api'
 import { ERROR_CODES, homePathForRole } from '@toeic/shared'
 import { AlertTriangle, Search } from 'lucide-react'
@@ -38,6 +39,9 @@ function ErrorShell({
   body: string
 }) {
   const navigate = useNavigate()
+  const site = useSite()
+  const brand = site.brandName.trim() || 'trung tâm'
+  const phone = site.phone.trim()
   return (
     <div className="relative min-h-screen overflow-hidden bg-paper text-ink">
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-linear-to-r from-button via-navy to-crimson" />
@@ -50,7 +54,10 @@ function ErrorShell({
           <p className="mt-4 text-xs font-semibold text-navy uppercase">{code}</p>
           <h1 className="serif mt-2 text-3xl font-bold">{title}</h1>
           <p className="mt-3 text-sm leading-7 text-ink-soft">{body}</p>
-          <p className="mt-4 text-sm text-ink-soft">Nếu cần hỗ trợ, vui lòng liên hệ Thầy Minh.</p>
+          <p className="mt-4 text-sm text-ink-soft">
+            Nếu cần hỗ trợ, vui lòng liên hệ {brand}
+            {phone ? ` (Hotline: ${phone})` : ''}.
+          </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Button variant="navy" onClick={() => navigate(-1)}>
               Quay lại

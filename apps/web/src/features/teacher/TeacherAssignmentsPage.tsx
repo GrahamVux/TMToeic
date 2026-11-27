@@ -59,6 +59,8 @@ export function TeacherAssignmentsPage() {
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [formError, setFormError] = useState<string | null>(null)
   const [checkingId, setCheckingId] = useState<string | null>(null)
+  const [confirmClose, setConfirmClose] = useState<AssignmentDto | null>(null)
+  const [closeError, setCloseError] = useState<string | null>(null)
   const [composer, setComposer] = useState<'bank' | 'fill'>('bank')
 
   const exam = published.find((e) => e.id === examId) ?? null
@@ -288,7 +290,12 @@ export function TeacherAssignmentsPage() {
 
       <section>
         <h2 className="serif text-2xl">Bài đã giao ({assignments.data?.length ?? 0})</h2>
-        {assignments.isPending ? <p className="mt-3 text-sm text-ink-soft">Đang tải…</p> : null}
+        {assignments.isPending ? (
+          <div className="mt-3 grid gap-3 animate-pulse" aria-busy="true" aria-label="Đang tải bài đã giao">
+            <div className="h-28 rounded-2xl bg-paper-2" />
+            <div className="h-28 rounded-2xl bg-paper-2" />
+          </div>
+        ) : null}
         {!assignments.isPending && (assignments.data?.length ?? 0) === 0 ? (
           <Card className="mt-3 p-6 text-center text-sm text-ink-soft">Chưa có bài tập nào được giao.</Card>
         ) : null}
@@ -315,7 +322,14 @@ export function TeacherAssignmentsPage() {
                   </Button>
                   {canManage && a.fillBlank && !a.inBank ? <SaveToBankButton id={a.id} /> : null}
                   {canManage && a.status === 'PUBLISHED' ? (
-                    <Button variant="paper" disabled={close.isPending} onClick={() => void close.mutateAsync(a.id).catch(() => undefined)}>
+                    <Button
+                      variant="paper"
+                      disabled={close.isPending}
+                      onClick={() => {
+                        setCloseError(null)
+                        setConfirmClose(a)
+                      }}
+                    >
                       Đóng bài
                     </Button>
                   ) : null}
@@ -328,6 +342,42 @@ export function TeacherAssignmentsPage() {
       </section>
 
       {checkingId ? <AssignmentCheckModal assignmentId={checkingId} onClose={() => setCheckingId(null)} /> : null}
+      {confirmClose ? (
+        <Modal
+          title="Đóng bài tập?"
+          dismissible={!close.isPending}
+          onClose={() => !close.isPending && setConfirmClose(null)}
+        >
+          <p className="text-sm text-ink-soft">
+            Học viên chưa nộp <strong className="text-ink">{confirmClose.title}</strong> sẽ không thể làm tiếp hoặc nộp mới sau khi đóng. Bài đã nộp vẫn được giữ nguyên.
+          </p>
+          {closeError ? (
+            <p className="mt-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
+              {closeError}
+            </p>
+          ) : null}
+          <div className="mt-5 flex justify-end gap-2">
+            <Button type="button" variant="paper" disabled={close.isPending} onClick={() => setConfirmClose(null)}>
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              disabled={close.isPending}
+              onClick={() => {
+                const target = confirmClose
+                setCloseError(null)
+                void close.mutateAsync(target.id).then(
+                  () => setConfirmClose(null),
+                  (err: unknown) => setCloseError(err instanceof ApiError ? err.message : 'Không đóng được bài tập.'),
+                )
+              }}
+            >
+              {close.isPending ? 'Đang đóng…' : 'Đóng bài'}
+            </Button>
+          </div>
+        </Modal>
+      ) : null}
     </div>
   )
 }
@@ -368,7 +418,11 @@ function AssignmentCheckModal({ assignmentId, onClose }: { assignmentId: string;
   return (
     <Modal wide title={q.data?.title ?? 'Bài làm học viên'} onClose={onClose}>
       {q.isPending ? <p className="text-sm text-ink-soft">Đang tải danh sách…</p> : null}
-      {q.error ? <p className="text-sm text-coral">Không tải được danh sách bài làm.</p> : null}
+      {q.error ? (
+        <p className="rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
+          Không tải được danh sách bài làm.
+        </p>
+      ) : null}
       {q.data ? (
         <>
           <p className="text-sm text-ink-soft">
@@ -405,7 +459,7 @@ function AssignmentCheckModal({ assignmentId, onClose }: { assignmentId: string;
                 {exporting ? 'Đang xuất…' : ready ? 'Tải báo cáo Excel' : `Còn ${pending} học viên chưa nộp`}
               </Button>
               {exportError ? (
-                <p className="mt-2 text-sm text-coral" role="alert">
+                <p className="mt-2 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
                   {exportError}
                 </p>
               ) : null}
@@ -438,7 +492,11 @@ function SaveToBankButton({ id }: { id: string }) {
       >
         {save.isPending ? 'Đang lưu…' : 'Lưu vào bộ đề'}
       </Button>
-      {note ? <p className="mt-1 text-xs text-coral">{note}</p> : null}
+      {note ? (
+        <p className="mt-2 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-xs text-danger" role="alert">
+          {note}
+        </p>
+      ) : null}
       <CornerNotice notice={notice} />
     </div>
   )
@@ -501,7 +559,7 @@ function AssignmentFiles({ assignment, canManage }: { assignment: AssignmentDto;
         />
       </div> : null}
       {note ? (
-        <p className="mt-2 text-sm text-coral" role="alert">
+        <p className="mt-2 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
           {note}
         </p>
       ) : null}

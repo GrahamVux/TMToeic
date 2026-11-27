@@ -44,34 +44,33 @@ Kế hoạch chi tiết xem tại [plan.md](./plan.md).
   - [x] Bỏ `<Link><Button>` ở `ResultPage`, `ReviewPage`, `PracticePage`
   - [x] Verify: `npm run build && npm run lint && npm run test` (test trực quan 390px/1440px trên trình duyệt)
 
-- [ ] **Task 6: Sửa lỗi P0 tại Học từ vựng, Sổ tay, Vinh danh & Báo lỗi** *(đã xong phần UI/layout/a11y; các mục thêm state/xác nhận xóa hoãn theo ràng buộc UI-only)*
-  - Files: `FlashcardPage.tsx`, `StudyPage.tsx`, `GrammarLessonPage.tsx`, `VocabGamesPage.tsx`, `VocabCourse.tsx`, `SelectableText.tsx`, `NotebookPage.tsx`, `FrameWardrobeModal.tsx`, `HonorBoards.tsx`, `BugReportWidget.tsx`, `BugReportsPage.tsx`
+- [x] **Task 6: Sửa lỗi P0 tại Học từ vựng, Sổ tay, Vinh danh & Báo lỗi**
+  - Files: `FlashcardPage.tsx`, `StudyPage.tsx`, `GrammarLessonPage.tsx`, `VocabGamesPage.tsx`, `VocabCourse.tsx`, `SelectableText.tsx`, `NotebookPage.tsx`, `FrameWardrobeModal.tsx`, `HonorBoards.tsx`, `StaffHonorPage.tsx`, `BugReportWidget.tsx`, `BugReportsPage.tsx`
   - [x] `FlashcardPage` check lỗi trước `cards === null`, thêm `focus-visible`/`aria-pressed` và disable khi fetching
   - [x] `VocabGamesPage` & `VocabCourse` có loading/error/empty; `SelectableText`, `FrameWardrobeModal`, `HonorBoards` chống tràn 390px
   - [x] `NotebookPage` mở rộng vùng chạm + tách hàng bảng màu chống ép cột 390px
-  - [ ] `NotebookPage` xác nhận xóa + `.catch()`; `StaffHonorPage` bỏ `window.confirm`; `BugReportWidget` thêm phím Esc *(hoãn vì chạm logic/state mới)*
+  - [x] `NotebookPage` xác nhận xóa qua `<Modal>` + `.catch()`; `StaffHonorPage` bỏ `window.confirm` dùng `<Modal>`; `BugReportWidget` thêm phím `Esc`
   - [x] `BugReportWidget` & `BugReportsPage` có gợi ý nhập tối thiểu, loading/error, `focus-visible`; bỏ `<Link><Button>`
   - [x] Verify: `npm run build && npm run lint && npm run test` (test bàn phím & 390px trên trình duyệt)
 
-- [ ] **Task 7: Sửa lỗi P0 tại Trang Giáo viên — Lớp học, Học sinh & Giao bài** *(đã xong phần UI/layout/a11y/guard hiển thị; các mục thêm modal xác nhận & xử lý state mới hoãn theo ràng buộc UI-only)*
+- [x] **Task 7: Sửa lỗi P0 tại Trang Giáo viên — Lớp học, Học sinh & Giao bài**
   - Files: `TeacherAssignmentsPage.tsx`, `FillAssignForm.tsx`, `ClassRooms.tsx`, `StudentDialogs.tsx`, `StudentDetailPage.tsx`, `TeacherDashboardPage.tsx`, `ReportsPage.tsx`, `ViewAsPage.tsx`
   - [x] Sửa tương phản dark mode ở `TeacherAssignmentsPage`, `ViewAsPage`, `ClassRooms`
   - [x] `grid-cols-1 sm:grid-cols-2` cho form giao bài; `ClassRooms` có `classes.isError`; `StudentDetailPage` không flash `<AttemptsTable>`
   - [x] `StudentDialogs` khóa đóng khi pending; `AssignmentCheckModal` luôn hiện nút `Đóng` khi loading/error
-  - [ ] `TeacherAssignmentsPage` thêm modal xác nhận `Đóng bài` + `ClassRooms` bỏ `window.confirm` *(hoãn vì chạm logic/state mới)*
+  - [x] `TeacherAssignmentsPage` có modal xác nhận `Đóng bài` + xử lý lỗi; `ClassRooms` bỏ `window.confirm` dùng `<Modal>`
   - [x] `TeacherDashboardPage` & `ReportsPage` bỏ `<Link><Button>`, thêm `focus-visible` và nâng nút phân trang
   - [x] Verify: `npm run build -w @toeic/web && npm run lint -w @toeic/web && npm run test -w @toeic/web` (test trực quan Dark Mode & 390px trên trình duyệt)
 
-- [ ] **Task 8: Sửa lỗi P0 tại Ngân hàng đề, Import/Scan, Quản trị Học liệu & Cài đặt Site** *(đã xong phần UI/layout/a11y/trạng thái tải; mục thêm modal xác nhận xóa ở `AdminStudyPage` hoãn theo ràng buộc UI-only)*
+- [x] **Task 8: Sửa lỗi P0 tại Ngân hàng đề, Import/Scan, Quản trị Học liệu & Cài đặt Site**
   - Files: `ExamBundlePanel.tsx`, `ExamBankPage.tsx`, `ImportReview.tsx`, `ListeningScanReview.tsx`, `AdminStudyPage.tsx`, `SiteSettingsPage.tsx`
   - [x] `ExamBundlePanel`: `grid-cols-1 sm:grid-cols-2` + loading/error + `min-h` nút chọn đề
   - [x] `ImportReview` & `ListeningScanReview`: `ReviewDock` ngang sticky trên `<md`
-  - [x] `AdminStudyPage`: badge dark-safe (`<Badge>`), loading/error/empty vocab, nút chạm ≥ 40px + `aria-label` + disable khi pending
-  - [ ] `AdminStudyPage`: thêm modal xác nhận trước khi xóa chuyên đề / xóa từ vựng *(hoãn vì chạm logic/state mới)*
+  - [x] `AdminStudyPage`: modal xác nhận xóa chuyên đề & từ vựng, badge dark-safe (`<Badge>`), loading/error/empty vocab, nút chạm ≥ 40px + `aria-label` + disable khi pending
   - [x] `SiteSettingsPage`: chặn form rỗng lúc đang tải (`remote.isPending && !remote.data`); `ExamBankPage`: empty state + bỏ `<Link><Button>`
   - [x] Verify: `npm run build -w @toeic/web && npm run lint -w @toeic/web && npm run test -w @toeic/web`
 
-- [ ] **Checkpoint 2: Hoàn tất phần UI-only của P0**
+- [x] **Checkpoint 2: Hoàn tất toàn bộ P0**
   - [x] `npm run build -w @toeic/web && npm run lint -w @toeic/web && npm run test -w @toeic/web` pass
   - [ ] Rà soát 390px & 1440px, Light & Dark Mode *(cần người dùng tự kiểm tra trên trình duyệt)*
 
@@ -83,32 +82,33 @@ Kế hoạch chi tiết xem tại [plan.md](./plan.md).
   - [x] Sửa `ProgressPage` card `bg-teal-soft`, sao `SkyBackdrop`, tương phản chữ `RankBadge` và `overflow-x-clip` ở `AdminShell`
   - [x] Verify: `npm run build -w @toeic/web && npm run lint -w @toeic/web && npm run test -w @toeic/web`
 
-- [ ] **Task 10: Đồng bộ Primitives (`Input`, `Badge`, Alert lỗi, Modal xác nhận) & Loading theo dòng**
-  - Files: `DarkModeSwitch.tsx`, `UserMenu.tsx`, `SettingsPage.tsx`, `AvatarSettings.tsx`, `LoginPage.tsx`, `AdminRecoveryDialog.tsx`, `PasswordFields.tsx`, `PracticePage.tsx`, `PartDrills.tsx`, `PracticeTabs.tsx`, `AssignmentsPage.tsx`, `ResultPage.tsx`, `ReviewPage.tsx`, `SheetGallery.tsx`, `AudioPlayer.tsx`, `ClassRooms.tsx`, `StudentDialogs.tsx`, `TeacherAssignmentsPage.tsx`, `FillAssignForm.tsx`, `ViewAsPage.tsx`, `SiteSettingsPage.tsx`, `ExamBankPage.tsx`
-  - [ ] Thay `<input>` tự viết bằng `<Input>`; đồng nhất alert lỗi `bg-danger-soft text-danger`
-  - [ ] Bỏ `window.confirm()` ở `ClassRooms`; thêm nút thử lại `AudioPlayer`; thêm skeleton thay chữ trần
-  - [ ] Theo dõi `pendingId` cho nút trong danh sách; bổ sung `focus-visible` & `aria-pressed` còn lại
-  - [ ] Verify: `npm run build -w @toeic/web`
+- [x] **Task 10: Đồng bộ Primitives (`Input`, `Badge`, Alert lỗi, Modal xác nhận) & Loading theo dòng**
+  - Files: `Modal.tsx`, `index.css`, `UserMenu.tsx`, `SettingsPage.tsx`, `AvatarSettings.tsx`, `AdminRecoveryDialog.tsx`, `PartDrills.tsx`, `PracticeTabs.tsx`, `SheetGallery.tsx`, `AudioPlayer.tsx`, `ClassRooms.tsx`, `TeacherAssignmentsPage.tsx`, `ViewAsPage.tsx`, `SiteSettingsPage.tsx`, `ExamBankPage.tsx`, `BugReportsPage.tsx`, `BugReportWidget.tsx`, `DailyGoalsCard.tsx`, `StaffHonorPage.tsx`
+  - [x] `Modal` render qua `createPortal(..., document.body)` tránh kẹt trong `<Card>` `backdrop-filter`; thay `<input>` tự viết bằng `<Input>` ở `SettingsPage` / `StaffHonorPage`; đồng nhất alert lỗi `bg-danger-soft text-danger border-danger/25`
+  - [x] Bỏ `window.confirm()` ở `ClassRooms` & `StaffHonorPage`; thêm nút `"Thử tải lại audio"` ở `AudioPlayer`; thêm skeleton thay chữ trần ở `TeacherAssignmentsPage`, `ClassRooms`, `ExamBankPage`
+  - [x] Theo dõi loading theo từng thẻ/dòng (`PartDrills`, `BugReportsPage`, `ExamBankPage`); bổ sung `focus-visible` cho `.u447-b`, `UserMenu`, `PracticeTabs`, `FilterChip`, `SheetGallery` và khóa `AdminRecoveryDialog` khi pending
+  - [x] Verify: `npm run build -w @toeic/web && npm run lint -w @toeic/web && npm run test -w @toeic/web`
 
-- [ ] **Task 11: Tinh gọn bố cục Card lồng nhau & tối ưu lưới Responsive (Mobile/Tablet)**
-  - Files: `ExamPlayerPage.tsx`, `PassageView.tsx`, `ResultPage.tsx`, `ZoomableImage.tsx`, `DashboardPage.tsx`, `DailyGoalsCard.tsx`, `ProgressPage.tsx`, `ProgressParts.tsx`, `HonorBoards.tsx`, `VocabCourse.tsx`, `TeacherDashboardPage.tsx`, `StudentDetailPage.tsx`, `ReportsPage.tsx`, `ExamBankPage.tsx`, `ExamBundlePanel.tsx`, `ListeningScanReview.tsx`, `ImportReview.tsx`, `BugReportsPage.tsx`
-  - [ ] Làm phẳng card lồng > 2 tầng
-  - [ ] Tách Prev/Next ra ngoài `.exam-scale`, thêm `max-w-full` cho `.exam-blank`, gom gọn header thi 390px
-  - [ ] Thêm `grid-cols-2` cho KPI, `sm:grid-cols-3` cho Top 3 Honor, `flex-wrap` cho `SkillCard`, mở rộng hit-area crop/dock
-  - [ ] Verify: `npm run build -w @toeic/web` + test 390px, 768px, 1440px
+- [x] **Task 11: Tinh gọn bố cục Card lồng nhau & tối ưu lưới Responsive (Mobile/Tablet)**
+  - Files: `ExamPlayerPage.tsx`, `PassageView.tsx`, `ZoomableImage.tsx`, `DailyGoalsCard.tsx`, `ProgressPage.tsx`, `ResultPage.tsx`, `HonorBoards.tsx`, `VocabCourse.tsx`, `TeacherDashboardPage.tsx`, `StudentDetailPage.tsx`, `ReportsPage.tsx`, `ListeningScanReview.tsx`, `BugReportWidget.tsx`, `index.css`
+  - [x] Làm phẳng card lồng > 2 tầng (`YesterdayCorner`, `HonorBoards`, `PassageView`, `BugReportWidget`)
+  - [x] Tách Prev/Next ra ngoài `.exam-scale` (giữ wrapper `min-w-0` cho lưới 2 cột ảnh nghe), clamp `width`/`min-width` cho `.exam-blank` ở zoom 300%
+  - [x] Thêm `grid-cols-2` cho KPI 4 cột, `grid-cols-1 sm:grid-cols-3` cho Top 3 Honor, bố cục flex sạch cho header `UnitCard`, mở rộng nút `ZoomableImage` lên `40px` và hit-area kéo crop `ListeningScanReview` (`h-4`/`w-4`)
+  - [x] Verify: `npm run build -w @toeic/web && npm run lint -w @toeic/web && npm run test -w @toeic/web` (test 390px, 768px, 1440px trên trình duyệt)
 
-- [ ] **Checkpoint 3: Hoàn tất P1**
-  - [ ] `npm run build -w @toeic/web && npm run lint -w @toeic/web` pass
+- [x] **Checkpoint 3: Hoàn tất P1**
+  - [x] `npm run build -w @toeic/web` & `npm run lint -w @toeic/web` pass không cảnh báo mới.
 
 ## Phase 3: P2 — Tinh chỉnh nhỏ
 
-- [ ] **Task 12: Chuẩn hóa Typography Scale, `tabular-nums` & Thứ tự Heading**
-  - Files: `ProgressPage.tsx`, `ProgressParts.tsx`, `SettingsPage.tsx`, `PartDrills.tsx`, `PassageView.tsx`, `FlashcardPage.tsx`, `GrammarLessonPage.tsx`, `VocabGamesPage.tsx`, `StudentDetailPage.tsx`, `SiteSettingsPage.tsx`
-  - [ ] Chuẩn hóa `text-[Npx]` về scale, thống nhất `h1`/`h2`, thêm `tabular-nums`, chống tràn từ dài ở `FlashcardPage`
-  - [ ] Verify: `npm run build -w @toeic/web`
+- [x] **Task 12: Chuẩn hóa Typography Scale, `tabular-nums` & Thứ tự Heading**
+  - Files: `ProgressPage.tsx`, `ProgressParts.tsx`, `PartDrills.tsx`, `PassageView.tsx`, `FlashcardPage.tsx`, `GrammarLessonPage.tsx`, `VocabGamesPage.tsx`, `StudentDetailPage.tsx`, `TeacherDashboardPage.tsx`, `ReportsPage.tsx`, `SiteSettingsPage.tsx`, `HonorBoards.tsx`, `VocabCourse.tsx`, `ZoomableImage.tsx`, `StaffHonorPage.tsx`
+  - [x] Chuẩn hóa `text-[13px]`/`text-[17px]` về `text-xs`/`text-base`, sửa nhảy cấp heading `h3` -> `h2` ở `StudentDetailPage`, thêm `tabular-nums` cho các số KPI/điểm/tỉ lệ
+  - [x] Chống tràn từ vựng dài trên `FlashcardPage` & `VocabGamesPage`, bỏ `w-36` cố định ở `SiteSettingsPage` và căn đáy nút card `PartDrills` bằng `mt-auto pt-4`
+  - [x] Verify: `npm run build -w @toeic/web && npm run lint -w @toeic/web && npm run test -w @toeic/web`
 
-- [ ] **Task 13: Tinh chỉnh A11y, Empty State phụ & Tối ưu nhỏ**
+- [x] **Task 13: Tinh chỉnh A11y, Empty State phụ & Tối ưu nhỏ**
   - Files: `Primitives.tsx`, `LoadingScreen.tsx`, `ErrorPages.tsx`, `AdminStudyPage.tsx`, `SkyBackdrop.tsx`, `ExamPlayerPage.tsx`
-  - [ ] ARIA `progressbar`, `motion-reduce` cho `LoadingScreen`, bỏ hardcode `"Thầy Minh"` ở `ErrorPages`
-  - [ ] Empty state ngữ pháp ở `AdminStudyPage`, `<Card>` overlay hết giờ ở `ExamPlayerPage`, throttle `SkyBackdrop` xuống `30_000ms`
-  - [ ] Verify: `npm run build -w @toeic/web && npm run lint -w @toeic/web && npm run test -w @toeic/web`
+  - [x] ARIA `progressbar` (`role`, `aria-label`, `aria-valuenow/min/max` + guard `NaN`), `motion-reduce:animate-none` cho `LoadingScreen` + `bg-cream`/`bg-crimson-fill`, lấy tên thương hiệu/hotline từ `useSite()` ở `ErrorPages`
+  - [x] Empty state ngữ pháp ở `AdminStudyPage`, `<Card>` overlay hết giờ có spinner & tương phản sáng/tối ở `ExamPlayerPage`, giảm `SkyBackdrop` interval xuống `30_000ms`
+  - [x] Verify: `npm run build -w @toeic/web && npm run lint -w @toeic/web && npm run test -w @toeic/web`

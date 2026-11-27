@@ -133,7 +133,12 @@ export function ClassRooms({ selectedId, onSelect }: { selectedId: string; onSel
 
   return (
     <section className="space-y-4">
-      {classes.isPending ? <p className="text-sm text-ink-soft">Đang tải lớp…</p> : null}
+      {classes.isPending ? (
+        <div className="space-y-3 animate-pulse" aria-busy="true" aria-label="Đang tải danh sách lớp">
+          <div className="h-10 w-64 rounded-full bg-paper-2" />
+          <div className="h-24 rounded-2xl bg-paper-2" />
+        </div>
+      ) : null}
       {classes.isError ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-danger/25 bg-danger-soft px-4 py-3 text-sm text-danger" role="alert">
           <span>Không tải được danh sách lớp.</span>
@@ -161,6 +166,7 @@ function ClassWorkspace({ room }: { room: ClassSummaryDto }) {
   const setClosed = useSetClassClosed()
   const remove = useDeleteClass()
   const [editingTeachers, setEditingTeachers] = useState(false)
+  const [pendingAction, setPendingAction] = useState<'close' | 'delete' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const roster = teachers.data?.items ?? []
 
@@ -170,21 +176,19 @@ function ClassWorkspace({ room }: { room: ClassSummaryDto }) {
     void setTeachers.mutate({ classId: room.id, teacherIds })
   }
 
-  function run(action: 'close' | 'delete') {
+  function confirmAction() {
+    if (!pendingAction) return
+    const action = pendingAction
     const nextClosed = !room.closedAt
-    const ok = window.confirm(
-      action === 'delete'
-        ? `Xóa lớp “${room.name}”? Học viên không bị xóa tài khoản, chỉ ra khỏi lớp. Không hoàn tác được.`
-        : nextClosed
-          ? `Đóng lớp “${room.name}”? Lớp không nhận học viên mới. Tài khoản hiện tại vẫn giữ.`
-          : `Mở lại lớp “${room.name}”?`,
-    )
-    if (!ok) return
     setError(null)
     const task = action === 'delete' ? remove.mutateAsync(room.id) : setClosed.mutateAsync({ classId: room.id, closed: nextClosed })
-    void task.catch((err: unknown) => {
-      setError(err instanceof ApiError ? err.message : action === 'delete' ? 'Không xóa được lớp.' : 'Không đổi được trạng thái lớp.')
-    })
+    void task.then(
+      () => setPendingAction(null),
+      (err: unknown) => {
+        setPendingAction(null)
+        setError(err instanceof ApiError ? err.message : action === 'delete' ? 'Không xóa được lớp.' : 'Không đổi được trạng thái lớp.')
+      },
+    )
   }
 
   return (
@@ -203,10 +207,10 @@ function ClassWorkspace({ room }: { room: ClassSummaryDto }) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {room.closedAt ? <p className="text-sm text-ink-soft">Lớp đã đóng nên không thêm học viên.</p> : <AddStudentActions classId={room.id} className={room.name} prominent />}
-          <Button type="button" variant="paper" className="px-3 py-1.5 text-xs" disabled={setClosed.isPending || remove.isPending} onClick={() => run('close')}>
+          <Button type="button" variant="paper" className="px-3 py-1.5 text-xs" disabled={setClosed.isPending || remove.isPending} onClick={() => setPendingAction('close')}>
             {room.closedAt ? 'Mở lại lớp' : 'Đóng lớp'}
           </Button>
-          <Button type="button" variant="danger" className="px-3 py-1.5 text-xs" disabled={setClosed.isPending || remove.isPending} onClick={() => run('delete')}>
+          <Button type="button" variant="danger" className="px-3 py-1.5 text-xs" disabled={setClosed.isPending || remove.isPending} onClick={() => setPendingAction('delete')}>
             Xóa lớp
           </Button>
         </div>
@@ -250,8 +254,46 @@ function ClassWorkspace({ room }: { room: ClassSummaryDto }) {
           )
         ) : null}
       </div>
-      {error ? <p role="alert" className="mt-3 text-sm text-coral">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="mt-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
       <ClassRoster key={room.id} classId={room.id} memberCount={room.memberCount} />
+      {pendingAction ? (
+        <Modal
+          title={pendingAction === 'delete' ? 'Xóa lớp này?' : room.closedAt ? 'Mở lại lớp?' : 'Đóng lớp này?'}
+          dismissible={!(setClosed.isPending || remove.isPending)}
+          onClose={() => !(setClosed.isPending || remove.isPending) && setPendingAction(null)}
+        >
+          <p className="text-sm text-ink-soft">
+            {pendingAction === 'delete'
+              ? `Xóa lớp “${room.name}”? Học viên không bị xóa tài khoản, chỉ ra khỏi lớp. Không hoàn tác được.`
+              : !room.closedAt
+                ? `Đóng lớp “${room.name}”? Lớp không nhận học viên mới. Tài khoản hiện tại vẫn giữ.`
+                : `Mở lại lớp “${room.name}” để tiếp tục nhận học viên mới?`}
+          </p>
+          <div className="mt-5 flex justify-end gap-2">
+            <Button type="button" variant="paper" disabled={setClosed.isPending || remove.isPending} onClick={() => setPendingAction(null)}>
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              variant={pendingAction === 'delete' ? 'danger' : 'gold'}
+              disabled={setClosed.isPending || remove.isPending}
+              onClick={confirmAction}
+            >
+              {setClosed.isPending || remove.isPending
+                ? 'Đang xử lý…'
+                : pendingAction === 'delete'
+                  ? 'Xóa lớp'
+                  : room.closedAt
+                    ? 'Mở lại lớp'
+                    : 'Đóng lớp'}
+            </Button>
+          </div>
+        </Modal>
+      ) : null}
     </Card>
   )
 }
@@ -275,7 +317,11 @@ function ClassRoster({ classId, memberCount }: { classId: string; memberCount: n
         <p className="text-sm font-semibold text-gold-deep">{total} học viên</p>
       </div>
       {students.isPending ? <p className="mt-3 text-sm text-ink-soft">Đang tải tài khoản…</p> : null}
-      {students.isError ? <p className="mt-3 text-sm text-coral">Không tải được danh sách học viên.</p> : null}
+      {students.isError ? (
+        <p className="mt-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
+          Không tải được danh sách học viên.
+        </p>
+      ) : null}
       {!students.isPending && items.length === 0 ? <p className="mt-3 text-sm text-ink-soft">Lớp chưa có học viên.</p> : null}
       {items.length > 0 ? (
         <ul className="mt-3 divide-y divide-gold/25">

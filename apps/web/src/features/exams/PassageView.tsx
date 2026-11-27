@@ -10,13 +10,13 @@ export function PassageView({ group, showImage = true }: { group: GroupDto; show
       {showImage && group.imageUrl ? <ZoomableImage src={group.imageUrl} alt="Hình/bảng biểu của nhóm câu hỏi" /> : null}
       {group.instructions ? <p className="text-xs font-semibold text-gold-deep">{group.instructions}</p> : null}
       {group.passages.map((p) => (
-        <article key={p.label} className="rounded-2xl border border-ink/12 bg-cream p-5">
-          <p className="text-[13px] font-semibold tracking-wide text-ink-soft uppercase">
+        <article key={p.label} className="rounded-2xl border border-gold/30 bg-paper/75 p-4 sm:p-5">
+          <p className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
             {group.passages.length > 1 ? `Văn bản ${p.label}` : 'Văn bản'}
             {p.title ? ` • ${p.title}` : ''}
           </p>
           <SelectableText
-            className="exam-passage mt-2.5 max-w-[68ch] text-[17px] leading-[1.72] whitespace-pre-line text-ink"
+            className="exam-passage mt-2.5 max-w-[68ch] text-base leading-[1.72] whitespace-pre-line text-ink"
             text={p.content}
             markTarget={isListeningPart(group.partCode) ? undefined : { kind: 'passage', id: group.id, passageLabel: p.label }}
           />

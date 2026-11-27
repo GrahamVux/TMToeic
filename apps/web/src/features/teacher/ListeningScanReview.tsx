@@ -202,14 +202,16 @@ function PageCropper({ pageImage, box, onBox }: { pageImage: string; box: Box; o
           <span
             key={edge}
             className={cn(
-              'absolute bg-button',
-              edge === 'n' && 'inset-x-0 top-0 h-2 cursor-ns-resize',
-              edge === 's' && 'inset-x-0 bottom-0 h-2 cursor-ns-resize',
-              edge === 'w' && 'inset-y-0 left-0 w-2 cursor-ew-resize',
-              edge === 'e' && 'inset-y-0 right-0 w-2 cursor-ew-resize',
+              'absolute flex items-center justify-center',
+              edge === 'n' && 'inset-x-0 -top-2 h-4 cursor-ns-resize',
+              edge === 's' && 'inset-x-0 -bottom-2 h-4 cursor-ns-resize',
+              edge === 'w' && 'inset-y-0 -left-2 w-4 cursor-ew-resize',
+              edge === 'e' && 'inset-y-0 -right-2 w-4 cursor-ew-resize',
             )}
             onPointerDown={(event) => begin(event, edge)}
-          />
+          >
+            <span className={cn('rounded-full bg-button', edge === 'n' || edge === 's' ? 'h-1 w-full' : 'h-full w-1')} />
+          </span>
         ))}
       </div>
     </div>

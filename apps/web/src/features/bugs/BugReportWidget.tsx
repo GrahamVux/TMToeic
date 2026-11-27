@@ -10,7 +10,7 @@ import {
   type BugReportStatus,
 } from '@toeic/shared'
 import { Bug, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useCreateBugReport, useMyBugReports } from './bugs.queries'
 
@@ -29,6 +29,15 @@ export function BugReportWidget() {
   const mine = useMyBugReports(open)
   const send = useCreateBugReport()
   const [sent, setSent] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open])
 
   async function submit() {
     setSent(false)
@@ -95,7 +104,7 @@ export function BugReportWidget() {
             </label>
             <p className="text-[13px] text-ink-soft">Trang hiện tại: {location.pathname || '/'}</p>
             {send.error ? (
-              <p className="text-sm text-coral" role="alert">
+              <p className="rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
                 {send.error instanceof ApiError ? send.error.message : 'Không gửi được. Thử lại sau.'}
               </p>
             ) : null}
@@ -121,7 +130,7 @@ export function BugReportWidget() {
                 <p className="text-xs font-semibold text-ink-soft">Báo cáo gần đây</p>
                 <ul className="mt-2 space-y-2">
                   {mine.data.items.slice(0, 5).map((item) => (
-                    <li key={item.id} className="rounded-xl bg-cream px-3 py-2">
+                    <li key={item.id} className="rounded-xl bg-paper px-3 py-2">
                       <div className="flex items-center justify-between gap-2">
                         <p className="truncate text-xs font-medium text-ink">{BUG_REPORT_CATEGORY_LABEL[item.category]}</p>
                         <Badge tone={STATUS_TONE[item.status]}>{BUG_REPORT_STATUS_LABEL[item.status]}</Badge>

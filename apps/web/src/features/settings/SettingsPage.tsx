@@ -2,7 +2,7 @@ import { useAuth } from '@/app/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { CornerNotice, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { ChangePasswordForm } from '@/features/auth/PasswordFields'
-import { Card } from '@/components/ui/Primitives'
+import { Card, Input } from '@/components/ui/Primitives'
 import { useDashboard, useSetGoal } from '@/features/dashboard/dashboard.queries'
 import { useUpdateProfile } from '@/features/site/site.queries'
 import { ApiError } from '@/lib/api'
@@ -37,9 +37,6 @@ function Toggle({ checked, onChange, label, hint, disabled }: { checked: boolean
     </div>
   )
 }
-
-const fieldCls =
-  'mt-1 h-10 w-full rounded-xl border border-gold/40 bg-cream px-3 text-sm text-ink outline-none focus:border-button focus:ring-2 focus:ring-button/30'
 
 function scoreFor(track: GoalTrack, saved: GoalDto) {
   if (saved?.track === track) return saved.score
@@ -143,23 +140,27 @@ export function SettingsPage() {
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <label className="text-xs font-medium text-ink-soft">
             Họ và tên
-            <input className={fieldCls} value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" />
+            <Input className="mt-1" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" />
           </label>
           <label className="text-xs font-medium text-ink-soft">
             Mã học viên
-            <input className={cn(fieldCls, 'bg-paper-2 text-ink-soft')} value={user?.studentCode ?? user?.username ?? ''} readOnly />
+            <input
+              className="mt-1 h-10 w-full rounded-xl border border-gold/40 bg-paper-2 px-3 text-sm text-ink-soft outline-none focus:border-button focus:ring-2 focus:ring-button/30"
+              value={user?.studentCode ?? user?.username ?? ''}
+              readOnly
+            />
           </label>
           <label className="text-xs font-medium text-ink-soft">
             Email
-            <input className={fieldCls} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Chưa cập nhật" autoComplete="email" />
+            <Input className="mt-1" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Chưa cập nhật" autoComplete="email" />
           </label>
           <label className="text-xs font-medium text-ink-soft">
             Số điện thoại
-            <input className={fieldCls} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Chưa cập nhật" autoComplete="tel" />
+            <Input className="mt-1" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Chưa cập nhật" autoComplete="tel" />
           </label>
         </div>
         {profileError ? (
-          <p className="mt-3 text-sm text-coral" role="alert">
+          <p className="mt-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
             {profileError}
           </p>
         ) : null}
@@ -195,7 +196,10 @@ export function SettingsPage() {
                 return (
                   <label
                     key={t}
-                    className={cn('flex cursor-pointer items-start gap-3 rounded-2xl border p-4', selected ? 'border-gold-deep bg-teal-soft/40' : 'border-gold/35 bg-cream')}
+                    className={cn(
+                      'flex cursor-pointer items-start gap-3 rounded-2xl border p-4 focus-within:ring-2 focus-within:ring-button/40',
+                      selected ? 'border-gold-deep bg-teal-soft/40' : 'border-gold/35 bg-cream',
+                    )}
                   >
                     <input className="mt-1" type="radio" name="goal-track" checked={selected} onChange={() => setTrack(t)} />
                     <span>
@@ -218,13 +222,13 @@ export function SettingsPage() {
                   onChange={(e) => setScores((prev) => ({ ...prev, [track]: Number(e.target.value) }))}
                   className="h-2 flex-1 accent-[var(--color-gold-deep)]"
                 />
-                <span className="w-20 shrink-0 rounded-xl bg-teal-soft py-1.5 text-center text-lg font-bold text-gold-deep">{scores[track]}</span>
+                <span className="w-20 shrink-0 rounded-xl bg-teal-soft py-1.5 text-center text-lg font-bold text-gold-deep tabular-nums">{scores[track]}</span>
               </div>
             ) : (
               <p className="mt-4 text-sm text-ink-soft">Chọn một nhóm để kéo thanh điểm mục tiêu.</p>
             )}
             {setGoal.error ? (
-              <p className="mt-3 text-sm text-coral" role="alert">
+              <p className="mt-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
                 Không lưu được mục tiêu. Kiểm tra điểm trong thang của nhóm đã chọn.
               </p>
             ) : null}

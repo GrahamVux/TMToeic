@@ -68,7 +68,7 @@ export function AvatarSettings() {
           </div>
         </div>
         <p role="status" className="empty:hidden mt-3 text-sm text-ink-soft">{change.isPending ? 'Đang lưu ảnh…' : message}</p>
-        {error && <p role="alert" className="mt-3 text-sm text-coral">{error}</p>}
+        {error && <p role="alert" className="mt-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
       </Card>
       <FrameWardrobeModal open={wardrobeOpen} onClose={() => setWardrobeOpen(false)} />
     </>

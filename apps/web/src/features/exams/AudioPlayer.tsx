@@ -60,10 +60,30 @@ function TrackAudio({
   const [rate, setRate] = useState<number>(1)
   const [failed, setFailed] = useState(false)
   const [recovering, setRecovering] = useState(false)
+  const [reloadNonce, setReloadNonce] = useState(0)
 
   useEffect(() => {
     if (!active) ref.current?.pause()
   }, [active])
+
+  useEffect(() => {
+    if (reloadNonce > 0) ref.current?.load()
+  }, [reloadNonce, url])
+
+  async function retry() {
+    if (recovering) return
+    refreshes.current = 0
+    setFailed(false)
+    setRecovering(true)
+    try {
+      await refreshUrls()
+      setReloadNonce((n) => n + 1)
+    } catch {
+      setFailed(true)
+    } finally {
+      setRecovering(false)
+    }
+  }
 
   function toggle() {
     const el = ref.current
@@ -180,17 +200,29 @@ function TrackAudio({
               </select>
             ) : null}
           </div>
-          <p className="mt-2 text-xs text-ink-soft" role="status" aria-live="polite">
-            {failed
-              ? 'Không phát được audio (link hết hạn hoặc mất kết nối). Hãy tải lại trang rồi thử lại — đáp án của bạn vẫn được lưu.'
-              : recovering
-                ? 'Đang kết nối lại audio…'
-                : !seekable
-                  ? 'Chế độ thi thử: audio phát liền mạch, không tua lại hay đổi tốc độ. Bấm ▶ để bắt đầu nghe.'
-                  : playing || time > 0
-                    ? duration ? `Còn ${formatClock(remaining)}` : ''
-                    : 'Bấm ▶ để bắt đầu nghe.'}
-          </p>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-soft" role="status" aria-live="polite">
+            <p>
+              {failed
+                ? 'Không phát được audio (link hết hạn hoặc mất kết nối). Thử tải lại audio — đáp án của bạn vẫn được lưu.'
+                : recovering
+                  ? 'Đang kết nối lại audio…'
+                  : !seekable
+                    ? 'Chế độ thi thử: audio phát liền mạch, không tua lại hay đổi tốc độ. Bấm ▶ để bắt đầu nghe.'
+                    : playing || time > 0
+                      ? duration ? `Còn ${formatClock(remaining)}` : ''
+                      : 'Bấm ▶ để bắt đầu nghe.'}
+            </p>
+            {failed ? (
+              <button
+                type="button"
+                disabled={recovering}
+                onClick={() => void retry()}
+                className="min-h-10 shrink-0 rounded-full border border-gold/40 bg-cream px-3 py-1 font-semibold text-gold-deep transition hover:bg-paper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 disabled:opacity-50"
+              >
+                {recovering ? 'Đang tải…' : 'Thử tải lại audio'}
+              </button>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </>

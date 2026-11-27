@@ -85,21 +85,21 @@ export function DashboardHonorSummaryCard({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-gold/30 bg-cream p-4">
+        <div className="rounded-2xl border border-gold/30 bg-paper p-4">
           <p className="text-xs font-semibold text-ink-soft">Top 3 Toàn Trung Tâm Tuần ({formatCountdown(centerWeek.endsAt)})</p>
           {top3.length === 0 ? (
             <p className="mt-3 text-xs text-ink-soft">
               Chưa ai đạt sàn {CENTER_MIN_XP.week} EXP tuần này để lên bục Top 3 Trung Tâm.
             </p>
           ) : (
-            <div className="mt-3 grid grid-cols-3 gap-2">
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
               {top3.map((row) => (
-                <div key={`${row.place}-${row.name}`} className="flex flex-col items-center rounded-xl bg-paper p-2.5 text-center">
+                <div key={`${row.place}-${row.name}`} className="flex flex-col items-center rounded-xl bg-cream/85 p-2.5 text-center">
                   <AccountAvatar name={row.name} url={row.avatarUrl} frameId={row.avatarFrame} className="size-[42px] text-xs" />
                   <p className="mt-1.5 w-full truncate text-xs font-semibold">
                     #{row.place} {row.name.split(' ').slice(-1)[0]}
                   </p>
-                  <p className="text-[13px] font-medium text-gold-deep">{row.periodXp} EXP</p>
+                  <p className="text-xs font-medium text-gold-deep tabular-nums">{row.periodXp} EXP</p>
                 </div>
               ))}
             </div>

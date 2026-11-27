@@ -182,7 +182,7 @@ function YesterdayCorner({ yesterday }: { yesterday: NonNullable<DailyGoalsDto['
   }
 
   return (
-    <aside aria-label="Kết quả mục tiêu hôm qua" className="mt-4 rounded-2xl border border-danger/25 bg-danger-soft/45 p-4">
+    <aside aria-label="Kết quả mục tiêu hôm qua" className="mt-4 rounded-2xl border border-danger/20 bg-danger-soft/35 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="size-2 shrink-0 rounded-full bg-crimson" aria-hidden="true" />
@@ -198,7 +198,7 @@ function YesterdayCorner({ yesterday }: { yesterday: NonNullable<DailyGoalsDto['
               <Link
                 key={item.kind}
                 to={item.to}
-                className="flex items-center justify-between gap-3 rounded-xl border border-danger/30 bg-cream px-3.5 py-2.5 shadow-2xs transition hover:border-danger/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+                className="flex items-center justify-between gap-3 rounded-xl border border-danger/25 bg-paper px-3.5 py-2.5 transition hover:border-danger/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
               >
                 <div className="min-w-0">
                   <span className="flex items-center gap-1.5 text-xs font-semibold text-ink-soft">
@@ -217,7 +217,7 @@ function YesterdayCorner({ yesterday }: { yesterday: NonNullable<DailyGoalsDto['
           return (
             <div
               key={item.kind}
-              className="flex items-center justify-between gap-3 rounded-xl border border-olive/25 bg-cream/80 px-3.5 py-2.5"
+              className="flex items-center justify-between gap-3 rounded-xl border border-olive/25 bg-paper px-3.5 py-2.5"
             >
               <span className="flex items-center gap-1.5 text-xs font-semibold text-ink-soft">
                 <Check className="size-4 shrink-0 text-olive" aria-hidden />
@@ -361,7 +361,7 @@ function GoalForm({ data, onClose, onSaved }: { data: DailyGoalsDto; onClose: ()
         })}
       </div>
       {error ? (
-        <p className="mt-3 text-sm text-coral" role="alert">
+        <p className="mt-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
           {error}
         </p>
       ) : null}

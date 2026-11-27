@@ -101,7 +101,7 @@ export function FlashcardPage() {
       <CornerNotice notice={notice} />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Học tập / Flashcard</p>
+          <p className="text-xs font-semibold tracking-[0.06em] text-gold-deep uppercase">Học tập / Flashcard</p>
           <h1 className="serif mt-2 text-3xl">{query.data?.title || 'Ôn từ vựng'}</h1>
         </div>
         <div className="flex items-center gap-4">
@@ -142,10 +142,10 @@ export function FlashcardPage() {
               <Card className="flex min-h-68 flex-col items-center justify-center p-8 text-center">
                 {flipped ? (
                   <>
-                    <p className="text-[13px] font-semibold tracking-[0.06em] text-ink-soft uppercase">
+                    <p className="text-xs font-semibold tracking-[0.06em] text-ink-soft uppercase">
                       Nghĩa • {card.partOfSpeech}
                     </p>
-                    <p className="serif mt-3 text-3xl leading-snug text-ink">{card.meaning}</p>
+                    <p className="serif mt-3 w-full break-words text-3xl leading-snug text-ink">{card.meaning}</p>
                     {card.example ? (
                       <p className="mt-4 max-w-md rounded-xl bg-paper px-4 py-2.5 text-sm italic leading-relaxed text-ink-soft">
                         “{card.example}”
@@ -155,7 +155,7 @@ export function FlashcardPage() {
                 ) : (
                   <>
                     <p className="text-sm font-semibold tracking-wide text-gold-deep">{card.partOfSpeech}</p>
-                    <p className="serif mt-3 text-5xl">{card.word}</p>
+                    <p className="serif mt-3 w-full max-w-full break-words text-4xl sm:text-5xl">{card.word}</p>
                     {card.topic || card.unit ? (
                       <p className="mt-3 text-xs text-ink-soft">
                         {card.topic ?? ''}{card.unit ? ` · Unit ${card.unit}` : ''}

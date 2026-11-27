@@ -83,7 +83,7 @@ export function TeacherDashboardPage() {
           <p className="text-sm text-ink-soft">Tài khoản này chưa được cấp quyền. Quản trị viên cần bật tạo học viên, giao bài hoặc xem tiến độ.</p>
         </Card>
       ) : null}
-      {canSeeStudents ? <div className="grid gap-4 md:grid-cols-4">
+      {canSeeStudents ? <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <Stat title="Tổng học viên" value={stats.data?.total} meta={knownClassId ? 'Trong lớp đang chọn' : 'Mọi lớp bạn được xem'} />
         <Stat title="Đang hoạt động" value={stats.data?.active} meta="Có thể đăng nhập" />
         <Stat title="Chưa đổi mật khẩu tạm" value={stats.data?.pendingFirstLogin} meta="Cần nhắc đăng nhập lần đầu" />
@@ -221,7 +221,7 @@ function Stat({ title, value, meta }: { title: string; value?: number; meta: str
   return (
     <Card className="p-5">
       <p className="text-xs text-ink-soft">{title}</p>
-      <p className="serif mt-2 text-4xl">{value ?? '—'}</p>
+      <p className="serif mt-2 text-4xl tabular-nums">{value ?? '—'}</p>
       <p className="mt-1 text-xs text-ink-soft">{meta}</p>
     </Card>
   )

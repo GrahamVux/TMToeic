@@ -266,7 +266,8 @@ function Player({ data }: { data: AttemptPlayerDto }) {
                 ))}
               </>
             )}
-            <div className="exam-scale" style={examTextStyle(textZoom)}>
+            <div className="min-w-0">
+              <div className="exam-scale" style={examTextStyle(textZoom)}>
             <p className="text-sm text-ink-soft">
               {partName(question.partCode)} • {grouped ? `Câu ${visible[0].number}–${visible[visible.length - 1].number}` : `Câu ${question.number}`}
             </p>
@@ -326,10 +327,11 @@ function Player({ data }: { data: AttemptPlayerDto }) {
               ))}
             </div>
             {visible.some((item) => item.type !== FILL_QUESTION_TYPE) ? <p className="mt-3 text-xs text-ink-soft">Bấm lại đáp án đã chọn để bỏ chọn.</p> : null}
-            <div className="mt-6 flex justify-between">
-              <Button variant="ghost" disabled={screen.start === 0} onClick={goPrev}>{grouped ? 'Nhóm trước' : 'Câu trước'}</Button>
-              <Button variant="navy" disabled={screen.end >= questions.length - 1} onClick={goNext}>{grouped ? 'Nhóm tiếp' : 'Câu tiếp'}</Button>
-            </div>
+              </div>
+              <div className="mt-6 flex flex-wrap justify-between gap-2">
+                <Button variant="ghost" disabled={screen.start === 0} onClick={goPrev}>{grouped ? 'Nhóm trước' : 'Câu trước'}</Button>
+                <Button variant="navy" disabled={screen.end >= questions.length - 1} onClick={goNext}>{grouped ? 'Nhóm tiếp' : 'Câu tiếp'}</Button>
+              </div>
             </div>
             </div>
           </Card>
@@ -423,8 +425,12 @@ function Player({ data }: { data: AttemptPlayerDto }) {
       ) : null}
 
       {finishing && !confirm ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/65 font-semibold text-white" role="status">
-          Hết giờ — đang nộp bài…
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/65 p-4" role="status" aria-live="polite">
+          <Card className="flex w-full max-w-sm flex-col items-center gap-3 p-6 text-center text-ink">
+            <span aria-hidden="true" className="size-10 animate-spin motion-reduce:animate-none rounded-full border-[3px] border-button/20 border-t-button border-r-crimson" />
+            <p className="text-base font-semibold text-ink">Hết giờ — đang nộp bài…</p>
+            <p className="text-sm text-ink-soft">Hệ thống đang lưu bài của bạn. Vui lòng giữ nguyên trang này.</p>
+          </Card>
         </div>
       ) : null}
     </div>

@@ -26,7 +26,7 @@ export function TextZoomBar({ scale, onChange }: { scale: number; onChange: (nex
       <button
         type="button"
         onClick={() => onChange(1)}
-        className="min-h-10 min-w-12 rounded-full bg-paper px-2 py-1 text-xs font-semibold text-gold-deep transition hover:bg-paper-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 sm:min-h-8"
+        className="min-h-10 min-w-12 rounded-full bg-paper px-2.5 py-1 text-xs font-semibold text-gold-deep tabular-nums transition hover:bg-paper-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
         title="Về 100%"
       >
         {Math.round(scale * 100)}%
@@ -110,7 +110,7 @@ function ZoomToolbar({
         type="button"
         onClick={onReset}
         className={cn(
-          'min-h-10 min-w-12 rounded-full px-2 py-1 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 sm:min-h-8',
+          'min-h-10 min-w-12 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums transition focus-visible:outline-none focus-visible:ring-2',
           onDark
             ? 'bg-white/15 text-white hover:bg-white/25 focus-visible:ring-white/80'
             : 'bg-paper text-gold-deep hover:bg-paper-2 focus-visible:ring-button/50',
@@ -152,7 +152,7 @@ function ToolBtn({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'grid size-10 place-items-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 disabled:opacity-40 sm:size-8',
+        'grid size-10 place-items-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 disabled:opacity-40',
         onDark
           ? 'border-white/25 bg-white/15 text-white hover:bg-white/25 focus-visible:ring-white/80'
           : 'border-ink/15 bg-cream text-ink hover:bg-paper-2 focus-visible:ring-button/50',

@@ -30,10 +30,19 @@ export function Card({ children, className, id }: { children: ReactNode; classNa
   return <section id={id} className={cn('ui-card rounded-2xl border border-gold/35 bg-cream shadow-[0_12px_40px_rgba(15,23,42,0.06)]', className)}>{children}</section>
 }
 
-export function ProgressBar({ value, className }: { value: number; className?: string }) {
+export function ProgressBar({ value, label, className }: { value: number; label?: string; className?: string }) {
+  const safe = Number.isFinite(value) ? value : 0
+  const clamped = Math.round(Math.min(100, Math.max(0, safe)))
   return (
-    <div className={cn('h-2 overflow-hidden rounded-full bg-paper-2', className)}>
-      <div className="h-full rounded-full bg-linear-to-r from-gold-deep to-gold" style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
+    <div
+      role="progressbar"
+      aria-label={label ?? 'Tiến độ'}
+      aria-valuenow={clamped}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      className={cn('h-2 overflow-hidden rounded-full bg-paper-2', className)}
+    >
+      <div className="h-full rounded-full bg-linear-to-r from-gold-deep to-gold" style={{ width: `${clamped}%` }} />
     </div>
   )
 }

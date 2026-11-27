@@ -76,18 +76,18 @@ export function StudentDetailPage() {
 
       {p ? (
         <>
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
             <Card className="p-5">
               <p className="text-xs text-ink-soft">Điểm gần nhất</p>
-              <p className="serif mt-2 text-4xl">{p.latestScore?.totalScore ?? '—'}</p>
+              <p className="serif mt-2 text-4xl tabular-nums">{p.latestScore?.totalScore ?? '—'}</p>
               <p className="mt-1 text-sm text-gold-deep">
                 {p.improvement === null ? (p.latestScore ? 'Mới có 1 bài' : 'Chưa có bài đủ 200 câu') : `${p.improvement >= 0 ? '+' : ''}${p.improvement} điểm so với lần đầu`}
               </p>
             </Card>
             <Card className="p-5">
               <p className="text-xs text-ink-soft">Hoạt động</p>
-              <p className="serif mt-2 text-4xl">{p.totals.attemptsFinished}<span className="text-lg text-ink-soft"> bài</span></p>
-              <p className="mt-1 text-xs text-ink-soft">
+              <p className="serif mt-2 text-4xl tabular-nums">{p.totals.attemptsFinished}<span className="text-lg text-ink-soft"> bài</span></p>
+              <p className="mt-1 text-xs text-ink-soft tabular-nums">
                 {p.totals.answered} câu • {p.totals.accuracy === null ? 'chưa có tỷ lệ đúng' : `${p.totals.accuracy}% đúng`} • chuỗi {p.streak.days} ngày
               </p>
             </Card>
@@ -99,7 +99,7 @@ export function StudentDetailPage() {
             </Card>
             <Card className="p-5">
               <p className="text-xs text-ink-soft">{target ? `So với mục tiêu ${formatGoal(target)}` : 'Mục tiêu'}</p>
-              <p className="serif mt-2 text-4xl">{p.remainingToTarget ?? '—'}</p>
+              <p className="serif mt-2 text-4xl tabular-nums">{p.remainingToTarget ?? '—'}</p>
               <p className="mt-1 text-xs text-ink-soft">
                 {!target ? 'Học viên chưa đặt mục tiêu' : target.track === 'FOUR_SKILL' ? 'Không so sánh với mock L&R' : p.latestScore ? 'điểm còn lại đến mục tiêu' : 'chưa có điểm để so sánh'}
               </p>
@@ -112,7 +112,7 @@ export function StudentDetailPage() {
       ) : null}
 
       <section id="bai-lam">
-        <h3 className="serif text-2xl">Kết quả & bài làm chi tiết</h3>
+        <h2 className="serif text-2xl">Kết quả & bài làm chi tiết</h2>
         <p className="mt-1 text-sm text-ink-soft">Mỗi lần nộp: điểm tổng, đúng/sai theo part, và từng câu học viên đã chọn.</p>
         {sittings.isPending ? <p className="mt-3 text-sm text-ink-soft">Đang tải bài làm…</p> : null}
         {sittings.error ? (

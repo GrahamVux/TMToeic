@@ -122,7 +122,11 @@ export function ViewAsPage() {
           </p>
         ) : null}
 
-        {error ? <p className="mt-3 text-sm text-coral" role="alert">{error}</p> : null}
+        {error ? (
+          <p className="mt-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
+            {error}
+          </p>
+        ) : null}
 
         <p className="mt-4 text-sm text-ink-soft">
           {list.isPending ? 'Đang tải…' : `${list.data?.total ?? 0} ${role === 'STUDENT' ? 'học sinh' : 'giáo viên'} đang hoạt động`}

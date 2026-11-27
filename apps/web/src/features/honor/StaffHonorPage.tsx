@@ -1,6 +1,7 @@
 import { useAuth } from '@/app/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { PageLoading } from '@/components/ui/LoadingScreen'
+import { Modal } from '@/components/ui/Modal'
 import { Badge, Card, Input } from '@/components/ui/Primitives'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { useStaffHonor } from '@/features/progress/progress.queries'
@@ -18,6 +19,7 @@ export function StaffHonorPage() {
   const { data, isPending, error } = useStaffHonor()
   const [period, setPeriod] = useState<HonorPeriod>('week')
   const [settlingKey, setSettlingKey] = useState<string | null>(null)
+  const [pendingSettle, setPendingSettle] = useState<{ scope: HonorScope; period: HonorPeriod; classId?: string; label: string; periodLabel: string } | null>(null)
   const [notice, setNotice] = useState('')
   const [actionError, setActionError] = useState('')
 
@@ -87,23 +89,28 @@ export function StaffHonorPage() {
     }
   }
 
-  async function handleSettle(scope: HonorScope, classId?: string) {
+  function requestSettle(scope: HonorScope, classId?: string) {
     const label = scope === 'center' ? 'Toàn Trung Tâm' : data?.classes.find((c) => c.classId === classId)?.className ?? 'Lớp'
     const periodLabel = period === 'week' ? 'Tuần' : period === 'month' ? 'Tháng' : 'Năm'
-    if (!window.confirm(`Chốt thưởng sớm kỳ ${periodLabel} cho ${label}? Điểm và khung viền Top 3 sẽ được trao ngay.`)) {
-      return
-    }
-    const key = scope === 'center' ? 'center' : `class:${classId}`
+    setActionError('')
+    setPendingSettle({ scope, period, classId, label, periodLabel })
+  }
+
+  async function confirmSettle() {
+    if (!pendingSettle) return
+    const target = pendingSettle
+    const key = target.scope === 'center' ? 'center' : `class:${target.classId}`
     setSettlingKey(key)
     setNotice('')
     setActionError('')
     try {
-      const res = await earlySettle.mutateAsync({ scope, period, classId })
-      setNotice(`Đã chốt thưởng ${label}: trao giải cho ${res.winners.length} học viên Top 3.`)
+      const res = await earlySettle.mutateAsync({ scope: target.scope, period: target.period, classId: target.classId })
+      setNotice(`Đã chốt thưởng ${target.label}: trao giải cho ${res.winners.length} học viên Top 3.`)
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : 'Không chốt thưởng được.')
     } finally {
       setSettlingKey(null)
+      setPendingSettle(null)
     }
   }
 
@@ -126,7 +133,7 @@ export function StaffHonorPage() {
         onPeriodChange={setPeriod}
         canSettle={isAdmin}
         settlingKey={settlingKey}
-        onEarlySettle={(scope, classId) => void handleSettle(scope, classId)}
+        onEarlySettle={(scope, classId) => requestSettle(scope, classId)}
       />
 
       {isAdmin ? (
@@ -147,7 +154,7 @@ export function StaffHonorPage() {
                 <Card key={scope} className="p-5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      {scope === 'center' ? <Crown className="size-5 text-amber-500" /> : <Trophy className="size-5 text-gold-deep" />}
+                      {scope === 'center' ? <Crown className="size-5 text-warn" /> : <Trophy className="size-5 text-gold-deep" />}
                       <h3 className="serif text-lg">{scope === 'center' ? 'Thưởng Toàn Trung Tâm' : 'Thưởng Trong Lớp'}</h3>
                     </div>
                     <Badge tone={scope === 'center' ? 'warn' : 'teal'}>
@@ -174,7 +181,7 @@ export function StaffHonorPage() {
                                   step={10}
                                   value={tier.points}
                                   onChange={(e) => setTierPoints(scope, p, tier.place, Math.max(0, Math.trunc(Number(e.target.value) || 0)))}
-                                  className="h-8 w-20 rounded-lg border border-gold/45 bg-cream px-2 text-right text-xs font-bold text-ink"
+                                  className="h-10 w-20 rounded-lg border border-gold/45 bg-cream px-2 text-right text-xs font-bold text-ink tabular-nums outline-none focus:border-button focus:ring-2 focus:ring-button/30"
                                 />
                                 <span className="text-ink-soft">điểm</span>
                               </span>
@@ -200,7 +207,7 @@ export function StaffHonorPage() {
                 <label className="block text-xs font-medium text-ink-soft">
                   Tìm học viên (tên hoặc mã HV)
                   <Input
-                    className="mt-1 h-9 text-sm"
+                    className="mt-1 text-sm"
                     placeholder="Nhập tên hoặc mã TM-…"
                     value={studentSearch}
                     onChange={(e) => {
@@ -212,7 +219,7 @@ export function StaffHonorPage() {
                 <label className="block text-xs font-medium text-ink-soft">
                   Chọn tài khoản
                   <select
-                    className="mt-1 h-9 w-full rounded-xl border border-ink/12 bg-cream px-3 text-sm"
+                    className="mt-1 h-10 w-full rounded-xl border border-ink/12 bg-cream px-3 text-sm outline-none focus:border-button focus:ring-2 focus:ring-button/30"
                     value={selectedStudentId}
                     onChange={(e) => setSelectedStudentId(e.target.value)}
                   >
@@ -225,12 +232,12 @@ export function StaffHonorPage() {
                 </label>
                 <label className="block text-xs font-medium text-ink-soft">
                   Số điểm thay đổi (nhập số âm để trừ, VD: -50)
-                  <Input className="mt-1 h-9 text-sm font-bold" type="number" value={deltaStr} onChange={(e) => setDeltaStr(e.target.value)} />
+                  <Input className="mt-1 text-sm font-bold" type="number" value={deltaStr} onChange={(e) => setDeltaStr(e.target.value)} />
                 </label>
                 <label className="block text-xs font-medium text-ink-soft">
                   Lý do
                   <Input
-                    className="mt-1 h-9 text-sm"
+                    className="mt-1 text-sm"
                     placeholder="VD: Thưởng nóng đạt 700+ Mock Test"
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
@@ -286,6 +293,25 @@ export function StaffHonorPage() {
             </Card>
           </div>
         </>
+      ) : null}
+      {pendingSettle ? (
+        <Modal
+          title="Chốt thưởng sớm?"
+          dismissible={!earlySettle.isPending}
+          onClose={() => !earlySettle.isPending && setPendingSettle(null)}
+        >
+          <p className="text-sm text-ink-soft">
+            Chốt thưởng sớm kỳ <strong className="text-ink">{pendingSettle.periodLabel}</strong> cho <strong className="text-ink">{pendingSettle.label}</strong>? Điểm và khung viền Top 3 sẽ được trao ngay.
+          </p>
+          <div className="mt-5 flex justify-end gap-2">
+            <Button type="button" variant="paper" disabled={earlySettle.isPending} onClick={() => setPendingSettle(null)}>
+              Hủy
+            </Button>
+            <Button type="button" disabled={earlySettle.isPending} onClick={() => void confirmSettle()}>
+              {earlySettle.isPending ? 'Đang chốt…' : 'Chốt thưởng ngay'}
+            </Button>
+          </div>
+        </Modal>
       ) : null}
     </div>
   )

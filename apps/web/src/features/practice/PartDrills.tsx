@@ -16,6 +16,7 @@ export function PartDrills({ skill, title, subtitle }: { skill: Skill; title: st
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [part, setPart] = useState('all')
+  const [startingKey, setStartingKey] = useState<string | null>(null)
 
   const cards = useMemo(
     () => (exams.data ?? []).flatMap((exam) => exam.parts.filter((item) => item.skill === skill).map((item) => ({ exam, part: item }))),
@@ -36,11 +37,14 @@ export function PartDrills({ skill, title, subtitle }: { skill: Skill; title: st
   if (exams.error) return <QueryErrorRedirect error={exams.error} />
 
   async function begin(examId: string, partCode: string) {
+    setStartingKey(`${examId}:${partCode}`)
     try {
       const created = await start.mutateAsync({ examId, mode: 'PART_DRILL', partCodes: [partCode] })
       navigate(`/attempts/${created.id}/play`)
     } catch {
       // shown below
+    } finally {
+      setStartingKey(null)
     }
   }
 
@@ -56,7 +60,7 @@ export function PartDrills({ skill, title, subtitle }: { skill: Skill; title: st
           <span className="sr-only">Tìm đề theo tên</span>
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-soft" />
           <input
-            className="h-11 w-full rounded-full border border-ink/10 bg-cream pr-4 pl-9 text-sm text-ink outline-none placeholder:text-ink/45 focus:ring-2 focus:ring-button/40"
+            className="h-11 w-full rounded-full border border-ink/10 bg-cream pr-4 pl-9 text-sm text-ink outline-none placeholder:text-ink/60 focus:ring-2 focus:ring-button/40"
             value={query}
             placeholder="Tìm đề theo tên..."
             onChange={(event) => setQuery(event.target.value)}
@@ -85,19 +89,24 @@ export function PartDrills({ skill, title, subtitle }: { skill: Skill; title: st
       {exams.data && cards.length === 0 ? <Card className="p-6 text-sm text-ink-soft">Chưa có đề nào có phần này.</Card> : null}
       {exams.data && cards.length > 0 && visible.length === 0 ? <Card className="p-6 text-sm text-ink-soft">Không có bài khớp tên hoặc part này.</Card> : null}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {visible.map(({ exam, part: item }) => (
-          <Card key={`${exam.id}-${item.code}`} className="flex h-full flex-col p-5">
-            <div className="flex items-center justify-between gap-2">
-              <Badge tone={skill === 'LISTENING' ? 'teal' : 'gold'}>{item.code.replace('PART_', 'Part ')}</Badge>
-              <span className="text-sm text-ink-soft">{item.questionCount} câu</span>
-            </div>
-            <h2 className="mt-3 text-lg font-semibold">{partName(item.code).split(' — ')[0]}</h2>
-            <p className="mt-1 text-sm text-ink-soft">{exam.title}</p>
-            <Button className="mt-4 w-full" disabled={start.isPending} onClick={() => void begin(exam.id, item.code)}>
-              <Play className="size-4" /> Bắt đầu luyện
-            </Button>
-          </Card>
-        ))}
+        {visible.map(({ exam, part: item }) => {
+          const busy = startingKey === `${exam.id}:${item.code}`
+          return (
+            <Card key={`${exam.id}-${item.code}`} className="flex h-full flex-col p-5">
+              <div className="flex items-center justify-between gap-2">
+                <Badge tone={skill === 'LISTENING' ? 'teal' : 'gold'}>{item.code.replace('PART_', 'Part ')}</Badge>
+                <span className="text-sm text-ink-soft tabular-nums">{item.questionCount} câu</span>
+              </div>
+              <h2 className="mt-3 text-lg font-semibold">{partName(item.code).split(' — ')[0]}</h2>
+              <p className="mt-1 text-sm text-ink-soft">{exam.title}</p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full" disabled={start.isPending} onClick={() => void begin(exam.id, item.code)}>
+                  <Play className="size-4" /> {busy ? 'Đang mở…' : 'Bắt đầu luyện'}
+                </Button>
+              </div>
+            </Card>
+          )
+        })}
       </div>
     </div>
   )

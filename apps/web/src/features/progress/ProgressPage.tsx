@@ -31,26 +31,26 @@ export function ProgressPage() {
         <Link to="/practice" className={buttonClasses('gold')}>Làm đề</Link>
       </header>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <Card className="p-5">
           <p className="text-xs text-ink-soft">Điểm thi thử gần nhất</p>
-          <p className="serif text-4xl">{p.latestScore?.totalScore ?? '—'}</p>
+          <p className="serif text-4xl tabular-nums">{p.latestScore?.totalScore ?? '—'}</p>
           <p className="text-sm text-ink-soft">
             {p.improvement === null ? (p.latestScore ? 'Bài thi thử đầu tiên' : 'Chưa có bài đủ 200 câu') : `${p.improvement >= 0 ? '+' : ''}${p.improvement} so với lần đầu`}
           </p>
         </Card>
         <Card className="p-5">
           <p className="text-xs text-ink-soft">Listening</p>
-          <p className="serif text-4xl">{p.latestScore?.listeningScore ?? '—'}<span className="text-lg text-ink-soft"> /495</span></p>
+          <p className="serif text-4xl tabular-nums">{p.latestScore?.listeningScore ?? '—'}<span className="text-lg text-ink-soft"> /495</span></p>
         </Card>
         <Card className="p-5">
           <p className="text-xs text-ink-soft">Reading</p>
-          <p className="serif text-4xl">{p.latestScore?.readingScore ?? '—'}<span className="text-lg text-ink-soft"> /495</span></p>
+          <p className="serif text-4xl tabular-nums">{p.latestScore?.readingScore ?? '—'}<span className="text-lg text-ink-soft"> /495</span></p>
         </Card>
         <Card className="p-5">
           <p className="text-xs text-ink-soft">Tỷ lệ đúng chung</p>
-          <p className="serif text-4xl">{p.totals.accuracy === null ? '—' : `${p.totals.accuracy}%`}</p>
-          <p className="text-sm text-ink-soft">
+          <p className="serif text-4xl tabular-nums">{p.totals.accuracy === null ? '—' : `${p.totals.accuracy}%`}</p>
+          <p className="text-sm text-ink-soft tabular-nums">
             {p.totals.answered} câu • {p.totals.attemptsFinished} bài
             {p.totals.avgSeconds !== null ? ` • ${p.totals.avgSeconds}s/câu` : ''}
           </p>

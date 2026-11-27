@@ -83,7 +83,7 @@ export function PartBreakdown({ parts }: { parts: PartStatDto[] }) {
               <ProgressBar className="mt-2" value={p.accuracy ?? 0} />
             </div>
             <div className="text-right">
-              <p className="text-xl font-semibold">{p.accuracy === null ? '—' : `${p.accuracy}%`}</p>
+              <p className="text-xl font-semibold tabular-nums">{p.accuracy === null ? '—' : `${p.accuracy}%`}</p>
               {p.answered > 0 && !enough ? <p className="text-xs text-ink-soft">Cần ≥{MIN_ANSWERS_FOR_INSIGHT} câu để đánh giá</p> : null}
             </div>
           </Card>
@@ -135,7 +135,7 @@ export function AttemptsTable({
                     <Badge tone="warn" className="ml-2">Rời tab {a.focusLeaveCount}</Badge>
                   ) : null}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 tabular-nums">
                   {a.totalScore !== null ? <span className="font-semibold">{a.totalScore}/990</span> : null}
                   <span className="text-ink-soft">{a.totalScore !== null ? ' • ' : ''}{a.correct}/{a.total} câu ({a.accuracy}%)</span>
                 </td>

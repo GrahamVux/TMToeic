@@ -74,7 +74,7 @@ function ExamCard({ exam }: { exam: ExamReportItemDto }) {
           </p>
         ) : null}
       </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-4">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Học viên đã làm" value={String(exam.students)} />
         <Stat label="Lượt nộp" value={String(exam.attempts)} />
         <Stat label="Tỷ lệ đúng" value={exam.accuracy === null ? '—' : `${exam.accuracy}%`} />
@@ -103,7 +103,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl bg-paper px-4 py-3">
       <p className="text-xs text-ink-soft">{label}</p>
-      <p className="serif mt-1 text-2xl">{value}</p>
+      <p className="serif mt-1 text-2xl tabular-nums">{value}</p>
     </div>
   )
 }
@@ -142,7 +142,7 @@ function Kpi({ label, value, meta }: { label: string; value: string; meta: strin
   return (
     <Card className="p-5">
       <p className="text-xs text-ink-soft">{label}</p>
-      <p className="serif mt-2 text-4xl">{value}</p>
+      <p className="serif mt-2 text-4xl tabular-nums">{value}</p>
       <p className="mt-1 text-xs text-ink-soft">{meta}</p>
     </Card>
   )

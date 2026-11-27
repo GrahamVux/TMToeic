@@ -130,7 +130,7 @@ export function VocabGamesPage() {
 
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">Học tập qua trò chơi</p>
+          <p className="text-xs font-semibold tracking-[0.06em] text-gold-deep uppercase">Học tập qua trò chơi</p>
           <h1 className="serif mt-2 text-3xl sm:text-4xl">Đấu trường Từ vựng TOEIC</h1>
           <p className="mt-1.5 text-sm text-ink-soft">
             Chơi ghép cặp, phản xạ 4 đáp án hoặc chính tả để ghi nhớ từ vựng và nhận tối đa {VOCAB_GAME_DAILY_XP_CAP} EXP/ngày cho Bảng xếp hạng.
@@ -140,7 +140,7 @@ export function VocabGamesPage() {
         <Card className="min-w-[230px] px-4 py-3">
           <div className="flex items-center justify-between gap-3 text-xs font-semibold">
             <span className="inline-flex items-center gap-1.5 text-gold-deep">
-              <Zap className="size-4 text-amber-500" /> EXP Game hôm nay
+              <Zap className="size-4 text-warn" /> EXP Game hôm nay
             </span>
             <span className="tabular-nums text-ink">{todayXp} / {VOCAB_GAME_DAILY_XP_CAP} EXP</span>
           </div>
@@ -379,13 +379,13 @@ function MatchGameBoard({
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gold/25 pb-3">
         <p className="text-sm font-semibold">Ghép {sample.length} cặp Từ vựng — Nghĩa đúng</p>
         <div className="flex items-center gap-3 text-xs font-bold">
-          <span className="inline-flex items-center gap-1 text-orange-600">
+          <span className="inline-flex items-center gap-1 text-warn">
             <Flame className="size-3.5" /> Combo x{combo}
           </span>
           <span className="inline-flex items-center gap-1 tabular-nums text-gold-deep">
             <Timer className="size-3.5" /> {seconds}s
           </span>
-          <span>{matched.size}/{sample.length} cặp</span>
+          <span className="tabular-nums">{matched.size}/{sample.length} cặp</span>
         </div>
       </div>
 
@@ -497,7 +497,7 @@ function QuizGameBoard({
 
   return (
     <Card className="mx-auto max-w-2xl p-6">
-      <div className="flex items-center justify-between text-xs font-semibold text-ink-soft">
+      <div className="flex items-center justify-between text-xs font-semibold text-ink-soft tabular-nums">
         <span>Câu {idx + 1} / {questions.length}</span>
         <span className="text-gold-deep">Đúng: {score}</span>
       </div>
@@ -505,7 +505,7 @@ function QuizGameBoard({
 
       <div className="mt-6 text-center">
         <p className="text-xs font-bold tracking-widest text-gold-deep uppercase">{current.target.partOfSpeech}</p>
-        <h2 className="serif mt-2 text-4xl text-ink">{current.target.word}</h2>
+        <h2 className="serif mt-2 break-words text-3xl text-ink sm:text-4xl">{current.target.word}</h2>
         {current.target.example ? (
           <p className="mt-2 text-xs italic text-ink-soft">“{maskWordInSentence(current.target.example, current.target.word)}”</p>
         ) : null}
@@ -586,7 +586,7 @@ function SpellGameBoard({
 
   return (
     <Card className="mx-auto max-w-xl p-6">
-      <div className="flex items-center justify-between text-xs font-semibold text-ink-soft">
+      <div className="flex items-center justify-between text-xs font-semibold text-ink-soft tabular-nums">
         <span>Chính tả {idx + 1} / {queue.length}</span>
         <span className="text-gold-deep">Đúng: {score}</span>
       </div>

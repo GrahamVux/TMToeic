@@ -29,6 +29,7 @@ export function BugReportsPage() {
   const list = useAdminBugReports(status, page)
   const update = useUpdateBugReport()
   const [notes, setNotes] = useState<Record<string, string>>({})
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
   if (user?.role !== 'ADMIN') {
@@ -51,10 +52,13 @@ export function BugReportsPage() {
 
   async function setStatusOf(id: string, next: BugReportStatus) {
     setErr(null)
+    setUpdatingId(id)
     try {
       await update.mutateAsync({ id, status: next, adminNote: notes[id] ?? '' })
     } catch {
       setErr('Không cập nhật được báo lỗi. Thử lại.')
+    } finally {
+      setUpdatingId(null)
     }
   }
 
@@ -90,7 +94,7 @@ export function BugReportsPage() {
       </div>
 
       {err ? (
-        <p className="text-sm text-coral" role="alert">
+        <p className="rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
           {err}
         </p>
       ) : null}
@@ -137,20 +141,20 @@ export function BugReportsPage() {
                   placeholder="Đã sửa / cần thêm thông tin…"
                 />
               </label>
-              <div className="mt-3 flex flex-wrap justify-end gap-2">
+              <div className="mt-3 flex flex-wrap justify-end gap-2" aria-busy={updatingId === item.id}>
                 {item.status === 'OPEN' ? (
                   <Button variant="paper" disabled={update.isPending} onClick={() => void setStatusOf(item.id, 'IN_PROGRESS')}>
-                    Đang xử lý
+                    {updatingId === item.id ? 'Đang lưu…' : 'Đang xử lý'}
                   </Button>
                 ) : null}
                 {item.status !== 'RESOLVED' ? (
                   <Button disabled={update.isPending} onClick={() => void setStatusOf(item.id, 'RESOLVED')}>
-                    Đã sửa
+                    {updatingId === item.id ? 'Đang lưu…' : 'Đã sửa'}
                   </Button>
                 ) : null}
                 {item.status !== 'CLOSED' ? (
                   <Button variant="ghost" disabled={update.isPending} onClick={() => void setStatusOf(item.id, 'CLOSED')}>
-                    Đóng
+                    {updatingId === item.id ? 'Đang lưu…' : 'Đóng'}
                   </Button>
                 ) : null}
               </div>

@@ -29,7 +29,7 @@ export function GrammarLessonPage() {
       </div>
       <Card className="p-6">
         <h2 className="serif text-2xl font-bold">Nội dung</h2>
-        <p className="mt-4 max-w-[68ch] text-[17px] leading-[1.72] whitespace-pre-line text-ink">{topic.body}</p>
+        <p className="mt-4 max-w-[68ch] text-base leading-[1.72] whitespace-pre-line text-ink">{topic.body}</p>
         {topic.pdf ? (
           <div className="mt-6">
             <h3 className="font-semibold">Tài liệu PDF</h3>

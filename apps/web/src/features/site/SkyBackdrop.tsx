@@ -101,9 +101,7 @@ export function SkyBackdrop({ embedded = false }: { embedded?: boolean }) {
   const moonId = useId().replace(/:/g, '')
 
   useEffect(() => {
-    const tick = () => setFrame(skyFrame())
-    tick()
-    const id = window.setInterval(tick, 1000)
+    const id = window.setInterval(() => setFrame(skyFrame()), 30_000)
     return () => window.clearInterval(id)
   }, [])
 

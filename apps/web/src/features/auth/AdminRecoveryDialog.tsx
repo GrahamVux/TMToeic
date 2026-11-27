@@ -41,7 +41,7 @@ export function AdminRecoveryDialog({ onClose, onDone }: { onClose: () => void; 
   }
 
   return (
-    <Modal title="Khôi phục mật khẩu quản trị" onClose={onClose}>
+    <Modal title="Khôi phục mật khẩu quản trị" dismissible={!busy} onClose={() => !busy && onClose()}>
       <p className="text-sm leading-6 text-ink-soft">
         Dành cho tài khoản quản trị khi quên mật khẩu. Nhập mã khôi phục cùng mật khẩu mới.
       </p>

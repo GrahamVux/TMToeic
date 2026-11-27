@@ -114,7 +114,7 @@ export function UserMenu({ name, code, subtitle, avatarUrl, avatarFrame, setting
                   to={item.to}
                   role="menuitem"
                   onClick={closeAll}
-                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[15px] text-ink transition hover:bg-teal-soft hover:text-ink"
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[15px] text-ink transition hover:bg-teal-soft hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
                 >
                   <item.icon className="size-4 text-ink-soft" />
                   {item.label}

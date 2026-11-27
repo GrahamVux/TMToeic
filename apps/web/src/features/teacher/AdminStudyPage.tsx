@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/Button'
 import { CornerNotice, flashError, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { FilePick } from '@/components/ui/FilePick'
+import { Modal } from '@/components/ui/Modal'
 import { Badge, Card } from '@/components/ui/Primitives'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
@@ -43,6 +44,7 @@ export function AdminStudyPage() {
   const [summary, setSummary] = useState('')
   const [body, setBody] = useState('')
   const [grammarNote, setGrammarNote] = useState<string | null>(null)
+  const [pendingDeleteLesson, setPendingDeleteLesson] = useState<GrammarLessonDto | null>(null)
 
   if (lessons.isPending) return <PageLoading message="Đang tải học liệu…" />
   if (lessons.error) return <QueryErrorRedirect error={lessons.error} />
@@ -132,30 +134,72 @@ export function AdminStudyPage() {
           <Button type="submit" disabled={createLesson.isPending}>
             Thêm chuyên đề
           </Button>
-          {grammarNote ? <p className="text-sm text-coral" role="alert">{grammarNote}</p> : null}
+          {grammarNote ? <p className="rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">{grammarNote}</p> : null}
         </form>
-        <ul className="mt-4 space-y-2">
-          {(lessons.data ?? []).map((lesson) => (
-            <li key={lesson.id} className="rounded-xl bg-paper px-3 py-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-semibold">{lesson.title}</p>
-                  <p className="text-sm text-ink-soft">{lesson.summary}</p>
+        {(lessons.data?.length ?? 0) === 0 ? (
+          <p className="mt-4 rounded-xl bg-paper px-4 py-3 text-sm text-ink-soft">
+            Chưa có chuyên đề ngữ pháp nào. Hãy thêm chuyên đề đầu tiên ở form phía trên.
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-2">
+            {(lessons.data ?? []).map((lesson) => (
+              <li key={lesson.id} className="rounded-xl bg-paper px-3 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold">{lesson.title}</p>
+                    <p className="text-sm text-ink-soft">{lesson.summary}</p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={removeLesson.isPending}
+                    className="min-h-10 shrink-0 rounded-lg px-2 text-sm font-semibold text-coral underline underline-offset-4 hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 disabled:opacity-50"
+                    onClick={() => setPendingDeleteLesson(lesson)}
+                  >
+                    Xóa chuyên đề
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  disabled={removeLesson.isPending}
-                  className="min-h-10 shrink-0 rounded-lg px-2 text-sm font-semibold text-coral underline underline-offset-4 hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 disabled:opacity-50"
-                  onClick={() => void removeLesson.mutateAsync(lesson.id)}
-                >
-                  Xóa chuyên đề
-                </button>
-              </div>
-              <GrammarPdf lesson={lesson} />
-            </li>
-          ))}
-        </ul>
+                <GrammarPdf lesson={lesson} />
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
+      {pendingDeleteLesson ? (
+        <Modal
+          title="Xóa chuyên đề ngữ pháp?"
+          dismissible={!removeLesson.isPending}
+          onClose={() => !removeLesson.isPending && setPendingDeleteLesson(null)}
+        >
+          <p className="text-sm text-ink-soft">
+            Bạn có chắc muốn xóa chuyên đề <strong className="text-ink">{pendingDeleteLesson.title}</strong> và tài liệu PDF đính kèm (nếu có)?
+          </p>
+          <div className="mt-5 flex justify-end gap-2">
+            <Button type="button" variant="paper" disabled={removeLesson.isPending} onClick={() => setPendingDeleteLesson(null)}>
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              disabled={removeLesson.isPending}
+              onClick={() => {
+                const target = pendingDeleteLesson
+                void removeLesson.mutateAsync(target.id).then(
+                  () => {
+                    setPendingDeleteLesson(null)
+                    setNotice(flashNotice(`Đã xóa chuyên đề “${target.title}”.`))
+                  },
+                  (err: unknown) => {
+                    setPendingDeleteLesson(null)
+                    setNotice(flashError(err instanceof ApiError ? err.message : 'Không xóa được chuyên đề.'))
+                  },
+                )
+              }}
+            >
+              {removeLesson.isPending ? 'Đang xóa…' : 'Xóa chuyên đề'}
+            </Button>
+          </div>
+        </Modal>
+      ) : null}
     </div>
   )
 }
@@ -488,6 +532,7 @@ function VocabUnitBrowserPanel({ onNotice }: { onNotice: (n: CornerNoticeState) 
   const [q, setQ] = useState('')
   const search = useVocabSearch(q)
   const removeVocab = useDeleteVocab()
+  const [pendingDeleteWord, setPendingDeleteWord] = useState<{ id: string; word: string } | null>(null)
 
   async function addWord(e: React.FormEvent) {
     e.preventDefault()
@@ -584,7 +629,15 @@ function VocabUnitBrowserPanel({ onNotice }: { onNotice: (n: CornerNoticeState) 
           ) : (
             <div className="space-y-2">
               {(unitDetail.data?.items ?? []).map((item) => (
-                <EditableDbVocabRow key={item.id} item={item} currentUnit={unitIndex} canEditUnit={effectiveSet?.id !== UNASSIGNED_VOCAB_SET} onNotice={onNotice} />
+                <EditableDbVocabRow
+                  key={item.id}
+                  item={item}
+                  currentUnit={unitIndex}
+                  canEditUnit={effectiveSet?.id !== UNASSIGNED_VOCAB_SET}
+                  deleting={removeVocab.isPending && pendingDeleteWord?.id === item.id}
+                  onRequestDelete={() => setPendingDeleteWord({ id: item.id, word: item.word })}
+                  onNotice={onNotice}
+                />
               ))}
             </div>
           )}
@@ -628,7 +681,7 @@ function VocabUnitBrowserPanel({ onNotice }: { onNotice: (n: CornerNoticeState) 
                     type="button"
                     disabled={removeVocab.isPending}
                     className="min-h-10 rounded-lg px-2 font-semibold text-coral underline underline-offset-4 hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 disabled:opacity-50"
-                    onClick={() => void removeVocab.mutateAsync(item.id)}
+                    onClick={() => setPendingDeleteWord({ id: item.id, word: item.word })}
                   >
                     Xóa
                   </button>
@@ -638,6 +691,42 @@ function VocabUnitBrowserPanel({ onNotice }: { onNotice: (n: CornerNoticeState) 
           )
         ) : null}
       </div>
+      {pendingDeleteWord ? (
+        <Modal
+          title="Xóa từ vựng khỏi kho?"
+          dismissible={!removeVocab.isPending}
+          onClose={() => !removeVocab.isPending && setPendingDeleteWord(null)}
+        >
+          <p className="text-sm text-ink-soft">
+            Bạn có chắc muốn xóa từ <strong className="text-ink">{pendingDeleteWord.word}</strong> khỏi Database?
+          </p>
+          <div className="mt-5 flex justify-end gap-2">
+            <Button type="button" variant="paper" disabled={removeVocab.isPending} onClick={() => setPendingDeleteWord(null)}>
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              disabled={removeVocab.isPending}
+              onClick={() => {
+                const target = pendingDeleteWord
+                void removeVocab.mutateAsync(target.id).then(
+                  () => {
+                    setPendingDeleteWord(null)
+                    onNotice(flashNotice(`Đã xóa từ “${target.word}”.`))
+                  },
+                  (err: unknown) => {
+                    setPendingDeleteWord(null)
+                    onNotice(flashError(err instanceof ApiError ? err.message : 'Không xóa được từ vựng.'))
+                  },
+                )
+              }}
+            >
+              {removeVocab.isPending ? 'Đang xóa…' : 'Xóa từ'}
+            </Button>
+          </div>
+        </Modal>
+      ) : null}
     </div>
   )
 }
@@ -646,15 +735,18 @@ function EditableDbVocabRow({
   item,
   currentUnit,
   canEditUnit,
+  deleting,
+  onRequestDelete,
   onNotice,
 }: {
   item: VocabUnitWordDto
   currentUnit: number
   canEditUnit: boolean
+  deleting: boolean
+  onRequestDelete: () => void
   onNotice: (n: CornerNoticeState) => void
 }) {
   const update = useUpdateVocab()
-  const remove = useDeleteVocab()
   const [word, setWord] = useState(item.word)
   const [pos, setPos] = useState(item.partOfSpeech)
   const [meaning, setMeaning] = useState(item.meaning)
@@ -711,8 +803,8 @@ function EditableDbVocabRow({
         <button
           type="button"
           aria-label="Xóa từ"
-          disabled={remove.isPending}
-          onClick={() => void remove.mutateAsync(item.id)}
+          disabled={deleting}
+          onClick={onRequestDelete}
           className="flex size-10 items-center justify-center rounded-lg text-coral hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 disabled:opacity-50"
         >
           <Trash2 className="size-4" />

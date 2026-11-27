@@ -1,6 +1,7 @@
 import { Button, buttonClasses } from '@/components/ui/Button'
 import { CornerNotice, flashError, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
 import { FilePick } from '@/components/ui/FilePick'
+import { Modal } from '@/components/ui/Modal'
 import { Card } from '@/components/ui/Primitives'
 import { PageLoading } from '@/components/ui/LoadingScreen'
 import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
@@ -363,6 +364,7 @@ function NoteCard({ item, onNotice }: { item: NotebookEntryDto; onNotice: (n: Co
   const [topic, setTopic] = useState(item.topic ?? '')
   const [unitStr, setUnitStr] = useState(item.unit != null ? String(item.unit) : '')
   const [error, setError] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const incomplete = !item.meaning || !item.partOfSpeech
   const [editing, setEditing] = useState(incomplete)
   const palette = paletteOf(item.color)
@@ -394,7 +396,7 @@ function NoteCard({ item, onNotice }: { item: NotebookEntryDto; onNotice: (n: Co
           aria-label="Xóa từ khỏi sổ tay"
           className="flex size-10 shrink-0 items-center justify-center rounded-full text-danger transition hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
           disabled={remove.isPending}
-          onClick={() => void remove.mutateAsync(item.id)}
+          onClick={() => setConfirmDelete(true)}
         >
           <Trash2 className="size-4" />
         </button>
@@ -472,6 +474,37 @@ function NoteCard({ item, onNotice }: { item: NotebookEntryDto; onNotice: (n: Co
           </div>
         </form>
       )}
+      {confirmDelete ? (
+        <Modal title="Xóa từ khỏi sổ tay?" dismissible={!remove.isPending} onClose={() => !remove.isPending && setConfirmDelete(false)}>
+          <p className="text-sm text-ink-soft">
+            Bạn có chắc muốn xóa <strong className="text-ink">{item.word}</strong> khỏi sổ tay cá nhân? Tiến độ ôn thẻ của từ này cũng sẽ bị xóa.
+          </p>
+          <div className="mt-5 flex justify-end gap-2">
+            <Button type="button" variant="paper" disabled={remove.isPending} onClick={() => setConfirmDelete(false)}>
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              disabled={remove.isPending}
+              onClick={() => {
+                void remove.mutateAsync(item.id).then(
+                  () => {
+                    setConfirmDelete(false)
+                    onNotice(flashNotice(`Đã xóa “${item.word}” khỏi sổ tay.`))
+                  },
+                  (err: unknown) => {
+                    setConfirmDelete(false)
+                    onNotice(flashError(err instanceof ApiError ? err.message : 'Không xóa được từ khỏi sổ tay.'))
+                  },
+                )
+              }}
+            >
+              {remove.isPending ? 'Đang xóa…' : 'Xóa từ'}
+            </Button>
+          </div>
+        </Modal>
+      ) : null}
     </section>
   )
 }

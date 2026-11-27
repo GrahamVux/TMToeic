@@ -385,7 +385,7 @@ function AuthoredImport({ skill }: { skill: Skill }) {
               <label className="mt-2 flex items-center gap-2 text-xs">
                 Đáp án đúng
                 <select
-                  className="h-8 rounded-lg border border-ink/12 bg-cream px-2"
+                  className="h-10 rounded-lg border border-ink/12 bg-cream px-2 outline-none focus:border-button focus:ring-2 focus:ring-button/30"
                   value={r.correct}
                   onChange={(e) => setRows((all) => all.map((x, j) => (j === i ? { ...x, correct: e.target.value } : x)))}
                 >
@@ -446,6 +446,7 @@ function ExamList() {
   const publish = usePublishExam()
   const archive = useArchiveExam()
   const remove = useDeleteExam()
+  const [actingId, setActingId] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<ExamSummaryDto | null>(null)
   const [notice, setNotice] = useState<CornerNoticeState | null>(null)
   const error = publish.error ?? archive.error
@@ -468,7 +469,12 @@ function ExamList() {
           ) : null}
         </div>
       ) : null}
-      {exams.isPending ? <p className="mt-3 text-sm text-ink-soft">Đang tải…</p> : null}
+      {exams.isPending ? (
+        <div className="mt-3 grid gap-3 animate-pulse" aria-busy="true" aria-label="Đang tải kho đề">
+          <div className="h-32 rounded-2xl bg-paper-2" />
+          <div className="h-32 rounded-2xl bg-paper-2" />
+        </div>
+      ) : null}
       {!exams.isPending && (exams.data?.length ?? 0) === 0 ? (
         <Card className="mt-3 p-6 text-center text-sm text-ink-soft">
           Chưa có đề nào trong ngân hàng. Hãy import hoặc soạn nhanh ở phía trên.
@@ -502,13 +508,26 @@ function ExamList() {
                   </Link>
                 ) : null}
                 {exam.status === 'DRAFT' || exam.status === 'PENDING_REVIEW' || exam.status === 'REJECTED' || exam.status === 'ARCHIVED' ? (
-                  <Button disabled={publish.isPending} onClick={() => publish.mutate(exam.id)}>
-                    Xuất bản
+                  <Button
+                    disabled={publish.isPending}
+                    onClick={() => {
+                      setActingId(exam.id)
+                      void publish.mutateAsync(exam.id).finally(() => setActingId(null))
+                    }}
+                  >
+                    {actingId === exam.id && publish.isPending ? 'Đang xuất bản…' : 'Xuất bản'}
                   </Button>
                 ) : null}
                 {exam.status === 'PUBLISHED' ? (
-                  <Button variant="paper" disabled={archive.isPending} onClick={() => archive.mutate(exam.id)}>
-                    Lưu trữ
+                  <Button
+                    variant="paper"
+                    disabled={archive.isPending}
+                    onClick={() => {
+                      setActingId(exam.id)
+                      void archive.mutateAsync(exam.id).finally(() => setActingId(null))
+                    }}
+                  >
+                    {actingId === exam.id && archive.isPending ? 'Đang lưu trữ…' : 'Lưu trữ'}
                   </Button>
                 ) : null}
                 <Button variant="danger" disabled={remove.isPending} onClick={() => setPendingDelete(exam)}>
@@ -584,7 +603,7 @@ function ListeningAudioControl({ exam }: { exam: ExamSummaryDto }) {
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <select
-          className="h-10 rounded-xl border border-ink/12 bg-cream px-3 text-sm"
+          className="h-10 rounded-xl border border-ink/12 bg-cream px-3 text-sm outline-none focus:border-button focus:ring-2 focus:ring-button/30"
           value={partCode}
           aria-label="Chỗ gắn file nghe"
           onChange={(e) => setPartCode(e.target.value)}
