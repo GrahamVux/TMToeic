@@ -132,22 +132,47 @@ export function NotificationBell() {
       >
         <Bell className="size-4" />
         {count > 0 ? (
-          <span className="absolute -top-1 -right-1 grid min-w-[18px] place-items-center rounded-full bg-crimson px-1 text-[12px] leading-[18px] font-bold text-white dark:bg-red-600">
+          <span className="absolute -top-1 -right-1 grid min-w-[18px] place-items-center rounded-full bg-crimson-fill px-1 text-[12px] leading-[18px] font-bold text-white">
             {count > 9 ? '9+' : count}
           </span>
         ) : null}
       </button>
       {open ? (
-        <div className="absolute top-full right-0 z-40 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-gold/40 bg-cream p-3 shadow-[0_12px_32px_rgba(15,23,42,0.16)]" role="dialog" aria-label="Nhắc nhở">
+        <div
+          className="fixed inset-x-4 top-[4.5rem] z-40 rounded-2xl border border-gold/40 bg-cream p-3 shadow-[0_12px_32px_rgba(15,23,42,0.16)] sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:mt-2 sm:w-80"
+          role="dialog"
+          aria-label="Nhắc nhở"
+        >
           <p className="px-1 text-sm font-semibold text-ink">Nhắc nhở</p>
-          {count === 0 ? <p className="px-1 py-3 text-sm text-ink-soft">Hiện chưa có nhắc nhở.</p> : null}
+          {(assignments.isPending || study.isPending) && count === 0 ? (
+            <p className="px-1 py-3 text-sm text-ink-soft">Đang tải nhắc nhở…</p>
+          ) : (assignments.isError || study.isError) && count === 0 ? (
+            <div className="px-1 py-3 text-sm text-danger">
+              Không tải được nhắc nhở.{' '}
+              <button
+                type="button"
+                className="rounded font-semibold underline hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+                onClick={() => {
+                  void assignments.refetch()
+                  void study.refetch()
+                }}
+              >
+                Thử lại
+              </button>
+            </div>
+          ) : count === 0 ? (
+            <p className="px-1 py-3 text-sm text-ink-soft">Hiện chưa có nhắc nhở.</p>
+          ) : null}
           <ul className="mt-2 max-h-80 space-y-1 overflow-y-auto">
             {items.map((item) => (
               <li key={item.id}>
                 <Link
                   to={item.to}
                   onClick={() => setOpen(false)}
-                  className={cn('block rounded-xl px-3 py-2 transition', item.urgent ? 'bg-danger-soft hover:bg-danger-soft/80' : 'bg-paper hover:bg-paper-2')}
+                  className={cn(
+                    'block rounded-xl px-3 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
+                    item.urgent ? 'bg-danger-soft hover:bg-danger-soft/80' : 'bg-paper hover:bg-paper-2',
+                  )}
                 >
                   <p className="text-sm font-semibold text-ink">{item.title}</p>
                   <p className="text-xs text-ink-soft">{item.body}</p>

@@ -7,8 +7,8 @@ export type NoticeTone = 'success' | 'error'
 export type CornerNoticeState = { id: number; text: string; tone: NoticeTone }
 
 const TONE = {
-  success: { bar: 'bg-[#3cb85c]', ink: 'text-[#3cb85c]' },
-  error: { bar: 'bg-[#e24b4b]', ink: 'text-[#e24b4b]' },
+  success: { bar: 'bg-success-fill', ink: 'text-success' },
+  error: { bar: 'bg-danger-fill', ink: 'text-danger' },
 } as const
 
 const VISIBLE_MS = 5000
@@ -68,7 +68,7 @@ export function CornerNotice({ notice }: { notice: CornerNoticeState | null }) {
 
   return createPortal(
     <div
-      className="fixed top-4 right-4 z-[80] flex max-w-md items-stretch overflow-hidden rounded-lg border border-gold/35 bg-cream shadow-[0_8px_24px_rgba(15,23,42,0.16)]"
+      className="fixed top-4 right-4 z-[80] flex max-w-[min(28rem,calc(100vw-2rem))] items-stretch overflow-hidden rounded-lg border border-gold/35 bg-cream shadow-[0_8px_24px_rgba(15,23,42,0.16)]"
       role={shown.tone === 'error' ? 'alert' : 'status'}
     >
       <span className={`w-1.5 shrink-0 ${tone.bar}`} aria-hidden />
@@ -94,7 +94,12 @@ export function CornerNotice({ notice }: { notice: CornerNoticeState | null }) {
           </svg>
           <span className="text-[13px] font-bold tabular-nums">{seconds}</span>
         </span>
-        <button type="button" className="shrink-0 text-ink-soft transition hover:text-ink" aria-label="Đóng" onClick={close}>
+        <button
+          type="button"
+          className="-mr-1.5 flex size-10 shrink-0 items-center justify-center rounded-full text-ink-soft transition hover:bg-paper-2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+          aria-label="Đóng"
+          onClick={close}
+        >
           <X className="size-4" />
         </button>
       </div>

@@ -1,5 +1,5 @@
 import { useAuth } from '@/app/AuthContext'
-import { Button } from '@/components/ui/Button'
+import { Button, buttonClasses } from '@/components/ui/Button'
 import { BrandMark } from '@/components/layout/Shell'
 import { ApiError } from '@/lib/api'
 import { ERROR_CODES, homePathForRole } from '@toeic/shared'
@@ -20,8 +20,8 @@ function SupportHomeLink() {
   const { user } = useAuth()
   const to = user ? homePathForRole(user.role) : '/login'
   return (
-    <Link to={to}>
-      <Button variant="gold">{user ? 'Về trang chủ' : 'Về trang đăng nhập'}</Button>
+    <Link to={to} className={buttonClasses('gold')}>
+      {user ? 'Về trang chủ' : 'Về trang đăng nhập'}
     </Link>
   )
 }

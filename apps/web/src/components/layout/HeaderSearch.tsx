@@ -74,10 +74,13 @@ export function HeaderSearch() {
 
   return (
     <div ref={wrapRef} className="relative">
+      {open ? <div className="size-10 sm:hidden" aria-hidden="true" /> : null}
       <div
         className={cn(
           'flex h-10 items-center overflow-hidden rounded-full border bg-cream transition-[width,border-color,box-shadow] duration-300 ease-out',
-          open ? 'w-56 border-gold-deep ring-2 ring-button/20 xl:w-72' : 'w-10 border-gold/40 hover:border-gold-deep',
+          open
+            ? 'fixed inset-x-4 top-3 z-50 w-auto border-gold-deep ring-2 ring-button/20 sm:static sm:w-56 xl:w-72'
+            : 'w-10 border-gold/40 hover:border-gold-deep',
         )}
       >
         <button
@@ -98,30 +101,39 @@ export function HeaderSearch() {
           tabIndex={open ? 0 : -1}
           placeholder="Tìm trang, đề thi…"
           className={cn(
-            'h-full min-w-0 flex-1 bg-transparent pr-1 text-[15px] text-ink outline-none placeholder:text-ink/45',
+            'h-full min-w-0 flex-1 bg-transparent pr-1 text-[15px] text-ink outline-none placeholder:text-ink/60',
             !open && 'pointer-events-none opacity-0',
           )}
         />
         {open && (
-          <button type="button" aria-label="Đóng tìm kiếm" onClick={close} className="mr-1.5 flex size-7 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-teal-soft hover:text-ink">
+          <button
+            type="button"
+            aria-label="Đóng tìm kiếm"
+            onClick={close}
+            className="mr-1 flex size-9 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-teal-soft hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+          >
             <X className="size-3.5" />
           </button>
         )}
       </div>
 
       {open && (
-        <div className="absolute top-full right-0 z-40 mt-2 w-[22rem] overflow-hidden rounded-2xl border border-gold/30 bg-cream shadow-[0_12px_32px_rgba(15,23,42,0.16)]">
+        <div className="fixed inset-x-4 top-[4.25rem] z-50 overflow-hidden rounded-2xl border border-gold/30 bg-cream shadow-[0_12px_32px_rgba(15,23,42,0.16)] sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:z-40 sm:mt-2 sm:w-88">
           <p className="px-4 pt-3 pb-1 text-[13px] font-semibold tracking-[0.06em] text-gold-deep uppercase">
             {q.trim() ? 'Kết quả' : 'Gợi ý'}
           </p>
           <ul className="max-h-72 overflow-y-auto p-1.5">
-            {results.length === 0 && <li className="px-3 py-4 text-center text-sm text-ink-soft">Không tìm thấy “{q}”</li>}
+            {exams.isPending ? <li className="px-3 py-2 text-xs text-ink-soft">Đang tải danh sách đề thi…</li> : null}
+            {exams.isError ? <li className="px-3 py-2 text-xs text-danger">Không tải được danh sách đề thi.</li> : null}
+            {!exams.isPending && results.length === 0 && (
+              <li className="px-3 py-4 text-center text-sm text-ink-soft">Không tìm thấy “{q}”</li>
+            )}
             {results.map((h) => (
               <li key={h.group + h.label}>
                 <button
                   type="button"
                   onClick={() => go(h)}
-                  className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-[15px] text-ink hover:bg-teal-soft"
+                  className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-[15px] text-ink hover:bg-teal-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
                 >
                   <span className="truncate">{h.label}</span>
                   <span className="shrink-0 rounded-full bg-paper-2 px-2 py-0.5 text-[12px] text-ink-soft">{h.group}</span>

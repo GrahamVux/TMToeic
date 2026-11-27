@@ -1,4 +1,5 @@
 import { useAuth } from '@/app/AuthContext'
+import { cn } from '@/lib/cn'
 import { Eye, LogOut } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -30,10 +31,13 @@ export function ViewAsBanner() {
         role="status"
         aria-label={fullNotice}
         title={fullNotice}
-        className="fixed bottom-20 left-1/2 z-[90] flex w-[calc(100vw-1.5rem)] max-w-xl -translate-x-1/2 flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-2xl bg-slate-900/95 px-4 py-2.5 text-white shadow-[0_12px_32px_rgba(15,23,42,0.35)] lg:bottom-auto lg:left-auto lg:right-4 lg:top-[62px] lg:w-auto lg:max-w-[22rem] lg:translate-x-0 lg:flex-nowrap lg:gap-2 lg:rounded-full lg:px-2 lg:py-1"
+        className={cn(
+          'fixed z-[90] mx-auto flex max-w-xl flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-2xl border border-banner-ink/20 bg-banner px-4 py-2.5 text-banner-ink shadow-[0_12px_32px_rgba(15,23,42,0.35)] lg:top-[72px] lg:right-4 lg:bottom-auto lg:left-auto lg:w-auto lg:max-w-[22rem] lg:flex-nowrap lg:gap-2 lg:rounded-full lg:px-2 lg:py-1',
+          user.role === 'STUDENT' ? 'right-20 bottom-4 left-4' : 'right-4 bottom-[4.5rem] left-4',
+        )}
       >
         <span className="flex min-w-0 items-center gap-1.5 text-[15px] lg:text-xs">
-          <Eye className="size-4 shrink-0 text-button-soft lg:size-3.5" />
+          <Eye className="size-4 shrink-0 text-banner-ink lg:size-3.5" />
           <span className="lg:hidden">
             Đang xem thử với tư cách <strong className="font-semibold">{user.fullName}</strong> ({roleLabel}). Chỉ xem, không lưu thay đổi.
           </span>
@@ -46,7 +50,7 @@ export function ViewAsBanner() {
           disabled={leaving}
           aria-label="Thoát xem thử"
           onClick={() => void leave()}
-          className="flex shrink-0 items-center gap-1.5 rounded-full bg-button px-3 py-1 text-[14px] font-semibold text-button-ink transition hover:bg-button-hover disabled:opacity-60 lg:px-2.5 lg:py-0.5 lg:text-[13px]"
+          className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-full bg-banner-ink px-3 py-1 text-[14px] font-semibold text-banner transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-banner-ink/80 disabled:opacity-60 lg:min-h-0 lg:px-2.5 lg:py-0.5 lg:text-[13px]"
         >
           <LogOut className="size-3.5 lg:size-3" />
           {leaving ? (

@@ -9,7 +9,7 @@ import { useColorMode, useSite } from '@/features/site/SiteSettingsProvider'
 import { BugReportWidget } from '@/features/bugs/BugReportWidget'
 import { useBugReportSummary } from '@/features/bugs/bugs.queries'
 import { BarChart3, BookOpen, Bug, ChevronDown, ClipboardList, Coins, Eye, Library, LogOut, Menu, MoreHorizontal, Settings, Trophy, UserRound, Users, X } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 
 export function BrandMark({ compact = false }: { compact?: boolean }) {
@@ -89,11 +89,44 @@ export function StudentShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const [wardrobeOpen, setWardrobeOpen] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
+  const moreRef = useRef<HTMLDivElement>(null)
   const moreActive = studentMoreNav.some((item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`))
 
+  useEffect(() => {
+    setOpen(false)
+    setMoreOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (!open && !moreOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false)
+        setMoreOpen(false)
+      }
+    }
+    const onDown = (e: MouseEvent) => {
+      if (moreOpen && moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('mousedown', onDown)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('mousedown', onDown)
+    }
+  }, [open, moreOpen])
+
   async function signOut() {
-    await logout()
-    navigate('/login', { replace: true })
+    if (signingOut) return
+    setSigningOut(true)
+    try {
+      await logout()
+      setOpen(false)
+      navigate('/login', { replace: true })
+    } finally {
+      setSigningOut(false)
+    }
   }
 
   return (
@@ -104,7 +137,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-2.5 px-4 sm:px-6 xl:gap-3.5">
 
           {/* Logo */}
-          <Link to="/dashboard" className="flex shrink-0 items-center no-underline cursor-pointer">
+          <Link to="/dashboard" className="flex shrink-0 cursor-pointer items-center rounded-full no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50">
             <BrandMark />
           </Link>
 
@@ -119,7 +152,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
                 to={item.to}
                 className={({ isActive }) =>
                   cn(
-                    'flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1.5 text-[15px] font-medium transition-colors xl:px-3',
+                    'flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1.5 text-[15px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 xl:px-3',
                     isActive
                       ? 'bg-button text-button-ink'
                       : 'text-ink-soft hover:bg-teal-soft hover:text-ink',
@@ -130,6 +163,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
               </NavLink>
             ))}
             <div
+              ref={moreRef}
               className="relative"
               onMouseEnter={() => setMoreOpen(true)}
               onMouseLeave={() => setMoreOpen(false)}
@@ -138,7 +172,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
                 type="button"
                 aria-expanded={moreOpen}
                 className={cn(
-                  'flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[15px] font-medium transition-colors xl:px-3',
+                  'flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[15px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 xl:px-3',
                   moreActive || moreOpen ? 'bg-button text-button-ink' : 'text-ink-soft hover:bg-teal-soft hover:text-ink',
                 )}
                 onClick={() => setMoreOpen((v) => !v)}
@@ -156,7 +190,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
                         onClick={() => setMoreOpen(false)}
                         className={({ isActive }) =>
                           cn(
-                            'flex items-center gap-2 rounded-xl px-3 py-2 text-[15px] font-medium',
+                            'flex items-center gap-2 rounded-xl px-3 py-2 text-[15px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
                             isActive ? 'bg-button text-button-ink' : 'text-ink hover:bg-paper',
                           )
                         }
@@ -184,7 +218,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
             <button
               type="button"
               onClick={() => setWardrobeOpen(true)}
-              className="hidden min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-300/80 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-900 transition hover:bg-amber-100 dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-200 dark:hover:bg-amber-500/25 sm:inline-flex"
+              className="hidden min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-300/80 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-900 transition hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-200 dark:hover:bg-amber-500/25 sm:inline-flex"
               title="Ví điểm thưởng & Kho khung viền (Đổi quà sắp mở)"
             >
               <Coins className="size-3.5 text-amber-600 dark:text-amber-300" />
@@ -204,7 +238,8 @@ export function StudentShell({ children }: { children: ReactNode }) {
             <button
               className="flex size-10 shrink-0 items-center justify-center rounded-full border border-gold/35 bg-cream text-ink transition hover:border-gold-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 lg:hidden"
               type="button"
-              aria-label="Mở menu"
+              aria-label={open ? 'Đóng menu' : 'Mở menu'}
+              aria-expanded={open}
               onClick={() => setOpen((v) => !v)}
             >
               {open ? <X className="size-4" /> : <Menu className="size-4" />}
@@ -222,7 +257,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
                 onClick={() => setOpen(false)}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium',
+                    'flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
                     isActive ? 'bg-button text-button-ink' : 'text-ink hover:bg-paper',
                   )
                 }
@@ -231,20 +266,37 @@ export function StudentShell({ children }: { children: ReactNode }) {
               </NavLink>
             ))}
             <hr className="my-2 border-gold/20" />
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false)
+                setWardrobeOpen(true)
+              }}
+              className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm font-medium text-ink transition hover:bg-paper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
+            >
+              <span className="flex items-center gap-2">
+                <Coins className="size-4 text-warn" />
+                Ví điểm thưởng & Khung viền
+              </span>
+              <span className="rounded-full bg-warn-soft px-2 py-0.5 text-xs font-bold text-warn tabular-nums">
+                {(user?.rewardPoints ?? 0).toLocaleString('vi-VN')} điểm
+              </span>
+            </button>
             <NavLink
               to="/settings"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-ink hover:bg-paper"
+              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-ink hover:bg-paper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
             >
               <Settings className="size-4" /> Cài đặt cá nhân
             </NavLink>
             <button
-              className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-danger-soft/75 px-3 py-2 text-sm font-semibold text-danger transition hover:bg-danger-soft"
+              className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-danger-soft/75 px-3 py-2 text-sm font-semibold text-danger transition hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 disabled:opacity-60"
               type="button"
+              disabled={signingOut}
               onClick={() => void signOut()}
             >
               <LogOut className="size-4" />
-              Đăng xuất
+              {signingOut ? 'Đang đăng xuất…' : 'Đăng xuất'}
             </button>
           </div>
         )}
@@ -274,6 +326,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const [deskMoreOpen, setDeskMoreOpen] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
   const roleLabel = user?.role === 'ADMIN' ? 'Quản trị viên' : 'Giáo viên'
   const bugs = useBugReportSummary(user?.role === 'ADMIN')
   const openCount = bugs.data?.openCount ?? 0
@@ -314,10 +367,29 @@ export function AdminShell({ children }: { children: ReactNode }) {
     setDeskMoreOpen(false)
   }, [location.pathname])
 
+  useEffect(() => {
+    if (!open && !moreOpen && !deskMoreOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false)
+        setMoreOpen(false)
+        setDeskMoreOpen(false)
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, moreOpen, deskMoreOpen])
+
   async function signOut() {
-    setOpen(false)
-    await logout()
-    navigate('/login', { replace: true })
+    if (signingOut) return
+    setSigningOut(true)
+    try {
+      await logout()
+      setOpen(false)
+      navigate('/login', { replace: true })
+    } finally {
+      setSigningOut(false)
+    }
   }
 
   return (
@@ -325,7 +397,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-30 border-b border-gold/30 bg-cream/95 backdrop-blur-md">
         <div aria-hidden="true" className="h-[3px] w-full bg-linear-to-r from-button via-navy to-crimson" />
         <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-3 px-4 sm:px-6">
-          <Link to="/admin" className="flex min-w-0 shrink-0 items-center no-underline cursor-pointer">
+          <Link to="/admin" className="flex min-w-0 shrink-0 cursor-pointer items-center rounded-full no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50">
             <BrandMark />
           </Link>
           <div className="hidden h-6 w-px shrink-0 bg-gold/40 lg:block" />
@@ -340,7 +412,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 end={item.end}
                 className={({ isActive }) =>
                   cn(
-                    'whitespace-nowrap rounded-full px-2.5 py-1.5 text-[15px] font-medium transition-colors xl:px-3',
+                    'whitespace-nowrap rounded-full px-2.5 py-1.5 text-[15px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 xl:px-3',
                     isActive ? 'bg-button text-button-ink' : 'text-ink-soft hover:bg-teal-soft hover:text-ink',
                   )
                 }
@@ -354,7 +426,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   type="button"
                   aria-expanded={deskMoreOpen}
                   className={cn(
-                    'flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-[15px] font-medium transition-colors',
+                    'flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-[15px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
                     desktopMoreActive || deskMoreOpen ? 'bg-button text-button-ink' : 'text-ink-soft hover:bg-teal-soft hover:text-ink',
                   )}
                   onClick={() => setDeskMoreOpen(!deskMoreOpen)}
@@ -374,7 +446,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                           end={item.end}
                           className={({ isActive }) =>
                             cn(
-                              'flex items-center gap-2 rounded-xl px-3 py-2 text-[15px] font-medium',
+                              'flex items-center gap-2 rounded-xl px-3 py-2 text-[15px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
                               isActive ? 'bg-button text-button-ink' : 'text-ink hover:bg-paper',
                             )
                           }
@@ -428,7 +500,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 end={item.end}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium',
+                    'flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
                     isActive ? 'bg-button text-button-ink' : 'text-ink hover:bg-paper',
                   )
                 }
@@ -439,12 +511,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
             ))}
             <hr className="my-2 border-gold/20" />
             <button
-              className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-danger-soft/75 px-3 py-2.5 text-sm font-semibold text-danger transition hover:bg-danger-soft"
+              className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-danger-soft/75 px-3 py-2.5 text-sm font-semibold text-danger transition hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 disabled:opacity-60"
               type="button"
+              disabled={signingOut}
               onClick={() => void signOut()}
             >
               <LogOut className="size-4" />
-              Đăng xuất
+              {signingOut ? 'Đang đăng xuất…' : 'Đăng xuất'}
             </button>
           </div>
         ) : null}
@@ -469,7 +542,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 end={item.end}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold',
+                    'flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
                     isActive ? 'bg-button text-button-ink' : 'text-ink hover:bg-paper',
                   )
                 }
@@ -488,7 +561,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               end={item.end}
               className={({ isActive }) =>
                 cn(
-                  'flex flex-col items-center gap-0.5 py-2.5 text-[13px] font-semibold transition-colors',
+                  'flex flex-col items-center gap-0.5 py-2.5 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-button/50',
                   isActive ? 'text-gold-deep' : 'text-ink-soft hover:text-ink',
                 )
               }
@@ -501,14 +574,19 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <button
               type="button"
               className={cn(
-                'flex flex-col items-center gap-0.5 py-2.5 text-[13px] font-semibold',
+                'relative flex flex-col items-center gap-0.5 py-2.5 text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-button/50',
                 moreOpen || moreActive ? 'text-gold-deep' : 'text-ink-soft',
               )}
               aria-expanded={moreOpen}
-              aria-label="Xem thêm"
+              aria-label={openCount > 0 && mobileMore.some((i) => i.to === '/admin/bugs') ? `Xem thêm (${openCount} báo lỗi chưa xử lý)` : 'Xem thêm'}
               onClick={() => setMoreOpen(!moreOpen)}
             >
-              <MoreHorizontal className="size-5" />
+              <span className="relative">
+                <MoreHorizontal className="size-5" />
+                {openCount > 0 && mobileMore.some((i) => i.to === '/admin/bugs') ? (
+                  <span className="absolute -top-0.5 -right-1.5 size-2 rounded-full bg-crimson" aria-hidden />
+                ) : null}
+              </span>
               Xem thêm
             </button>
           ) : null}

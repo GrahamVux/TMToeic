@@ -80,6 +80,7 @@ export function CalendarDateTimePicker({
   const rootRef = useRef<HTMLDivElement>(null)
   const gridRef = useRef<HTMLDivElement>(null)
   const prevInViewRef = useRef(false)
+  const pendingFocusDayRef = useRef<number | null>(null)
 
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -117,6 +118,13 @@ export function CalendarDateTimePicker({
     }
   }, [open, view, parsed.date, inView])
 
+  useEffect(() => {
+    if (pendingFocusDayRef.current === null || !gridRef.current) return
+    const day = pendingFocusDayRef.current
+    pendingFocusDayRef.current = null
+    gridRef.current.querySelector<HTMLButtonElement>(`[data-day="${day}"]`)?.focus()
+  }, [slideTick])
+
   function shiftMonth(delta: number) {
     const nextView = new Date(view.getFullYear(), view.getMonth() + delta, 1)
     if (dateKey(nextView) < dateKey(firstAllowed)) return
@@ -152,12 +160,16 @@ export function CalendarDateTimePicker({
     if (dateKey(nd) > dateKey(lastAllowed)) nd = new Date(lastAllowed)
     const diff = nd.getFullYear() * 12 + nd.getMonth() - (view.getFullYear() * 12 + view.getMonth())
     if (diff !== 0) {
+      pendingFocusDayRef.current = nd.getDate()
       prevInViewRef.current = false
       setSlideDir(diff > 0 ? 1 : -1)
       setSlideTick((t) => t + 1)
       setView(new Date(nd.getFullYear(), nd.getMonth(), 1))
+      pickDate(nd)
+    } else {
+      pickDate(nd)
+      gridRef.current?.querySelector<HTMLButtonElement>(`[data-day="${nd.getDate()}"]`)?.focus()
     }
-    pickDate(nd)
   }
 
   const y = view.getFullYear()
@@ -191,7 +203,7 @@ export function CalendarDateTimePicker({
       </button>
 
       {open ? (
-        <div className="ux absolute right-0 z-50 mt-2 w-[312px] max-w-[calc(100vw-2rem)] rounded-[20px] bg-cream p-3 shadow-[0_0_0_1px_var(--ux-line-2),0_20px_44px_-16px_var(--ux-shadow-strong)]">
+        <div className="ux fixed inset-x-4 bottom-4 z-50 mx-auto w-[min(312px,calc(100vw-2rem))] rounded-[20px] bg-cream p-3 shadow-[0_0_0_1px_var(--ux-line-2),0_20px_44px_-16px_var(--ux-shadow-strong)] sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:bottom-auto sm:mt-2 sm:w-[312px]">
           <div className="u431-hd">
             <b aria-live="polite">
               {MONTHS[m]} {y}
@@ -269,7 +281,7 @@ export function CalendarDateTimePicker({
                   aria-label="Giờ"
                   value={parsed.hour}
                   onChange={(e) => pickTime(Number(e.target.value), parsed.minute)}
-                  className="h-8 rounded-lg border border-gold/40 bg-paper px-2 text-xs font-semibold tabular-nums text-ink"
+                  className="h-10 rounded-lg border border-gold/40 bg-paper px-2 text-xs font-semibold tabular-nums text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
                 >
                   {Array.from({ length: 24 }, (_, h) => (
                     <option key={h} value={h}>
@@ -282,7 +294,7 @@ export function CalendarDateTimePicker({
                   aria-label="Phút"
                   value={parsed.minute}
                   onChange={(e) => pickTime(parsed.hour, Number(e.target.value))}
-                  className="h-8 rounded-lg border border-gold/40 bg-paper px-2 text-xs font-semibold tabular-nums text-ink"
+                  className="h-10 rounded-lg border border-gold/40 bg-paper px-2 text-xs font-semibold tabular-nums text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
                 >
                   {Array.from({ length: 12 }, (_, idx) => idx * 5).map((min) => (
                     <option key={min} value={min}>
@@ -293,8 +305,8 @@ export function CalendarDateTimePicker({
                 </select>
               </div>
             </div>
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-1">
-              <div className="flex gap-1">
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-1.5">
+              <div className="flex flex-wrap gap-1.5">
                 {TIME_PRESETS.map((preset) => {
                   const [hh, mm] = preset.split(':').map(Number)
                   const active = parsed.hour === hh && parsed.minute === mm
@@ -304,7 +316,7 @@ export function CalendarDateTimePicker({
                       type="button"
                       onClick={() => pickTime(hh!, mm!)}
                       className={cn(
-                        'rounded-lg px-2 py-1 text-[13px] font-semibold tabular-nums transition',
+                        'min-h-10 rounded-lg px-2 py-2 text-[13px] font-semibold tabular-nums transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
                         active ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink-soft hover:text-ink',
                       )}
                     >
@@ -316,7 +328,7 @@ export function CalendarDateTimePicker({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-lg bg-button px-2.5 py-1 text-[13px] font-semibold text-button-ink"
+                className="min-h-10 rounded-lg bg-button px-3 py-2 text-[13px] font-semibold text-button-ink transition hover:bg-button-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
               >
                 Xong
               </button>

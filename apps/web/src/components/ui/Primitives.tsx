@@ -42,7 +42,7 @@ export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElem
   return (
     <input
       className={cn(
-        'h-10 w-full rounded-xl border border-ink/15 bg-cream px-3 text-base text-ink outline-none ring-button/40 placeholder:text-ink/45 focus:border-button focus:ring-2',
+        'h-10 w-full rounded-xl border border-ink/15 bg-cream px-3 text-base text-ink outline-none ring-button/40 placeholder:text-ink/60 focus:border-button focus:ring-2',
         className,
       )}
       {...props}
