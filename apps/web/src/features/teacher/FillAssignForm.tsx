@@ -117,7 +117,7 @@ export function FillAssignForm({ roster }: { roster: RosterUser[] }) {
   return (
     <Card className="p-5">
       <h2 className="serif text-2xl">Soạn bài điền từ</h2>
-      <p className="mt-1 text-sm text-ink/55">Viết ___ tại mỗi chỗ trống. Nhiều đáp án đúng thì cách nhau bằng dấu |, ví dụ color | colour.</p>
+      <p className="mt-1 text-sm text-ink-soft">Viết ___ tại mỗi chỗ trống. Nhiều đáp án đúng thì cách nhau bằng dấu |, ví dụ color | colour.</p>
       <a className="mt-2 inline-block text-sm font-semibold text-gold-deep underline" href="/mau-import-dien-tu.json" download>
         Tải file mẫu
       </a>
@@ -164,9 +164,9 @@ export function FillAssignForm({ roster }: { roster: RosterUser[] }) {
               onChange={(e) => update(index, withPrompt(item, e.target.value))}
               rows={3}
               placeholder="The meeting was ___ because the train was late."
-              className="mt-2 w-full rounded-xl border border-ink/10 bg-white px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm"
             />
-            {item.answers.length === 0 ? <p className="mt-2 text-xs text-ink/45">Chưa có chỗ trống.</p> : null}
+            {item.answers.length === 0 ? <p className="mt-2 text-xs text-ink-soft">Chưa có chỗ trống.</p> : null}
             <div className="mt-2 grid gap-2">
               {item.answers.map((answer, blank) => (
                 <label key={blank} className="block text-sm">
@@ -181,7 +181,7 @@ export function FillAssignForm({ roster }: { roster: RosterUser[] }) {
                   onChange={(e) => update(index, { ...item, explanation: e.target.value })}
                   rows={2}
                   placeholder="Vì sao đáp án này đúng. Học viên thấy sau khi nộp bài."
-                  className="mt-1 w-full rounded-xl border border-ink/10 bg-white px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm"
                 />
               </label>
             </div>
@@ -191,7 +191,7 @@ export function FillAssignForm({ roster }: { roster: RosterUser[] }) {
       <Button type="button" variant="paper" className="mt-3" onClick={() => setItems((rows) => [...rows, { prompt: '', answers: [], explanation: '' }])}>
         Thêm câu
       </Button>
-      <p className="mt-3 text-sm text-ink/55">{blankTotal} chỗ trống</p>
+      <p className="mt-3 text-sm text-ink-soft">{blankTotal} chỗ trống</p>
 
       <label className="mt-4 flex items-center gap-2 text-sm">
         <input type="checkbox" checked={allStudents} onChange={(e) => setAllStudents(e.target.checked)} />
@@ -202,12 +202,12 @@ export function FillAssignForm({ roster }: { roster: RosterUser[] }) {
           {roster.map((u) => (
             <label key={u.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-paper">
               <input type="checkbox" checked={picked.includes(u.id)} onChange={(e) => setPicked((prev) => (e.target.checked ? [...prev, u.id] : prev.filter((id) => id !== u.id)))} />
-              {u.fullName} <span className="text-ink/45">{u.studentCode}</span>
+              {u.fullName} <span className="text-ink-soft">{u.studentCode}</span>
             </label>
           ))}
         </div>
       ) : null}
-      {formError ? <p className="mt-3 rounded-xl bg-[#f8dcd8] px-3 py-2 text-sm text-coral" role="alert">{formError}</p> : null}
+      {formError ? <p className="mt-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">{formError}</p> : null}
       <CornerNotice notice={notice} />
       <Button className="mt-4 w-full" disabled={create.isPending} onClick={() => void submit()}>
         {create.isPending ? 'Đang giao…' : 'Giao bài điền từ'}

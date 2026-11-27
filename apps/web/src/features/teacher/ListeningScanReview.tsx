@@ -69,11 +69,11 @@ function ReviewDock({
   return (
     <nav
       ref={dockRef}
-      className="fixed z-20 flex max-h-[calc(100vh-6.5rem)] flex-col gap-1 overflow-y-auto rounded-2xl border border-gold/40 bg-white/95 p-2 shadow-[0_12px_32px_rgba(30,51,60,0.14)] backdrop-blur-md"
+      className="fixed z-20 flex max-h-[calc(100vh-6.5rem)] flex-col gap-1 overflow-y-auto rounded-2xl border border-gold/40 bg-cream/95 p-2 shadow-[0_12px_32px_rgba(30,51,60,0.14)] backdrop-blur-md"
       style={{ top: pos?.top ?? 72, left: pos?.left ?? 16, width: pos?.width ?? 148 }}
       aria-label="Đến từng part"
     >
-      <p className="px-1 pb-1 text-[10px] font-semibold tracking-[0.14em] text-gold-deep uppercase">Đến part</p>
+      <p className="px-1 pb-1 text-[12px] font-semibold tracking-[0.14em] text-gold-deep uppercase">Đến part</p>
       {parts.map((code) => (
         <button
           key={code}
@@ -180,7 +180,7 @@ function PageCropper({ pageImage, box, onBox }: { pageImage: string; box: Box; o
   return (
     <div
       ref={frame}
-      className="relative touch-none overflow-hidden rounded-xl border border-ink/10 bg-white"
+      className="relative touch-none overflow-hidden rounded-xl border border-ink/10 bg-cream"
       onPointerDown={(event) => begin(event, 'draw')}
       onPointerMove={move}
       onPointerUp={() => {
@@ -232,11 +232,11 @@ function CropEditor({
     <div className="mt-3 space-y-3">
       {pageImage ? (
         <>
-          <p className="text-xs text-ink/55">Trang {crop.page} do Gemini chọn. Kéo giữa khung để dời, kéo cạnh để đổi cỡ, hoặc kéo trên chỗ trống để vẽ khung mới.</p>
+          <p className="text-xs text-ink-soft">Trang {crop.page} do Gemini chọn. Kéo giữa khung để dời, kéo cạnh để đổi cỡ, hoặc kéo trên chỗ trống để vẽ khung mới.</p>
           <PageCropper pageImage={pageImage} box={crop.box} onBox={(box) => onChange({ ...crop, manual: true, box })} />
         </>
       ) : null}
-      {image ? <img src={`data:image/jpeg;base64,${image}`} alt={crop.file} className="h-auto w-full rounded-xl border border-ink/10 bg-white" /> : <p className="text-sm text-coral">Chưa có ảnh cho {crop.file}.</p>}
+      {image ? <img src={`data:image/jpeg;base64,${image}`} alt={crop.file} className="h-auto w-full rounded-xl border border-ink/10 bg-[#ffffff]" /> : <p className="text-sm text-coral">Chưa có ảnh cho {crop.file}.</p>}
       <div className="grid gap-2 sm:grid-cols-6">
         <label className="text-xs font-medium">
           Trang PDF
@@ -245,7 +245,7 @@ function CropEditor({
         <label className="text-xs font-medium">
           Loại
           <select
-            className="mt-1 h-10 w-full rounded-xl border border-ink/12 bg-white px-2 text-sm"
+            className="mt-1 h-10 w-full rounded-xl border border-ink/12 bg-cream px-2 text-sm"
             value={crop.kind ?? 'photo'}
             onChange={(e) => onChange({ ...crop, kind: e.target.value === 'graphic' ? 'graphic' : 'photo' })}
           >
@@ -412,7 +412,7 @@ export function ListeningScanReview({
               onChange={(e) => setForm((current) => ({ ...current, durationSeconds: Math.max(60, (Number(e.target.value) || 1) * 60) }))}
             />
           </label>
-          <p className="self-end text-sm text-ink/55">{form.questions.length} câu</p>
+          <p className="self-end text-sm text-ink-soft">{form.questions.length} câu</p>
         </div>
       </Card>
 
@@ -446,7 +446,7 @@ export function ListeningScanReview({
                           groups: current.groups.map((item, i) => (i === groupIndex ? { ...item, instructions: e.target.value } : item)),
                         }))
                       }
-                      className="mt-1 w-full rounded-xl border border-ink/10 bg-white px-3 py-2 text-sm"
+                      className="mt-1 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm"
                     />
                   </label>
                   {crop ? <CropEditor crop={crop} image={shown[crop.file]} pageImage={pages[crop.page - 1]} onChange={(next) => patchCrop(crop.file, next)} /> : null}
@@ -457,13 +457,13 @@ export function ListeningScanReview({
               const crop = question.imageFile ? form.crops.find((item) => item.file === question.imageFile) : undefined
               return (
                 <Card key={`${question.partCode}-${question.number}`} className="p-5">
-                  <p className="text-sm text-ink/50">
+                  <p className="text-sm text-ink-soft">
                     {shortPart(question.partCode)} • Câu {question.number}
                     {question.groupKey ? ` • nhóm ${question.groupKey}` : ''}
                   </p>
                   <label className="mt-3 block text-sm font-medium">
                     Đề bài
-                    <textarea value={question.prompt} rows={2} onChange={(e) => patchQuestion(index, { ...question, prompt: e.target.value })} className="mt-1 w-full rounded-xl border border-ink/10 bg-white px-3 py-2 text-sm" />
+                    <textarea value={question.prompt} rows={2} onChange={(e) => patchQuestion(index, { ...question, prompt: e.target.value })} className="mt-1 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm" />
                   </label>
                   {crop ? <CropEditor crop={crop} image={shown[crop.file]} pageImage={pages[crop.page - 1]} onChange={(next) => patchCrop(crop.file, next)} /> : null}
                   <div className="mt-3 grid gap-2">
@@ -488,9 +488,9 @@ export function ListeningScanReview({
       })}
 
       {stale ? <p className="text-sm text-ink/70">Khung cắt đã đổi. Bấm Cắt lại ảnh để xem ảnh mới trước khi lưu.</p> : null}
-      {missingAnswer > 0 ? <p className="text-sm text-ink/55">{missingAnswer} câu chưa có đáp án. Đề sẽ được lưu ở dạng bản nháp.</p> : null}
+      {missingAnswer > 0 ? <p className="text-sm text-ink-soft">{missingAnswer} câu chưa có đáp án. Đề sẽ được lưu ở dạng bản nháp.</p> : null}
       {problems.length > 0 ? (
-        <ul className="rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral" role="alert">
+        <ul className="rounded-xl border border-danger/25 bg-danger-soft p-3 text-sm text-danger" role="alert">
           {problems.map((problem) => (
             <li key={problem}>{problem}</li>
           ))}

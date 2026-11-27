@@ -3,13 +3,12 @@ import { cn } from '@/lib/cn'
 import { HeaderSearch } from '@/components/layout/HeaderSearch'
 import { NotificationBell } from '@/components/layout/NotificationBell'
 import { UserMenu } from '@/components/layout/UserMenu'
-import { AccountAvatar } from '@/components/ui/AccountAvatar'
 import { DarkModeSwitch } from '@/components/ui/DarkModeSwitch'
 import { FrameWardrobeModal } from '@/features/honor/FrameWardrobeModal'
 import { useColorMode, useSite } from '@/features/site/SiteSettingsProvider'
 import { BugReportWidget } from '@/features/bugs/BugReportWidget'
 import { useBugReportSummary } from '@/features/bugs/bugs.queries'
-import { BarChart3, BookOpen, Bug, ChevronDown, ClipboardList, Coins, Eye, Library, LogOut, Menu, MoreHorizontal, Settings, Trophy, Users, X } from 'lucide-react'
+import { BarChart3, BookOpen, Bug, ChevronDown, ClipboardList, Coins, Eye, Library, LogOut, Menu, MoreHorizontal, Settings, Trophy, UserRound, Users, X } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 
@@ -20,12 +19,12 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
       <img
         src={site.logoUrl || '/logo.png'}
         alt={site.brandName}
-        className="size-9 shrink-0 rounded-full bg-white object-contain shadow-[0_2px_8px_rgba(43,138,156,0.18)]"
+        className="size-10 shrink-0 rounded-full bg-cream object-contain ring-1 ring-ink/8 shadow-[0_2px_8px_rgba(20,56,153,0.16)]"
       />
       {!compact && (
         <div className="hidden sm:block">
-          <p className="text-[15px] font-bold leading-none tracking-tight text-ink">{site.brandName}</p>
-          <p className="mt-0.5 text-[9px] font-semibold tracking-[0.2em] text-gold-deep uppercase">{site.slogan}</p>
+          <p className="font-[family-name:var(--font-display)] text-[17px] font-bold leading-tight tracking-tight text-ink">{site.brandName}</p>
+          <p className="mt-0.5 text-[12px] font-semibold tracking-[0.18em] text-crimson uppercase">{site.slogan}</p>
         </div>
       )}
     </div>
@@ -35,25 +34,34 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
 export function SiteFooter() {
   const site = useSite()
   return (
-    <footer className="mt-12 border-t border-gold/40 bg-cream text-ink">
-      <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 md:grid-cols-3">
+    <footer className="relative mt-12 overflow-hidden border-t border-gold/40 bg-cream text-ink">
+      <div aria-hidden="true" className="h-[2px] w-full bg-linear-to-r from-button/60 via-gold to-crimson/60" />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-60"
+        style={{
+          background:
+            'radial-gradient(circle at 0% 100%, color-mix(in srgb, var(--color-button) 10%, transparent), transparent 28%), radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--color-crimson) 8%, transparent), transparent 24%)',
+        }}
+      />
+      <div className="relative mx-auto grid max-w-7xl gap-8 px-6 py-10 md:grid-cols-3">
         <div>
           <BrandMark />
-          <p className="mt-4 max-w-sm text-sm leading-6 text-ink/65">{site.footerAbout}</p>
+          <p className="mt-4 max-w-sm text-sm leading-6 text-ink-soft">{site.footerAbout}</p>
         </div>
         <div>
           <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">{site.supportHeading}</p>
-          <p className="mt-3 whitespace-pre-line text-sm text-ink/70">{site.supportDetail}</p>
-          {site.phone ? <p className="mt-1 text-sm text-ink/70">Hotline: {site.phone}{site.hours ? ` (${site.hours})` : ''}</p> : null}
-          {site.address ? <p className="mt-1 text-sm text-ink/70">{site.address}</p> : null}
+          <p className="mt-3 whitespace-pre-line text-sm text-ink-soft">{site.supportDetail}</p>
+          {site.phone ? <p className="mt-1 text-sm text-ink-soft">Hotline: {site.phone}{site.hours ? ` (${site.hours})` : ''}</p> : null}
+          {site.address ? <p className="mt-1 text-sm text-ink-soft">{site.address}</p> : null}
         </div>
         <div>
           <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">{site.channelHeading}</p>
-          <p className="mt-3 whitespace-pre-line text-sm text-ink/70">{site.channelDetail}</p>
-          {site.legalNote ? <p className="mt-4 text-xs text-ink/40">{site.legalNote}</p> : null}
+          <p className="mt-3 whitespace-pre-line text-sm text-ink-soft">{site.channelDetail}</p>
+          {site.legalNote ? <p className="mt-4 text-xs text-ink-soft">{site.legalNote}</p> : null}
         </div>
       </div>
-      <div className="border-t border-gold/30 px-6 py-4 text-center text-xs text-ink/40">{site.copyright}</div>
+      <div className="relative border-t border-gold/30 px-6 py-4 text-center text-xs text-ink-soft">{site.copyright}</div>
     </footer>
   )
 }
@@ -69,6 +77,7 @@ const studentNav = [
 
 export function StudentShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth()
+  const site = useSite()
   const { colorMode, toggleColorMode } = useColorMode()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -81,9 +90,10 @@ export function StudentShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-gold/30 bg-white/95 text-ink backdrop-blur-md">
-        {/* ─── Main row: fixed height 60px ─── */}
-        <div className="mx-auto flex h-[60px] max-w-7xl items-center gap-4 px-4 sm:px-6">
+      <header className="sticky top-0 z-30 border-b border-gold/30 bg-cream/95 text-ink backdrop-blur-md">
+        <div aria-hidden="true" className="h-[3px] w-full bg-linear-to-r from-button via-navy to-crimson" />
+        {/* ─── Main row: fixed height 64px ─── */}
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-2.5 px-4 sm:px-6 xl:gap-3.5">
 
           {/* Logo */}
           <Link to="/dashboard" className="flex shrink-0 items-center no-underline cursor-pointer">
@@ -101,10 +111,10 @@ export function StudentShell({ children }: { children: ReactNode }) {
                 to={item.to}
                 className={({ isActive }) =>
                   cn(
-                    'flex shrink-0 items-center whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors',
+                    'flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1.5 text-[15px] font-medium transition-colors xl:px-3',
                     isActive
                       ? 'bg-button text-button-ink'
-                      : 'text-ink/65 hover:bg-teal-soft hover:text-ink',
+                      : 'text-ink-soft hover:bg-teal-soft hover:text-ink',
                   )
                 }
               >
@@ -119,18 +129,18 @@ export function StudentShell({ children }: { children: ReactNode }) {
             {/* Search – thu nhỏ mặc định, bấm để kéo giãn */}
             <HeaderSearch />
 
-            <DarkModeSwitch checked={colorMode === 'dark'} onToggle={toggleColorMode} scale={0.44} />
+            {site.backgroundMode === 'sky' ? null : <DarkModeSwitch checked={colorMode === 'dark'} onToggle={toggleColorMode} scale={0.44} />}
 
             <NotificationBell />
 
             <button
               type="button"
               onClick={() => setWardrobeOpen(true)}
-              className="hidden shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-300/80 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-900 transition hover:bg-amber-100 sm:inline-flex"
+              className="hidden min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-300/80 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-900 transition hover:bg-amber-100 dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-200 dark:hover:bg-amber-500/25 sm:inline-flex"
               title="Ví điểm thưởng & Kho khung viền (Đổi quà sắp mở)"
             >
-              <Coins className="size-3.5 text-amber-600" />
-              <span>{(user?.rewardPoints ?? 0).toLocaleString('vi-VN')} điểm</span>
+              <Coins className="size-3.5 text-amber-600 dark:text-amber-300" />
+              <span className="tabular-nums">{(user?.rewardPoints ?? 0).toLocaleString('vi-VN')} điểm</span>
             </button>
 
             {/* Tài khoản: cài đặt + đăng xuất */}
@@ -144,7 +154,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
 
             {/* Hamburger – mobile / tablet */}
             <button
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gold/35 bg-white lg:hidden"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full border border-gold/35 bg-cream text-ink transition hover:border-gold-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 lg:hidden"
               type="button"
               aria-label="Mở menu"
               onClick={() => setOpen((v) => !v)}
@@ -156,7 +166,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
 
         {/* ─── Mobile drawer ─── */}
         {open && (
-          <div className="border-t border-gold/25 bg-white px-4 pb-3 pt-2 lg:hidden">
+          <div className="border-t border-gold/25 bg-cream px-4 pb-3 pt-2 lg:hidden">
             {studentNav.map((item) => (
               <NavLink
                 key={item.to}
@@ -165,7 +175,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
                 className={({ isActive }) =>
                   cn(
                     'flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium',
-                    isActive ? 'bg-button text-button-ink' : 'text-ink/75 hover:bg-paper',
+                    isActive ? 'bg-button text-button-ink' : 'text-ink/80 hover:bg-paper',
                   )
                 }
               >
@@ -176,12 +186,12 @@ export function StudentShell({ children }: { children: ReactNode }) {
             <NavLink
               to="/settings"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-ink/75 hover:bg-paper"
+              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-ink/80 hover:bg-paper"
             >
               <Settings className="size-4" /> Cài đặt cá nhân
             </NavLink>
             <button
-              className="mt-1 flex w-full items-center gap-2 rounded-xl justify-center bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-danger-soft/75 px-3 py-2 text-sm font-semibold text-danger transition hover:bg-danger-soft"
               type="button"
               onClick={() => void signOut()}
             >
@@ -209,6 +219,7 @@ const adminNav = [
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth()
+  const site = useSite()
   const { colorMode, toggleColorMode } = useColorMode()
   const navigate = useNavigate()
   const location = useLocation()
@@ -263,13 +274,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen overflow-x-hidden text-ink">
-      <header className="sticky top-0 z-30 border-b border-gold/30 bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex h-[60px] max-w-[1400px] items-center gap-3 px-4 sm:px-6">
+      <header className="sticky top-0 z-30 border-b border-gold/30 bg-cream/95 backdrop-blur-md">
+        <div aria-hidden="true" className="h-[3px] w-full bg-linear-to-r from-button via-navy to-crimson" />
+        <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-3 px-4 sm:px-6">
           <Link to="/admin" className="flex min-w-0 shrink-0 items-center no-underline cursor-pointer">
             <BrandMark />
           </Link>
           <div className="hidden h-6 w-px shrink-0 bg-gold/40 lg:block" />
-          <p className="hidden whitespace-nowrap text-[11px] font-semibold tracking-[0.18em] text-gold-deep uppercase 2xl:block">
+          <p className="hidden whitespace-nowrap text-[13px] font-semibold tracking-[0.18em] text-gold-deep uppercase 2xl:block">
             Cổng quản lý đào tạo
           </p>
           <nav className="ml-2 hidden min-w-0 items-center gap-0.5 lg:flex">
@@ -280,8 +292,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 end={item.end}
                 className={({ isActive }) =>
                   cn(
-                    'whitespace-nowrap rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors',
-                    isActive ? 'bg-button text-button-ink' : 'text-ink/65 hover:bg-teal-soft hover:text-ink',
+                    'whitespace-nowrap rounded-full px-2.5 py-1.5 text-[15px] font-medium transition-colors xl:px-3',
+                    isActive ? 'bg-button text-button-ink' : 'text-ink-soft hover:bg-teal-soft hover:text-ink',
                   )
                 }
               >
@@ -294,19 +306,19 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   type="button"
                   aria-expanded={deskMoreOpen}
                   className={cn(
-                    'flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors',
-                    desktopMoreActive || deskMoreOpen ? 'bg-button text-button-ink' : 'text-ink/65 hover:bg-teal-soft hover:text-ink',
+                    'flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-[15px] font-medium transition-colors',
+                    desktopMoreActive || deskMoreOpen ? 'bg-button text-button-ink' : 'text-ink-soft hover:bg-teal-soft hover:text-ink',
                   )}
                   onClick={() => setDeskMoreOpen(!deskMoreOpen)}
                 >
                   Khác
-                  {openCount > 0 ? <span className="size-2 rounded-full bg-red-500" aria-label={`${openCount} báo lỗi chưa xử lý`} /> : null}
+                  {openCount > 0 ? <span className="size-2 rounded-full bg-crimson" aria-label={`${openCount} báo lỗi chưa xử lý`} /> : null}
                   <ChevronDown className={cn('size-3.5 transition-transform', deskMoreOpen && 'rotate-180')} />
                 </button>
                 {deskMoreOpen ? (
                   <>
                     <button type="button" className="fixed inset-0 z-30" aria-label="Đóng menu Khác" onClick={() => setDeskMoreOpen(false)} />
-                    <div className="absolute top-full left-0 z-40 mt-2 w-48 rounded-2xl border border-gold/30 bg-white p-1.5 shadow-[0_12px_32px_rgba(30,51,60,0.16)]">
+                    <div className="absolute top-full left-0 z-40 mt-2 w-48 rounded-2xl border border-gold/30 bg-cream p-1.5 shadow-[0_12px_32px_rgba(15,23,42,0.16)]">
                       {desktopMore.map((item) => (
                         <NavLink
                           key={item.to}
@@ -314,8 +326,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
                           end={item.end}
                           className={({ isActive }) =>
                             cn(
-                              'flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-medium',
-                              isActive ? 'bg-button text-button-ink' : 'text-ink/75 hover:bg-paper',
+                              'flex items-center gap-2 rounded-xl px-3 py-2 text-[15px] font-medium',
+                              isActive ? 'bg-button text-button-ink' : 'text-ink/80 hover:bg-paper',
                             )
                           }
                         >
@@ -330,24 +342,21 @@ export function AdminShell({ children }: { children: ReactNode }) {
             ) : null}
           </nav>
           <div className="ml-auto flex shrink-0 items-center gap-2">
-            <DarkModeSwitch checked={colorMode === 'dark'} onToggle={toggleColorMode} scale={0.44} />
-            <Link to="/admin/profile" aria-label="Tài khoản cá nhân" className="flex items-center gap-2 rounded-full p-1 hover:bg-paper">
-              <AccountAvatar name={user?.fullName ?? ''} url={user?.avatarUrl} frameId={user?.avatarFrame} />
-              <span className="hidden leading-none text-left md:block">
-                <span className="block max-w-[160px] truncate text-[13px] font-semibold">{user?.fullName}</span>
-                <span className="mt-0.5 block text-[10px] text-gold-deep">{roleLabel}</span>
-              </span>
-            </Link>
+            {site.backgroundMode === 'sky' ? null : <DarkModeSwitch checked={colorMode === 'dark'} onToggle={toggleColorMode} scale={0.44} />}
+            <UserMenu
+              name={user?.fullName ?? ''}
+              subtitle={roleLabel}
+              avatarUrl={user?.avatarUrl}
+              avatarFrame={user?.avatarFrame}
+              settingsPath="/admin/profile"
+              menuItems={[
+                { to: '/admin/profile', label: 'Tài khoản & Khung viền', icon: UserRound },
+                ...(user?.role === 'ADMIN' ? [{ to: '/admin/settings', label: 'Cài đặt hệ thống', icon: Settings }] : []),
+              ]}
+              onSignOut={() => void signOut()}
+            />
             <button
-              className="hidden items-center gap-1.5 whitespace-nowrap rounded-full bg-red-600 px-3 py-1.5 text-[12px] font-semibold text-white shadow-sm transition hover:bg-red-700 lg:flex"
-              type="button"
-              onClick={() => void signOut()}
-            >
-              <LogOut className="size-3.5" />
-              Đăng xuất
-            </button>
-            <button
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gold/35 bg-white lg:hidden"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full border border-gold/35 bg-cream text-ink transition hover:border-gold-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50 lg:hidden"
               type="button"
               aria-label={open ? 'Đóng menu' : 'Mở menu'}
               aria-expanded={open}
@@ -359,8 +368,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
         </div>
 
         {open ? (
-          <div className="border-t border-gold/25 bg-white px-4 pb-3 pt-2 lg:hidden">
-            <p className="px-3 py-2 text-xs text-ink/50">
+          <div className="border-t border-gold/25 bg-cream px-4 pb-3 pt-2 lg:hidden">
+            <p className="px-3 py-2 text-xs text-ink-soft">
               {user?.fullName}
               {user?.username ? ` · ${user.username}` : ''}
             </p>
@@ -372,7 +381,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 className={({ isActive }) =>
                   cn(
                     'flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium',
-                    isActive ? 'bg-button text-button-ink' : 'text-ink/75 hover:bg-paper',
+                    isActive ? 'bg-button text-button-ink' : 'text-ink/80 hover:bg-paper',
                   )
                 }
               >
@@ -382,7 +391,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             ))}
             <hr className="my-2 border-gold/20" />
             <button
-              className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
+              className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-danger-soft/75 px-3 py-2.5 text-sm font-semibold text-danger transition hover:bg-danger-soft"
               type="button"
               onClick={() => void signOut()}
             >
@@ -396,15 +405,15 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <main className="mx-auto max-w-[1400px] px-4 py-6 pb-24 sm:px-6 sm:py-8 lg:pb-8">{children}</main>
 
       {moreOpen ? (
-        <button type="button" className="fixed inset-0 z-20 bg-ink/25 lg:hidden" aria-label="Đóng xem thêm" onClick={() => setMoreOpen(false)} />
+        <button type="button" className="fixed inset-0 z-20 bg-slate-950/35 lg:hidden" aria-label="Đóng xem thêm" onClick={() => setMoreOpen(false)} />
       ) : null}
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-gold/30 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-gold/30 bg-cream/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
         aria-label="Menu quản lý"
       >
         {moreOpen && mobileMore.length > 0 ? (
-          <div className="border-b border-gold/25 bg-white px-3 py-2">
+          <div className="border-b border-gold/25 bg-cream px-3 py-2">
             {mobileMore.map((item) => (
               <NavLink
                 key={item.to}
@@ -413,7 +422,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 className={({ isActive }) =>
                   cn(
                     'flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold',
-                    isActive ? 'bg-button text-button-ink' : 'text-ink/75 hover:bg-paper',
+                    isActive ? 'bg-button text-button-ink' : 'text-ink/80 hover:bg-paper',
                   )
                 }
               >
@@ -431,8 +440,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
               end={item.end}
               className={({ isActive }) =>
                 cn(
-                  'flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold transition-colors',
-                  isActive ? 'text-gold-deep' : 'text-ink/50 hover:text-ink',
+                  'flex flex-col items-center gap-0.5 py-2.5 text-[13px] font-semibold transition-colors',
+                  isActive ? 'text-gold-deep' : 'text-ink-soft hover:text-ink',
                 )
               }
             >
@@ -444,8 +453,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <button
               type="button"
               className={cn(
-                'flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold',
-                moreOpen || moreActive ? 'text-gold-deep' : 'text-ink/50',
+                'flex flex-col items-center gap-0.5 py-2.5 text-[13px] font-semibold',
+                moreOpen || moreActive ? 'text-gold-deep' : 'text-ink-soft',
               )}
               aria-expanded={moreOpen}
               aria-label="Xem thêm"

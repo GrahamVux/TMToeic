@@ -16,28 +16,28 @@ export function GrammarLessonPage() {
 
   return (
     <div className="space-y-6">
-      <p className="text-xs text-ink/50">Học tập / Ngữ pháp</p>
+      <p className="text-xs text-ink-soft">Học tập / Ngữ pháp</p>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <Badge tone={topic.completed ? 'olive' : 'gold'}>{topic.completed ? 'Đã học' : 'Chuyên đề'}</Badge>
-          <h1 className="serif mt-3 text-3xl sm:text-4xl">{topic.title}</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-ink/65">{topic.summary}</p>
+          <h1 className="serif mt-3 max-w-[28ch] text-3xl font-bold sm:text-4xl">{topic.title}</h1>
+          <p className="mt-2 max-w-[68ch] text-sm leading-6 text-ink-soft">{topic.summary}</p>
         </div>
         <Link to="/study">
           <Button variant="ghost">Về mục học tập</Button>
         </Link>
       </div>
       <Card className="p-6">
-        <h2 className="serif text-2xl">Nội dung</h2>
-        <p className="mt-4 text-sm leading-7 whitespace-pre-line text-ink/80">{topic.body}</p>
+        <h2 className="serif text-2xl font-bold">Nội dung</h2>
+        <p className="mt-4 max-w-[68ch] text-[17px] leading-[1.72] whitespace-pre-line text-ink/90">{topic.body}</p>
         {topic.pdf ? (
           <div className="mt-6">
             <h3 className="font-semibold">Tài liệu PDF</h3>
-            <p className="mt-1 text-sm text-ink/55">{topic.pdf.filename}</p>
+            <p className="mt-1 text-sm text-ink-soft">{topic.pdf.filename}</p>
             <a className="mt-3 inline-block" href={`/api/v1/study/grammar/${topic.id}/pdf`} target="_blank" rel="noreferrer">
               <Button>Mở tài liệu PDF</Button>
             </a>
-            <iframe title={topic.pdf.filename} src={`/api/v1/study/grammar/${topic.id}/pdf`} className="mt-4 hidden h-[70vh] w-full rounded-xl border border-ink/10 bg-white md:block" />
+            <iframe title={topic.pdf.filename} src={`/api/v1/study/grammar/${topic.id}/pdf`} className="mt-4 hidden h-[70vh] w-full rounded-xl border border-ink/10 bg-cream md:block" />
           </div>
         ) : null}
         <div className="mt-6 flex flex-wrap gap-3">

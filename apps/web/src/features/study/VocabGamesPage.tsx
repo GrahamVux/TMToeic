@@ -170,7 +170,7 @@ export function VocabGamesPage() {
             {source === 'catalog' ? (
               <div className="flex flex-wrap gap-2.5">
                 <select
-                  className="h-9 rounded-xl border border-gold/35 bg-white px-3 text-xs font-semibold"
+                  className="h-9 rounded-xl border border-gold/35 bg-cream px-3 text-xs font-semibold"
                   value={selectedSet?.id ?? ''}
                   onChange={(e) => { setSetId(e.target.value); setLastResult(null); setSessionId((s) => s + 1) }}
                 >
@@ -186,7 +186,7 @@ export function VocabGamesPage() {
                       key={u.index}
                       type="button"
                       onClick={() => { setUnit(u.index); setLastResult(null); setSessionId((s) => s + 1) }}
-                      className={cn('rounded-full px-3 py-1 text-xs font-semibold', unit === u.index ? 'bg-ink text-white' : 'bg-paper-2 text-ink/70')}
+                      className={cn('rounded-full px-3 py-1 text-xs font-semibold', unit === u.index ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/70')}
                     >
                       Unit {u.index} ({u.wordCount})
                     </button>
@@ -196,7 +196,7 @@ export function VocabGamesPage() {
             ) : (
               <div className="flex flex-wrap gap-2.5">
                 <select
-                  className="h-9 rounded-xl border border-gold/35 bg-white px-3 text-xs font-semibold"
+                  className="h-9 rounded-xl border border-gold/35 bg-cream px-3 text-xs font-semibold"
                   value={nbTopic}
                   onChange={(e) => { setNbTopic(e.target.value); setLastResult(null); setSessionId((s) => s + 1) }}
                 >
@@ -206,7 +206,7 @@ export function VocabGamesPage() {
                   ))}
                 </select>
                 <select
-                  className="h-9 rounded-xl border border-gold/35 bg-white px-3 text-xs font-semibold"
+                  className="h-9 rounded-xl border border-gold/35 bg-cream px-3 text-xs font-semibold"
                   value={nbColor}
                   onChange={(e) => { setNbColor(e.target.value as NotebookCardColor | 'all'); setLastResult(null); setSessionId((s) => s + 1) }}
                 >
@@ -265,8 +265,8 @@ export function VocabGamesPage() {
           <p className="mt-2 text-sm text-ink/65">
             Bộ từ: <strong>{deckLabel}</strong> • Đạt <strong>{lastResult.score}/{lastResult.total}</strong> điểm chính xác
           </p>
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-amber-50 px-4 py-2 text-sm font-bold text-amber-800 border border-amber-200">
-            <Sparkles className="size-4 text-amber-500" />
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-warn/30 bg-warn-soft px-4 py-2 text-sm font-bold text-warn">
+            <Sparkles className="size-4" />
             {lastResult.xpAwarded > 0
               ? `+${lastResult.xpAwarded} EXP đã cộng vào Bảng xếp hạng`
               : `Bạn đã đạt trần ${VOCAB_GAME_DAILY_XP_CAP} EXP/ngày (tiến độ SRS vẫn được ghi nhận)`}
@@ -361,7 +361,7 @@ function MatchGameBoard({
 
       <div className={cn('mt-4 grid gap-4 md:grid-cols-2 transition', wrongFlash && 'animate-pulse')}>
         <div className="space-y-2">
-          <p className="text-xs font-bold text-ink/50 uppercase">Từ tiếng Anh</p>
+          <p className="text-xs font-bold text-ink-soft uppercase">Từ tiếng Anh</p>
           {leftItems.map((item) => {
             const done = matched.has(item.id)
             const active = pickedWord === item.id
@@ -377,7 +377,7 @@ function MatchGameBoard({
                 className={cn(
                   'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition',
                   done
-                    ? 'border-emerald-200 bg-emerald-50/70 text-emerald-700 opacity-60'
+                    ? 'border-success/35 bg-success-soft text-success opacity-65'
                     : active
                       ? 'border-button bg-button text-button-ink shadow-xs'
                       : 'border-gold/30 bg-paper hover:border-button/70',
@@ -391,7 +391,7 @@ function MatchGameBoard({
         </div>
 
         <div className="space-y-2">
-          <p className="text-xs font-bold text-ink/50 uppercase">Nghĩa tiếng Việt</p>
+          <p className="text-xs font-bold text-ink-soft uppercase">Nghĩa tiếng Việt</p>
           {rightItems.map((item) => {
             const done = matched.has(item.id)
             const active = pickedMeaning === item.id
@@ -407,7 +407,7 @@ function MatchGameBoard({
                 className={cn(
                   'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition',
                   done
-                    ? 'border-emerald-200 bg-emerald-50/70 text-emerald-700 opacity-60'
+                    ? 'border-success/35 bg-success-soft text-success opacity-65'
                     : active
                       ? 'border-button bg-button text-button-ink shadow-xs'
                       : 'border-gold/30 bg-paper hover:border-button/70',
@@ -477,7 +477,7 @@ function QuizGameBoard({
         <p className="text-xs font-bold tracking-widest text-gold-deep uppercase">{current.target.partOfSpeech}</p>
         <h2 className="serif mt-2 text-4xl text-ink">{current.target.word}</h2>
         {current.target.example ? (
-          <p className="mt-2 text-xs italic text-ink/55">“{maskWordInSentence(current.target.example, current.target.word)}”</p>
+          <p className="mt-2 text-xs italic text-ink-soft">“{maskWordInSentence(current.target.example, current.target.word)}”</p>
         ) : null}
       </div>
 
@@ -495,14 +495,14 @@ function QuizGameBoard({
                 'flex items-start gap-2.5 rounded-2xl border p-4 text-left text-sm font-medium transition',
                 chosenId
                   ? isTarget
-                    ? 'border-emerald-400 bg-emerald-50 text-emerald-900'
+                    ? 'border-success/45 bg-success-soft text-ink'
                     : picked
-                      ? 'border-rose-400 bg-rose-50 text-rose-900'
+                      ? 'border-danger/45 bg-danger-soft text-ink'
                       : 'border-gold/25 bg-paper opacity-60'
                   : 'border-gold/35 bg-paper hover:border-button',
               )}
             >
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-gold-deep">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-cream text-xs font-bold text-gold-deep">
                 {i + 1}
               </span>
               <span>{opt.meaning}</span>
@@ -586,14 +586,14 @@ function SpellGameBoard({
           className={cn(
             'h-12 w-full rounded-2xl border-2 px-4 text-center text-lg font-bold outline-none',
             feedback === 'correct'
-              ? 'border-emerald-400 bg-emerald-50 text-emerald-900'
+              ? 'border-success/45 bg-success-soft text-ink'
               : feedback === 'wrong'
-                ? 'border-rose-400 bg-rose-50 text-rose-900'
-                : 'border-gold/45 bg-white focus:border-button',
+                ? 'border-danger/45 bg-danger-soft text-ink'
+                : 'border-gold/45 bg-cream focus:border-button',
           )}
         />
         {feedback === 'wrong' ? (
-          <p className="text-center text-sm font-semibold text-rose-700">
+          <p className="text-center text-sm font-semibold text-danger">
             Đáp án đúng: <span className="underline">{targetClean}</span>
           </p>
         ) : null}

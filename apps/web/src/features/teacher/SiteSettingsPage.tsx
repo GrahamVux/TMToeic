@@ -13,8 +13,8 @@ import { cn } from '@/lib/cn'
 import { DEFAULT_SITE_THEME, resolveThemePreset, THEME_PRESETS, type SiteThemeDto, type ThemePresetId, type UpdateSiteSettingsInput } from '@toeic/shared'
 import { useEffect, useRef, useState } from 'react'
 
-const field = 'mt-1 h-10 w-full rounded-xl border border-gold/40 bg-white px-3 text-sm outline-none focus:border-button focus:ring-2 focus:ring-button/30'
-const area = 'mt-1 min-h-24 w-full rounded-xl border border-gold/40 bg-white px-3 py-2 text-sm outline-none focus:border-button focus:ring-2 focus:ring-button/30'
+const field = 'mt-1 h-10 w-full rounded-xl border border-gold/40 bg-cream px-3 text-sm outline-none focus:border-button focus:ring-2 focus:ring-button/30'
+const area = 'mt-1 min-h-24 w-full rounded-xl border border-gold/40 bg-cream px-3 py-2 text-sm outline-none focus:border-button focus:ring-2 focus:ring-button/30'
 
 type Section = 'honor' | 'brand' | 'login' | 'contact' | 'theme'
 
@@ -146,8 +146,8 @@ export function SiteSettingsPage() {
       <CornerNotice notice={notice} />
       <header>
         <p className="text-xs tracking-[0.18em] text-gold-deep uppercase">Cài đặt cổng học</p>
-        <h1 className="serif mt-2 text-3xl sm:text-4xl">Logo, khẩu hiệu, footer & màu theme</h1>
-        <p className="mt-2 text-sm text-ink/60">Thay đổi được lưu vào hệ thống và hiện ngay trên trang học viên, không cần sửa database.</p>
+        <h1 className="serif mt-2 text-3xl font-bold sm:text-4xl">Logo, khẩu hiệu, footer & màu theme</h1>
+        <p className="mt-2 text-sm text-ink-soft">Thay đổi được lưu vào hệ thống và hiện ngay trên trang học viên, không cần sửa database.</p>
       </header>
 
       <Card className="p-6">
@@ -160,7 +160,7 @@ export function SiteSettingsPage() {
           />
           Hiện bảng vinh danh năm trên trang học viên
         </label>
-        <p className="mt-2 text-xs text-ink/55">Tắt thì cả hai bảng (trong lớp và trong trung tâm) biến mất, kể cả hạng EXP.</p>
+        <p className="mt-2 text-xs text-ink-soft">Tắt thì cả hai bảng (trong lớp và trong trung tâm) biến mất, kể cả hạng EXP.</p>
         <SectionSave section="honor" saving={saving} error={err} onSave={saveSection} />
       </Card>
 
@@ -176,11 +176,11 @@ export function SiteSettingsPage() {
             <Input className={field} value={form.slogan ?? ''} onChange={(e) => set('slogan', e.target.value)} />
           </label>
         </div>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div>
-            <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-flow-col sm:grid-cols-2 sm:grid-rows-[auto_auto] sm:gap-x-4 sm:gap-y-2">
+          <div className="contents">
+            <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
-                <img src={previewLogo} alt="" className="size-11 rounded-full bg-white object-contain shadow" />
+                <img src={previewLogo} alt="" className="size-11 rounded-full bg-cream object-contain shadow" />
                 <p className="text-sm font-medium">Logo thương hiệu</p>
               </div>
               {form.logoUrl || site.logoUrl ? (
@@ -196,8 +196,8 @@ export function SiteSettingsPage() {
               onFiles={(files) => void onFile('logoUrl', files[0])}
             />
           </div>
-          <div>
-            <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="contents">
+            <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-medium">Favicon (icon tab trình duyệt)</p>
               {form.faviconUrl || site.faviconUrl ? (
                 <Button variant="ghost" type="button" onClick={() => set('faviconUrl', null)}>
@@ -283,13 +283,21 @@ export function SiteSettingsPage() {
       <Card className="p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 flex-1">
-            <h2 className="serif text-2xl">Theme Background theo Chủ đề (Mùa & Lễ hội)</h2>
-            <p className="mt-1 text-sm text-ink/60">Admin chọn cảnh nền vẽ minh họa chung cho toàn trang; thẻ nội dung chuyển sang kính mờ trong suốt 70%. Học viên có nút Sáng/Tối riêng trên Header.</p>
+            <h2 className="serif text-2xl font-bold">Theme Background theo Chủ đề (Mùa & Lễ hội)</h2>
+            <p className="mt-1 text-sm text-ink-soft">
+              {backgroundMode === 'sky'
+                ? 'Bầu trời theo giờ Việt Nam giữ một chế độ sáng cố định. Nút Sáng/Tối được ẩn trên toàn trang.'
+                : backgroundMode === 'gradient'
+                  ? 'Hình nền theo chủ đề chỉ hiện ở màn hình đăng nhập và lúc đang mở cổng. Sau khi đăng nhập, nền trở lại màu cố định. Nút Sáng/Tối vẫn đổi màu trang.'
+                  : 'Nền trang giữ màu chuẩn học thuật sạch sẽ, họa tiết khung viền nhẹ chỉ nằm ở hai lề màn hình. Học viên có nút Sáng/Tối riêng trên Header.'}
+            </p>
           </div>
-          <div className="flex shrink-0 items-center gap-3 self-start sm:self-center">
-            <span className="w-36 whitespace-nowrap text-xs font-semibold text-ink/65 sm:text-right">{colorMode === 'dark' ? 'Đang xem chế độ Tối' : 'Đang xem chế độ Sáng'}</span>
-            <DarkModeSwitch checked={colorMode === 'dark'} onToggle={toggleColorMode} scale={0.72} />
-          </div>
+          {backgroundMode === 'sky' ? null : (
+            <div className="flex shrink-0 items-center gap-3 self-start sm:self-center">
+              <span className="w-36 whitespace-nowrap text-xs font-semibold text-ink-soft sm:text-right">{colorMode === 'dark' ? 'Đang xem chế độ Tối' : 'Đang xem chế độ Sáng'}</span>
+              <DarkModeSwitch checked={colorMode === 'dark'} onToggle={toggleColorMode} scale={0.72} />
+            </div>
+          )}
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -314,9 +322,9 @@ export function SiteSettingsPage() {
           ))}
         </div>
 
-        <p className="mt-3 text-sm text-ink/60">
+        <p className="mt-3 text-sm text-ink-soft">
           {backgroundMode === 'gradient'
-            ? `Đang chọn: ${THEME_PRESETS.find((p) => p.id === themePreset)?.label ?? 'Ngọc Lam Chuẩn'}${themePreset === 'auto' ? ` (Hôm nay đang áp dụng: ${resolvedPreset.label})` : ''}. Gạt nút Sáng/Tối góc phải để xem biến thể ngày/đêm.`
+            ? `Đang chọn: ${THEME_PRESETS.find((p) => p.id === themePreset)?.label ?? 'Xanh Học Thuật Chuẩn'}${themePreset === 'auto' ? ` (Hôm nay đang áp dụng: ${resolvedPreset.label})` : ''}. Gạt nút Sáng/Tối để đổi màu trang; cảnh minh họa chỉ ở màn đăng nhập.`
             : backgroundMode === 'sky'
               ? `Mặt trời đi sát mép trái, mặt trăng đi sát mép phải, đối nhau theo giờ Việt Nam, hiện ${skyClockLabel()}.`
               : 'Toàn trang dùng một màu nền cố định (tự chuyển nền tối khi người dùng gạt sang Dark Mode).'}
@@ -372,7 +380,7 @@ export function SiteSettingsPage() {
                         </span>
                         <span className="min-w-0">
                           <span className="block truncate text-sm font-semibold text-ink">{preset.label}</span>
-                          <span className="block truncate text-[11px] text-ink/55">{preset.subtitle}</span>
+                          <span className="block truncate text-[13px] text-ink-soft">{preset.subtitle}</span>
                         </span>
                       </button>
                     )
@@ -383,7 +391,27 @@ export function SiteSettingsPage() {
           </div>
         ) : null}
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-gold/25 pt-5">
+          <div>
+            <p className="text-sm font-semibold text-ink">Bảng màu mặc định: Academic Navy &amp; Đỏ Đô</p>
+            <p className="text-xs text-ink-soft">Chủ đạo {DEFAULT_SITE_THEME.primary} • Nhấn {DEFAULT_SITE_THEME.primarySoft} • Nền {DEFAULT_SITE_THEME.paper} • Điểm nhấn Đỏ Đô #d9232e</p>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={
+              theme.primary.toLowerCase() === DEFAULT_SITE_THEME.primary &&
+              theme.primarySoft.toLowerCase() === DEFAULT_SITE_THEME.primarySoft &&
+              theme.paper.toLowerCase() === DEFAULT_SITE_THEME.paper &&
+              (theme.button ?? DEFAULT_SITE_THEME.button!).toLowerCase() === DEFAULT_SITE_THEME.button!
+            }
+            onClick={() => paintTheme({ ...DEFAULT_SITE_THEME })}
+          >
+            Khôi phục màu chuẩn Navy
+          </Button>
+        </div>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <ColorField label="Màu chủ đạo (Fixed/Sky)" value={theme.primary} onChange={(primary) => paintTheme({ ...theme, primary })} />
           <ColorField label="Màu nhấn nhạt" value={theme.primarySoft} onChange={(primarySoft) => paintTheme({ ...theme, primarySoft })} />
           <ColorField label="Màu nền cố định" value={theme.paper} onChange={(paper) => paintTheme({ ...theme, paper })} />
@@ -392,7 +420,8 @@ export function SiteSettingsPage() {
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <Badge>Xem thử</Badge>
           <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: buttonLook.background, color: buttonLook.ink }}>Nút chính</span>
-          <span className="rounded-full bg-teal-soft px-3 py-1 text-xs font-semibold text-gold-deep">Nhấn nhạt</span>
+          <span className="rounded-full bg-crimson-soft px-3 py-1 text-xs font-semibold text-crimson">Điểm nhấn Đỏ Đô</span>
+          <span className="rounded-full bg-teal-soft px-3 py-1 text-xs font-semibold text-navy">Nhấn nhạt</span>
         </div>
         <SectionSave section="theme" saving={saving} error={err} onSave={saveSection} />
       </Card>
@@ -430,7 +459,7 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
     <label className="text-sm font-medium">
       {label}
       <span className="mt-1 flex items-center gap-2">
-        <input className="h-10 w-14 cursor-pointer rounded-lg border border-gold/40 bg-white" type="color" value={value} onChange={(e) => onChange(e.target.value)} />
+        <input className="h-10 w-14 cursor-pointer rounded-lg border border-gold/40 bg-cream" type="color" value={value} onChange={(e) => onChange(e.target.value)} />
         <Input className={cn(field, 'font-mono')} value={value} onChange={(e) => onChange(e.target.value)} />
       </span>
     </label>

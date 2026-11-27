@@ -45,7 +45,7 @@ export function ExamBankPage() {
 function tabClass(active: boolean) {
   return active
     ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink'
-    : 'rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink/70 ring-1 ring-ink/10'
+    : 'rounded-full bg-cream px-4 py-2 text-sm font-semibold text-ink/70 ring-1 ring-ink/10'
 }
 
 function newExamCode() {
@@ -341,7 +341,7 @@ function AuthoredImport({ skill }: { skill: Skill }) {
             </label>
             <select
               id="au-part"
-              className="mt-1 h-10 w-full rounded-xl border border-ink/12 bg-white px-3 text-sm"
+              className="mt-1 h-10 w-full rounded-xl border border-ink/12 bg-cream px-3 text-sm"
               value={partCode}
               onChange={(e) => setPartCode(e.target.value)}
             >
@@ -362,7 +362,7 @@ function AuthoredImport({ skill }: { skill: Skill }) {
         <div className="mt-4 max-h-72 space-y-3 overflow-y-auto">
           {rows.map((r, i) => (
             <div key={i} className="rounded-xl bg-paper p-3">
-              <p className="text-xs text-ink/45">Câu {i + 1}</p>
+              <p className="text-xs text-ink-soft">Câu {i + 1}</p>
               <Input className="mt-1" placeholder="Đề bài" value={r.prompt} onChange={(e) => setRows((all) => all.map((x, j) => (j === i ? { ...x, prompt: e.target.value } : x)))} />
               <div className="mt-2 grid grid-cols-2 gap-2">
                 {(['a', 'b', 'c', 'd'] as const).map((k) => (
@@ -375,7 +375,7 @@ function AuthoredImport({ skill }: { skill: Skill }) {
                 ))}
               </div>
               <textarea
-                className="mt-2 w-full rounded-xl border border-ink/10 bg-white px-3 py-2 text-sm"
+                className="mt-2 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm"
                 rows={2}
                 placeholder="Lời giải thích"
                 value={r.explanation}
@@ -384,7 +384,7 @@ function AuthoredImport({ skill }: { skill: Skill }) {
               <label className="mt-2 flex items-center gap-2 text-xs">
                 Đáp án đúng
                 <select
-                  className="h-8 rounded-lg border border-ink/12 bg-white px-2"
+                  className="h-8 rounded-lg border border-ink/12 bg-cream px-2"
                   value={r.correct}
                   onChange={(e) => setRows((all) => all.map((x, j) => (j === i ? { ...x, correct: e.target.value } : x)))}
                 >
@@ -456,7 +456,7 @@ function ExamList() {
     <section>
       <h2 className="serif text-2xl">Kho đề ({exams.data?.length ?? 0})</h2>
       {error ? (
-        <div className="mt-3 rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral" role="alert">
+        <div className="mt-3 rounded-xl border border-danger/25 bg-danger-soft p-3 text-sm text-danger" role="alert">
           <p>{error instanceof ApiError && error.code === ERROR_CODES.EXAM_NOT_READY ? 'Đề chưa sẵn sàng để xuất bản.' : 'Thao tác thất bại.'}</p>
           {problems.length > 0 ? (
             <ul className="mt-1 list-disc pl-5">
@@ -467,7 +467,7 @@ function ExamList() {
           ) : null}
         </div>
       ) : null}
-      {exams.isPending ? <p className="mt-3 text-sm text-ink/55">Đang tải…</p> : null}
+      {exams.isPending ? <p className="mt-3 text-sm text-ink-soft">Đang tải…</p> : null}
       <div className="mt-3 grid gap-3">
         {exams.data?.map((exam) => (
           <Card key={exam.id} className="p-5">
@@ -478,12 +478,12 @@ function ExamList() {
                   {exam.parts.some((p) => p.skill === 'LISTENING') && exam.hasAudio ? <Badge tone="teal">Có file nghe</Badge> : null}
                 </div>
                 <h3 className="mt-2 font-semibold">{exam.title}</h3>
-                <p className="text-sm text-ink/55">
+                <p className="text-sm text-ink-soft">
                   {exam.code} • {Math.round(exam.durationSeconds / 60)} phút • {exam.totalQuestions} câu
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {exam.parts.map((p) => (
-                    <span key={p.code} className="rounded-full bg-paper-2 px-2.5 py-1 text-[11px] font-semibold text-ink/70">
+                    <span key={p.code} className="rounded-full bg-paper-2 px-2.5 py-1 text-[13px] font-semibold text-ink/70">
                       {partName(p.code).split(' — ')[0]} · {p.questionCount} câu
                     </span>
                   ))}
@@ -573,12 +573,12 @@ function ListeningAudioControl({ exam }: { exam: ExamSummaryDto }) {
 
   return (
     <div className="mt-4 border-t border-ink/8 pt-3">
-      <p className="text-xs text-ink/55">
+      <p className="text-xs text-ink-soft">
         Gắn file cho cả phần nghe khi bài làm gồm mọi part Listening. Gắn theo từng part khi giao bài một part.
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <select
-          className="h-10 rounded-xl border border-ink/12 bg-white px-3 text-sm"
+          className="h-10 rounded-xl border border-ink/12 bg-cream px-3 text-sm"
           value={partCode}
           aria-label="Chỗ gắn file nghe"
           onChange={(e) => setPartCode(e.target.value)}

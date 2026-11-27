@@ -144,7 +144,7 @@ export function FilePick({
   const isDone = phase === 'done' || phase === 'out'
   const isOut = phase === 'out'
   const dashOffset = (289 * (1 - progress / 100)).toFixed(1)
-  const extColor = EXT_COLORS[meta?.ext ?? 'file'] ?? '#2b8a9c'
+  const extColor = EXT_COLORS[meta?.ext ?? 'file'] ?? 'var(--color-button)'
 
   return (
     <div
@@ -197,7 +197,7 @@ export function FilePick({
               <span className="truncate">Đã chọn: {chosen}</span>
             </span>
           ) : null}
-          {hint ? <p className="mt-1.5 max-w-md text-[11px] leading-snug text-ink/55">{hint}</p> : null}
+          {hint ? <p className="mt-1.5 max-w-md text-[13px] leading-snug text-ink-soft">{hint}</p> : null}
         </div>
 
         <div className="u432-up px-4 py-3" aria-hidden="true">

@@ -92,7 +92,7 @@ export function FrameWardrobeModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-ink/45 p-4 backdrop-blur-xs"
+      className="fixed inset-0 z-50 grid place-items-center bg-slate-950/55 p-4 backdrop-blur-xs"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
@@ -115,19 +115,19 @@ export function FrameWardrobeModal({
             type="button"
             aria-label="Đóng hộp thoại"
             onClick={onClose}
-            className="grid size-8 place-items-center rounded-full border border-ink/12 bg-white text-ink/70 hover:bg-paper-2"
+            className="grid size-8 place-items-center rounded-full border border-ink/12 bg-cream text-ink/70 hover:bg-paper-2"
           >
             <X className="size-4" />
           </button>
         </div>
 
-        <div className="flex border-b border-gold/25 bg-white px-6">
+        <div className="flex border-b border-gold/25 bg-cream px-6">
           <button
             type="button"
             onClick={() => setTab('frames')}
             className={cn(
               'border-b-2 px-4 py-3 text-sm font-semibold transition',
-              tab === 'frames' ? 'border-button text-gold-deep' : 'border-transparent text-ink/55 hover:text-ink',
+              tab === 'frames' ? 'border-button text-gold-deep' : 'border-transparent text-ink-soft hover:text-ink',
             )}
           >
             Bộ sưu tập Khung viền ({AVATAR_FRAMES.length})
@@ -137,7 +137,7 @@ export function FrameWardrobeModal({
             onClick={() => setTab('wallet')}
             className={cn(
               'flex items-center gap-1.5 border-b-2 px-4 py-3 text-sm font-semibold transition',
-              tab === 'wallet' ? 'border-button text-gold-deep' : 'border-transparent text-ink/55 hover:text-ink',
+              tab === 'wallet' ? 'border-button text-gold-deep' : 'border-transparent text-ink-soft hover:text-ink',
             )}
           >
             <Coins className="size-4 text-amber-500" />
@@ -159,7 +159,7 @@ export function FrameWardrobeModal({
                 </p>
                 <p className="mt-1.5 text-xs leading-relaxed text-ink/65">{activeDef.unlockCondition}</p>
                 {previewExpiry ? (
-                  <p className="mt-2 inline-flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-800">
+                  <p className="mt-2 inline-flex items-center gap-1 rounded-xl border border-warn/25 bg-warn-soft px-2.5 py-1 text-[13px] font-medium text-warn">
                     <Clock className="size-3.5 shrink-0" />
                     {previewExpiry}
                   </p>
@@ -167,14 +167,14 @@ export function FrameWardrobeModal({
               </div>
 
               <div className="mt-3.5 w-full space-y-2 border-t border-gold/25 pt-3">
-                <p className="text-[11px] text-ink/50">Xem thử trên thanh tài khoản:</p>
-                <div className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-white py-1 pr-3 pl-1.5 shadow-2xs">
-                  <AccountAvatar name={user.fullName} url={user.avatarUrl} frameId={previewFrameId} className="size-[30px] text-[10px]" />
+                <p className="text-[13px] text-ink-soft">Xem thử trên thanh tài khoản:</p>
+                <div className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-cream py-1 pr-3 pl-1.5 shadow-2xs">
+                  <AccountAvatar name={user.fullName} url={user.avatarUrl} frameId={previewFrameId} className="size-[30px] text-[12px]" />
                   <span className="max-w-[140px] truncate text-xs font-semibold">{user.fullName}</span>
                 </div>
                 {error ? <p role="alert" className="text-xs text-coral">{error}</p> : null}
                 {viewing ? (
-                  <p className="text-[11px] text-ink/55">Chế độ xem thử không cho phép đổi khung.</p>
+                  <p className="text-[13px] text-ink-soft">Chế độ xem thử không cho phép đổi khung.</p>
                 ) : isUnlocked ? (
                   <Button
                     type="button"
@@ -201,7 +201,7 @@ export function FrameWardrobeModal({
                     onClick={() => setCat(c.id)}
                     className={cn(
                       'rounded-full border px-3 py-1 text-xs font-semibold transition',
-                      cat === c.id ? 'border-button bg-button text-white' : 'border-gold/35 bg-white text-ink/70 hover:bg-teal-soft',
+                      cat === c.id ? 'border-button bg-button text-button-ink' : 'border-gold/35 bg-cream text-ink-soft hover:bg-teal-soft',
                     )}
                   >
                     {c.label}
@@ -209,7 +209,7 @@ export function FrameWardrobeModal({
                 ))}
               </div>
 
-              {rewards.isPending ? <p className="text-xs text-ink/55">Đang tải danh sách khung đã mở…</p> : null}
+              {rewards.isPending ? <p className="text-xs text-ink-soft">Đang tải danh sách khung đã mở…</p> : null}
 
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {visibleFrames.map((f) => {
@@ -225,27 +225,27 @@ export function FrameWardrobeModal({
                       onClick={() => setPreviewFrameId(f.id)}
                       className={cn(
                         'relative flex flex-col items-center rounded-2xl border px-3 pt-7 pb-3 text-center transition',
-                        selected ? 'border-button bg-teal-soft/55 ring-2 ring-button/25' : 'border-gold/30 bg-white hover:border-gold-deep/50',
+                        selected ? 'border-button bg-teal-soft/55 ring-2 ring-button/25' : 'border-gold/30 bg-cream hover:border-gold-deep/50',
                         !unlocked && 'opacity-75',
                       )}
                     >
                       {equipped ? (
-                        <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 rounded-full bg-olive px-2 py-0.5 text-[10px] font-bold text-white">
+                        <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 rounded-full bg-olive px-2 py-0.5 text-[12px] font-bold text-white">
                           <Check className="size-3" /> Đang dùng
                         </span>
                       ) : !unlocked ? (
-                        <span className="absolute top-2 right-2 grid size-5 place-items-center rounded-full bg-ink/10 text-ink/55">
+                        <span className="absolute top-2 right-2 grid size-5 place-items-center rounded-full bg-ink/10 text-ink-soft">
                           <Lock className="size-3" />
                         </span>
                       ) : expText ? (
-                        <span className="absolute top-2 right-2 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800">
+                        <span className="absolute top-2 right-2 rounded-full bg-warn-soft px-1.5 py-0.5 text-[12px] font-bold text-warn">
                           {expText}
                         </span>
                       ) : null}
 
                       <AccountAvatar name={user.fullName} url={user.avatarUrl} frameId={f.id} className="size-[56px] text-sm" />
                       <span className="mt-2 line-clamp-2 text-xs leading-tight font-semibold text-ink">{f.name}</span>
-                      <span className="mt-0.5 text-[10px] text-ink/55">{f.badgeLabel}</span>
+                      <span className="mt-0.5 text-[12px] text-ink-soft">{f.badgeLabel}</span>
                     </button>
                   )
                 })}
@@ -258,7 +258,7 @@ export function FrameWardrobeModal({
               <p className="text-xs font-semibold tracking-wider text-gold-deep uppercase">Số dư tích lũy</p>
               <p className="serif mt-2 text-4xl text-ink">{points.toLocaleString('vi-VN')}</p>
               <p className="text-xs text-ink/60">Điểm thưởng vinh danh</p>
-              <div className="mt-5 rounded-2xl border border-dashed border-gold-deep/40 bg-white p-4">
+              <div className="mt-5 rounded-2xl border border-dashed border-gold-deep/40 bg-cream p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-gold-deep">
                   <Gift className="size-4" /> Cửa hàng Đổi quà
                 </div>
@@ -272,21 +272,21 @@ export function FrameWardrobeModal({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-ink">Lịch sử biến động điểm</h3>
-                <span className="inline-flex items-center gap-1 text-xs text-ink/55">
+                <span className="inline-flex items-center gap-1 text-xs text-ink-soft">
                   <ShieldCheck className="size-3.5 text-olive" /> Tự động chốt theo kỳ & Streak
                 </span>
               </div>
               {ledger.length === 0 ? (
-                <p className="rounded-2xl border border-gold/30 bg-white p-4 text-sm text-ink/60">
+                <p className="rounded-2xl border border-gold/30 bg-cream p-4 text-sm text-ink/60">
                   Chưa có giao dịch điểm thưởng nào. Đạt Top 3 Tuần/Tháng hoặc các mốc Streak để nhận điểm!
                 </p>
               ) : (
-                <ul className="divide-y divide-gold/25 rounded-2xl border border-gold/30 bg-white">
+                <ul className="divide-y divide-gold/25 rounded-2xl border border-gold/30 bg-cream">
                   {ledger.map((item) => (
                     <li key={item.id} className="flex items-center justify-between gap-4 px-4 py-3">
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-ink">{item.reason}</p>
-                        <p className="text-xs text-ink/50">
+                        <p className="text-xs text-ink-soft">
                           {sourceBadge(item.source)} • {new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(item.createdAt))}
                         </p>
                       </div>

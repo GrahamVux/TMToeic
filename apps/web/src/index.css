@@ -1,29 +1,57 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Be Vietnam Pro", "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  --color-ink: #1e333c;
-  --color-ink-soft: #2c4a55;
-  --color-navy: #3a6f7c;
-  --color-gold: #b9e4ec;
-  --color-gold-deep: #2b8a9c;
-  --color-paper: #f7fbfd;
-  --color-paper-2: #eaf5f8;
+  --text-xs: 0.875rem;
+  --text-sm: 1rem;
+  --text-base: 1.125rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.625rem;
+  --text-3xl: 2rem;
+  --text-4xl: 2.375rem;
+  --text-5xl: 3.125rem;
+  --text-5xl--line-height: 1.15;
+  --text-6xl: 3.875rem;
+  --text-7xl: 4.625rem;
+  --text-8xl: 6.125rem;
+  --text-9xl: 8.125rem;
+
+  --color-ink: #0f172a;
+  --color-ink-soft: #334155;
+  --color-navy: #1e3a8a;
+  --color-gold: #dbeafe;
+  --color-gold-deep: #143899;
+  --color-paper: #f6f8fc;
+  --color-paper-2: #e8eef9;
   --color-cream: #ffffff;
-  --color-teal: #4aa8b8;
-  --color-teal-soft: #e8f6f9;
-  --color-coral: #d9786c;
-  --color-olive: #3f9a86;
-  --color-warn: #d4a05a;
-  --color-button: #1f7a8c;
+  --color-teal: #143899;
+  --color-teal-soft: #eaf0fb;
+  --color-coral: #be123c;
+  --color-olive: #0f766e;
+  --color-warn: #b45309;
+  --color-button: #143899;
   --color-button-ink: #ffffff;
-  --color-button-hover: #185f6e;
-  --color-button-soft: #e7f2f5;
-  --color-amber: #1f7a8c;
-  --color-amber-soft: #e7f2f5;
-  --color-amber-deep: #185f6e;
+  --color-button-hover: #0f2b78;
+  --color-button-soft: #e6ecf8;
+  --color-amber: #143899;
+  --color-amber-soft: #e6ecf8;
+  --color-amber-deep: #0f2b78;
+  --color-crimson: #d9232e;
+  --color-crimson-soft: #fdecee;
+  --color-banner: #143899;
+  --color-banner-ink: #ffffff;
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fce7e6;
+  --color-success: #15803d;
+  --color-success-soft: #e6f4ec;
+  --color-warn-soft: #fef3e2;
+  --color-chart-line: var(--color-button);
+  --color-chart-dot: var(--color-gold);
 }
 
 html {
@@ -36,6 +64,8 @@ body {
   background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  font-size: 1.125rem;
+  line-height: 1.55;
 }
 
 html.sky-mode body,
@@ -49,51 +79,86 @@ html.gradient-mode .site-wash {
   display: none;
 }
 
-/* 70% transparent frosted glass cards & panels over illustrated Theme Backgrounds / Sky (exams opt out via .exam-plain). */
+/* 88% frosted glass cards & panels over illustrated Theme Backgrounds / Sky (exams opt out via .exam-plain). */
 html:not(.exam-plain):not([data-theme="dark"]) .ui-card,
 html.sky-mode:not(.exam-plain):not([data-theme="dark"]) :is(section, div, aside, form, li, article):is(.rounded-2xl, .rounded-3xl):is(.bg-cream, .bg-white),
 html.gradient-mode:not(.exam-plain):not([data-theme="dark"]) :is(section, div, aside, form, li, article):is(.rounded-2xl, .rounded-3xl):is(.bg-cream, .bg-white),
-html.gradient-mode:not(.exam-plain):not([data-theme="dark"]) :is(header, footer):is(.bg-cream, .bg-white\/95) {
-  background-color: rgba(255, 255, 255, 0.70);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+html.sky-mode:not(.exam-plain):not([data-theme="dark"]) :is(header, footer):is(.bg-cream, .bg-cream\/95, .bg-white\/95),
+html.gradient-mode:not(.exam-plain):not([data-theme="dark"]) :is(header, footer):is(.bg-cream, .bg-cream\/95, .bg-white\/95) {
+  background-color: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 html.gradient-mode:not(.exam-plain):not([data-theme="dark"]) .bg-paper {
-  background-color: rgba(247, 251, 253, 0.70);
+  background-color: rgba(247, 251, 253, 0.86);
 }
 
 html.gradient-mode:not(.exam-plain):not([data-theme="dark"]) .bg-paper-2 {
-  background-color: rgba(234, 245, 248, 0.70);
+  background-color: rgba(234, 245, 248, 0.86);
 }
 
-html[data-theme="dark"]:not(.exam-plain) {
+html[data-theme="dark"] {
   color-scheme: dark;
+  --color-navy: #bfdbfe;
+  --color-gold-deep: #9fb5e0;
+  --color-teal: #9fb5e0;
+  --color-coral: #fb7185;
+  --color-olive: #2dd4bf;
+  --color-warn: #fbbf24;
+  --color-crimson: #f87171;
+  --color-crimson-soft: rgba(217, 35, 46, 0.18);
+  --color-danger: #f87171;
+  --color-danger-soft: rgba(239, 68, 68, 0.16);
+  --color-success: #4ade80;
+  --color-success-soft: rgba(34, 197, 94, 0.16);
+  --color-warn-soft: rgba(245, 158, 11, 0.16);
+  --color-chart-line: #60a5fa;
+  --color-chart-dot: #1e3a8a;
 }
 
-html[data-theme="dark"]:not(.exam-plain) :is(.ui-card, .bg-white, .bg-cream, .bg-white\/95, .bg-white\/90, .bg-white\/85) {
-  background-color: rgba(18, 25, 36, 0.70) !important;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+html[data-theme="dark"]:not(.exam-plain) :is(.ui-card, .bg-white, .bg-cream, .bg-cream\/95, .bg-white\/95, .bg-white\/90, .bg-white\/85) {
+  background-color: rgba(18, 25, 36, 0.88) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   color: var(--color-ink);
 }
 
 html[data-theme="dark"]:not(.exam-plain) .bg-paper {
-  background-color: rgba(15, 22, 30, 0.70);
+  background-color: rgba(15, 22, 30, 0.86);
 }
 
 html[data-theme="dark"]:not(.exam-plain) .bg-paper-2 {
-  background-color: rgba(28, 38, 52, 0.70);
+  background-color: rgba(28, 38, 52, 0.86);
 }
 
-html[data-theme="dark"]:not(.exam-plain) :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="color"]) {
+html[data-theme="dark"] :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="color"]) {
   background-color: rgba(16, 23, 32, 0.84);
   color: #f1f5f9;
   border-color: rgba(148, 163, 184, 0.28);
 }
 
-html[data-theme="dark"]:not(.exam-plain) :is(input, textarea)::placeholder {
+html[data-theme="dark"] :is(input, textarea)::placeholder {
   color: rgba(203, 213, 225, 0.48);
+}
+
+/* Logged-in seasonal theme keeps a solid page. The illustration stays on login and the opening splash. */
+html.surface-solid[data-theme="dark"] body {
+  background: var(--color-paper);
+}
+
+html.surface-solid[data-theme="dark"]:not(.exam-plain) :is(.ui-card, .bg-white, .bg-cream, .bg-cream\/95, .bg-white\/95, .bg-white\/90, .bg-white\/85) {
+  background-color: var(--color-cream) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html.surface-solid[data-theme="dark"] .bg-paper {
+  background-color: var(--color-paper);
+}
+
+html.surface-solid[data-theme="dark"] .bg-paper-2 {
+  background-color: var(--color-paper-2);
 }
 
 html.sky-mode.exam-plain body,
@@ -103,8 +168,15 @@ html[data-theme="dark"].exam-plain body {
 }
 
 html.exam-plain .sky-backdrop,
-html.exam-plain .theme-backdrop {
+html.exam-plain .theme-backdrop,
+html.exam-plain .site-wash {
   display: none;
+}
+
+/* Exam room keeps dark mode: solid dark surfaces, no glass. */
+html[data-theme="dark"].exam-plain :is(.ui-card, .bg-white, .bg-cream, .bg-cream\/95, .bg-white\/95, .bg-white\/90, .bg-white\/85) {
+  background-color: var(--color-cream) !important;
+  color: var(--color-ink);
 }
 
 /* Illustrated Theme Scene gentle ambient animations */
@@ -142,8 +214,8 @@ html.exam-plain .theme-backdrop {
   --ux-ink-3: #8E8A97;
   --ux-line: rgba(22, 21, 27, .09);
   --ux-line-2: rgba(22, 21, 27, .17);
-  --ux-accent: var(--color-button, #1f7a8c);
-  --ux-accent-soft: color-mix(in srgb, var(--color-button, #1f7a8c) 12%, transparent);
+  --ux-accent: var(--color-button, #143899);
+  --ux-accent-soft: color-mix(in srgb, var(--color-button, #143899) 12%, transparent);
   --ux-accent-ink: #FFFFFF;
   --ux-mint: #119C72;
   --ux-danger: #D93A55;
@@ -247,11 +319,11 @@ html.exam-plain .theme-backdrop {
 .u432-ar svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 @keyframes u432-bob { 50% { transform: translateY(-5px); } }
 .u432-wrap.is-drag .u432-ar { color: var(--ux-accent); animation: none; transform: translateY(-8px) scale(1.08); }
-.u432-idle b { font-size: 14px; font-weight: 650; letter-spacing: -.015em; }
+.u432-idle b { font-size: 16px; font-weight: 650; letter-spacing: -.015em; }
 .u432-idle b + b { display: none; color: var(--ux-accent); }
 .u432-wrap.is-drag .u432-idle b:first-of-type { display: none; }
 .u432-wrap.is-drag .u432-idle b + b { display: block; }
-.u432-idle small { margin-top: 3px; font-size: 12px; color: var(--ux-ink-3); }
+.u432-idle small { margin-top: 3px; font-size: 14px; color: var(--ux-ink-3); }
 .u432-br { font-weight: 650; color: var(--ux-accent); text-decoration: underline; text-underline-offset: 3px; }
 .u432-up { opacity: 0; pointer-events: none; }
 .u432-wrap.is-up .u432-up { opacity: 1; }
@@ -273,13 +345,13 @@ html.exam-plain .theme-backdrop {
 .u432-ok { position: absolute; right: 12px; bottom: 10px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--ux-mint); color: #fff; box-shadow: 0 0 0 3px var(--ux-surface), 0 6px 14px -6px var(--ux-mint); opacity: 0; transform: scale(.2); }
 .u432-ok svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .u432-wrap.is-done .u432-ok { opacity: 1; transform: none; transition: opacity .15s, transform .55s cubic-bezier(.3,1.9,.5,1); }
-.u432-nm { margin-top: 8px; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.u432-nm { margin-top: 8px; font-size: 14.5px; font-weight: 600; font-variant-numeric: tabular-nums; max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .u432-nm small { font-weight: 500; color: var(--ux-ink-3); }
 .u432-file { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
 /* Lucian #431 Animated Calendar */
 .u431-hd { display: flex; align-items: center; height: 32px; padding: 0 2px 0 8px; }
-.u431-hd b { flex: 1; font-size: 15px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.u431-hd b { flex: 1; font-size: 17px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .u431-nav { width: 30px; height: 30px; padding: 0; border: 0; border-radius: 9px; display: grid; place-items: center; background: none; color: var(--ux-ink-2); transform: scale(var(--k, 1)); transition: background-color .15s, color .15s, opacity .15s, transform .4s cubic-bezier(.34,1.7,.5,1); }
 .u431-nav:hover:not(:disabled) { background: var(--ux-surface-2); color: var(--ux-ink); }
 .u431-nav:active:not(:disabled) { --k: .86; transition: transform .1s var(--ux-ease); }
@@ -287,7 +359,7 @@ html.exam-plain .theme-backdrop {
 .u431-nav svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .u431-wk, .u431-g { display: grid; grid-template-columns: repeat(7, 1fr); }
 .u431-wk { margin-top: 4px; }
-.u431-wk span { height: 24px; display: grid; place-items: center; font-size: 11px; font-weight: 600; color: var(--ux-ink-3); }
+.u431-wk span { height: 24px; display: grid; place-items: center; font-size: 13px; font-weight: 600; color: var(--ux-ink-3); }
 .u431-gw { position: relative; overflow: hidden; }
 .u431-g { position: relative; grid-template-rows: repeat(6, 32px); }
 .u431-g.is-l { animation: u431-l .42s cubic-bezier(.25,1,.4,1); }
@@ -296,7 +368,7 @@ html.exam-plain .theme-backdrop {
 @keyframes u431-r { from { opacity: 0; transform: translateX(-44px); } }
 .u431-sel { position: absolute; left: 0; top: 0; width: 32px; height: 32px; border-radius: 50%; background: var(--ux-accent); box-shadow: 0 6px 14px -6px var(--ux-accent); transform: translate(var(--sx, 0px), var(--sy, 0px)) scale(var(--ss, 0)); transition: transform .5s cubic-bezier(.3,1.45,.5,1); pointer-events: none; }
 .u431-sel.is-jump { transition: none; }
-.u431-d { position: relative; z-index: 1; justify-self: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: none; font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ux-ink); transition: color .2s var(--ux-ease), background-color .15s; }
+.u431-d { position: relative; z-index: 1; justify-self: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: none; font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ux-ink); transition: color .2s var(--ux-ease), background-color .15s; }
 .u431-d:hover:not(:disabled):not([aria-selected="true"]) { background: color-mix(in srgb, var(--ux-ink) 7%, transparent); }
 .u431-d:disabled { color: var(--ux-ink-3); opacity: .4; cursor: default; }
 .u431-d[aria-selected="true"] { color: var(--ux-accent-ink); font-weight: 700; transition: color .2s var(--ux-ease) .12s; }
@@ -364,10 +436,15 @@ label,
 }
 
 .site-wash {
-  background:
-    radial-gradient(circle at top right, color-mix(in srgb, var(--color-gold) 70%, transparent), transparent 42%),
-    radial-gradient(circle at bottom left, color-mix(in srgb, var(--color-amber) 28%, transparent), transparent 36%),
-    radial-gradient(circle at 70% 80%, color-mix(in srgb, var(--color-teal-soft) 95%, transparent), transparent 40%);
+  background-image:
+    radial-gradient(circle at 0% 14%, color-mix(in srgb, var(--color-gold) 65%, transparent), transparent 36%),
+    radial-gradient(circle at 100% 12%, color-mix(in srgb, var(--color-crimson) 14%, transparent), transparent 32%),
+    radial-gradient(circle at 0% 88%, color-mix(in srgb, var(--color-crimson) 11%, transparent), transparent 30%),
+    radial-gradient(circle at 100% 86%, color-mix(in srgb, var(--color-button) 18%, transparent), transparent 36%),
+    radial-gradient(color-mix(in srgb, var(--color-button) 16%, transparent) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 22px 22px;
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.65) 9%, transparent 20%, transparent 80%, rgba(0, 0, 0, 0.65) 91%, #000 100%);
+  mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.65) 9%, transparent 20%, transparent 80%, rgba(0, 0, 0, 0.65) 91%, #000 100%);
 }
 
 #root {
@@ -407,24 +484,27 @@ label,
 }
 
 .serif {
-  font-family: var(--font-sans);
+  font-family: var(--font-display);
   font-weight: 600;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
 }
 
 /* Exam copy uses rem utilities, so a parent em size never reached them. Scale those sizes together. */
 .exam-scale {
   --exam-scale: 1;
-  font-size: calc(1rem * var(--exam-scale));
+  font-size: calc(1.125rem * var(--exam-scale));
 }
-.exam-scale .text-xs { font-size: calc(0.75rem * var(--exam-scale)); }
-.exam-scale .text-sm { font-size: calc(0.875rem * var(--exam-scale)); }
-.exam-scale .text-base { font-size: calc(1rem * var(--exam-scale)); }
-.exam-scale .text-lg { font-size: calc(1.125rem * var(--exam-scale)); }
-.exam-scale .text-xl { font-size: calc(1.25rem * var(--exam-scale)); }
+.exam-scale .text-xs { font-size: calc(0.875rem * var(--exam-scale)); }
+.exam-scale .text-sm { font-size: calc(1rem * var(--exam-scale)); }
+.exam-scale .text-\[17px\] { font-size: calc(1.0625rem * var(--exam-scale)); }
+.exam-scale .text-base { font-size: calc(1.125rem * var(--exam-scale)); }
+.exam-scale .text-lg { font-size: calc(1.25rem * var(--exam-scale)); }
+.exam-scale .text-xl { font-size: calc(1.375rem * var(--exam-scale)); }
 .exam-scale .exam-copy {
-  font-size: calc(1.25rem * var(--exam-scale));
-  line-height: 1.65;
+  font-size: calc(1.375rem * var(--exam-scale));
+  line-height: 1.72;
+  max-width: 68ch;
 }
 .exam-scale .exam-blank {
   font-size: inherit;
@@ -434,16 +514,21 @@ label,
   padding: 0.12em 0.4em;
   vertical-align: baseline;
 }
-.exam-scale .text-\[11px\] { font-size: calc(11px * var(--exam-scale)); }
+.exam-scale .text-\[13px\] { font-size: calc(13px * var(--exam-scale)); }
 .exam-scale .leading-6,
 .exam-scale .leading-7,
 .exam-scale .leading-8,
 .exam-scale .leading-10 { line-height: 1.65; }
+.exam-passage,
+.exam-scale .exam-passage {
+  max-width: 68ch;
+  line-height: 1.72;
+}
 .exam-scale .exam-figure,
 .exam-scale .exam-figure .text-xs,
 .exam-scale .exam-figure .text-sm,
-.exam-scale .exam-figure .text-\[11px\] {
-  font-size: 0.6875rem;
+.exam-scale .exam-figure .text-\[13px\] {
+  font-size: 0.8125rem;
   line-height: 1.4;
 }
 /* Listening figures keep their own aspect ratio and fill the column. */

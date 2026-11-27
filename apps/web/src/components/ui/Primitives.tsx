@@ -13,21 +13,21 @@ export function Badge({
   const tones = {
     gold: 'bg-button-soft text-ink border-button/40',
     teal: 'bg-teal-soft text-teal border-teal/20',
-    warn: 'bg-[#f8e7c9] text-warn border-warn/20',
-    danger: 'bg-[#f8dcd8] text-coral border-coral/20',
+    warn: 'bg-warn-soft text-warn border-warn/25',
+    danger: 'bg-danger-soft text-danger border-danger/25',
     ink: 'bg-button text-button-ink border-gold-deep',
-    olive: 'bg-[#e4efd8] text-olive border-olive/20',
-    paper: 'bg-paper-2 text-ink/70 border-ink/10',
+    olive: 'bg-success-soft text-olive border-olive/25',
+    paper: 'bg-paper-2 text-ink-soft border-ink/12',
   }
   return (
-    <span className={cn('inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide', tones[tone], className)}>
+    <span className={cn('inline-flex items-center rounded-full border px-2.5 py-0.5 text-[13px] font-semibold uppercase tracking-wide', tones[tone], className)}>
       {children}
     </span>
   )
 }
 
 export function Card({ children, className, id }: { children: ReactNode; className?: string; id?: string }) {
-  return <section id={id} className={cn('ui-card rounded-2xl border border-gold/35 bg-cream shadow-[0_12px_40px_rgba(43,138,156,0.06)]', className)}>{children}</section>
+  return <section id={id} className={cn('ui-card rounded-2xl border border-gold/35 bg-cream shadow-[0_12px_40px_rgba(15,23,42,0.06)]', className)}>{children}</section>
 }
 
 export function ProgressBar({ value, className }: { value: number; className?: string }) {
@@ -42,7 +42,7 @@ export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElem
   return (
     <input
       className={cn(
-        'h-10 w-full rounded-xl border border-ink/12 bg-white px-3 text-base outline-none ring-button/40 placeholder:text-ink/40 focus:ring-2',
+        'h-10 w-full rounded-xl border border-ink/15 bg-cream px-3 text-base text-ink outline-none ring-button/40 placeholder:text-ink/45 focus:border-button focus:ring-2',
         className,
       )}
       {...props}

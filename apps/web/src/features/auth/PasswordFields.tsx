@@ -77,7 +77,7 @@ export function ChangePasswordForm({
       <div>
         <label className="text-sm font-medium" htmlFor="cp-new">Mật khẩu mới</label>
         <Input id="cp-new" className="mt-1.5" type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNew(e.target.value)} />
-        <p className="mt-1 text-xs text-ink/50">Tối thiểu {PASSWORD_MIN_LENGTH} ký tự, gồm cả chữ và số.</p>
+        <p className="mt-1 text-xs text-ink-soft">Tối thiểu {PASSWORD_MIN_LENGTH} ký tự, gồm cả chữ và số.</p>
         <FieldError message={errors.newPassword} />
       </div>
       <div>
@@ -86,7 +86,7 @@ export function ChangePasswordForm({
         <FieldError message={errors.confirm} />
       </div>
       {formError && (
-        <p role="alert" className="rounded-xl bg-[#f8dcd8] px-3 py-2 text-sm text-coral">{formError}</p>
+        <p role="alert" className="rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger">{formError}</p>
       )}
       {done && !hideSuccess && <p role="status" className="text-sm text-olive">Đã đổi mật khẩu thành công ✓</p>}
       <Button type="submit" disabled={busy} className="w-full">

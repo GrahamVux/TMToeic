@@ -277,7 +277,7 @@ export function CalendarDateTimePicker({
                     </option>
                   ))}
                 </select>
-                <span className="text-xs font-bold text-ink/50">:</span>
+                <span className="text-xs font-bold text-ink-soft">:</span>
                 <select
                   aria-label="Phút"
                   value={parsed.minute}
@@ -304,7 +304,7 @@ export function CalendarDateTimePicker({
                       type="button"
                       onClick={() => pickTime(hh!, mm!)}
                       className={cn(
-                        'rounded-lg px-2 py-1 text-[11px] font-semibold tabular-nums transition',
+                        'rounded-lg px-2 py-1 text-[13px] font-semibold tabular-nums transition',
                         active ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/70 hover:text-ink',
                       )}
                     >
@@ -316,7 +316,7 @@ export function CalendarDateTimePicker({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-lg bg-button px-2.5 py-1 text-[11px] font-semibold text-button-ink"
+                className="rounded-lg bg-button px-2.5 py-1 text-[13px] font-semibold text-button-ink"
               >
                 Xong
               </button>

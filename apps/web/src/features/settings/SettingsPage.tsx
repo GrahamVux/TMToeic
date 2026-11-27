@@ -18,7 +18,7 @@ function Toggle({ checked, onChange, label, hint, disabled }: { checked: boolean
     <div className="flex items-center justify-between gap-4 py-3">
       <div>
         <p className="text-sm font-medium text-ink">{label}</p>
-        <p className="text-xs text-ink/55">{hint}</p>
+        <p className="text-xs text-ink-soft">{hint}</p>
       </div>
       <button
         type="button"
@@ -36,7 +36,7 @@ function Toggle({ checked, onChange, label, hint, disabled }: { checked: boolean
 }
 
 const fieldCls =
-  'mt-1 h-10 w-full rounded-xl border border-gold/40 bg-white px-3 text-sm text-ink outline-none focus:border-button focus:ring-2 focus:ring-button/30'
+  'mt-1 h-10 w-full rounded-xl border border-gold/40 bg-cream px-3 text-sm text-ink outline-none focus:border-button focus:ring-2 focus:ring-button/30'
 
 function scoreFor(track: GoalTrack, saved: GoalDto) {
   if (saved?.track === track) return saved.score
@@ -128,7 +128,7 @@ export function SettingsPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <CornerNotice notice={notice} />
       <header>
-        <p className="text-xs text-ink/50">Trang chủ / Cài đặt cá nhân</p>
+        <p className="text-xs text-ink-soft">Trang chủ / Cài đặt cá nhân</p>
         <h1 className="serif mt-2 text-3xl">Cài đặt cá nhân</h1>
         <p className="mt-1 text-sm text-ink/60">Quản lý thông tin, mục tiêu điểm số và nhắc học của bạn.</p>
       </header>
@@ -136,7 +136,7 @@ export function SettingsPage() {
       <AvatarSettings />
       <Card className="scroll-mt-24 p-6">
         <h2 className="text-base font-semibold">Thông tin cá nhân</h2>
-        <p className="mt-1 text-xs text-ink/55">Bạn có thể tự cập nhật họ tên, email và số điện thoại. Mã học viên do lớp cấp, không đổi được.</p>
+        <p className="mt-1 text-xs text-ink-soft">Bạn có thể tự cập nhật họ tên, email và số điện thoại. Mã học viên do lớp cấp, không đổi được.</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <label className="text-xs font-medium text-ink/60">
             Họ và tên
@@ -170,7 +170,7 @@ export function SettingsPage() {
       <Card className="scroll-mt-24 p-6">
         <div id="security" className="scroll-mt-24">
           <h2 className="text-base font-semibold">Đổi mật khẩu</h2>
-          <p className="mt-1 mb-4 text-xs text-ink/55">Sau khi đổi, các thiết bị khác đang đăng nhập sẽ bị đăng xuất.</p>
+          <p className="mt-1 mb-4 text-xs text-ink-soft">Sau khi đổi, các thiết bị khác đang đăng nhập sẽ bị đăng xuất.</p>
           <div className="max-w-md">
             <ChangePasswordForm hideSuccess onSubmit={changePassword} onDone={() => setNotice(flashNotice('Đã đổi mật khẩu thành công.'))} />
           </div>
@@ -181,7 +181,7 @@ export function SettingsPage() {
         <Card className="scroll-mt-24 p-6">
           <div id="goal" className="scroll-mt-24">
             <h2 className="text-base font-semibold">Mục tiêu điểm số</h2>
-            <p className="mt-1 text-xs text-ink/55">
+            <p className="mt-1 text-xs text-ink-soft">
               Chọn 2 kỹ năng hoặc 4 kỹ năng (chỉ một nhóm), rồi kéo thanh để đặt một điểm mục tiêu.
             </p>
             <p className="mt-2 text-sm text-ink/70">{goalStatus(currentGoal, latest)}</p>
@@ -192,12 +192,12 @@ export function SettingsPage() {
                 return (
                   <label
                     key={t}
-                    className={cn('flex cursor-pointer items-start gap-3 rounded-2xl border p-4', selected ? 'border-gold-deep bg-teal-soft/40' : 'border-gold/35 bg-white')}
+                    className={cn('flex cursor-pointer items-start gap-3 rounded-2xl border p-4', selected ? 'border-gold-deep bg-teal-soft/40' : 'border-gold/35 bg-cream')}
                   >
                     <input className="mt-1" type="radio" name="goal-track" checked={selected} onChange={() => setTrack(t)} />
                     <span>
                       <span className="block text-sm font-semibold text-ink">{b.label}</span>
-                      <span className="mt-0.5 block text-xs text-ink/55">{b.hint}</span>
+                      <span className="mt-0.5 block text-xs text-ink-soft">{b.hint}</span>
                     </span>
                   </label>
                 )
@@ -218,7 +218,7 @@ export function SettingsPage() {
                 <span className="w-20 shrink-0 rounded-xl bg-teal-soft py-1.5 text-center text-lg font-bold text-gold-deep">{scores[track]}</span>
               </div>
             ) : (
-              <p className="mt-4 text-sm text-ink/50">Chọn một nhóm để kéo thanh điểm mục tiêu.</p>
+              <p className="mt-4 text-sm text-ink-soft">Chọn một nhóm để kéo thanh điểm mục tiêu.</p>
             )}
             {setGoal.error ? (
               <p className="mt-3 text-sm text-coral" role="alert">
@@ -242,7 +242,7 @@ export function SettingsPage() {
       <Card className="p-6">
         <div id="notify" className="scroll-mt-24">
           <h2 className="text-base font-semibold">Thông báo & nhắc học</h2>
-          <p className="mt-1 text-xs text-ink/55">Bật hoặc tắt từng loại nhắc trên icon chuông. Thay đổi có hiệu lực ngay.</p>
+          <p className="mt-1 text-xs text-ink-soft">Bật hoặc tắt từng loại nhắc trên icon chuông. Thay đổi có hiệu lực ngay.</p>
           <div className="mt-2 divide-y divide-gold/20">
             <Toggle checked={notify.overdue} onChange={(value) => setKind('overdue', value)} label="Bài tập quá hạn" hint="Hiện khi bài đã quá hạn nộp." />
             <Toggle checked={notify.dueSoon} onChange={(value) => setKind('dueSoon', value)} label="Bài sắp hết hạn" hint="Hiện khi bài còn dưới 24 giờ." />

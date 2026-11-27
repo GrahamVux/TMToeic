@@ -21,7 +21,7 @@ export function ProgressPage() {
     <div className="space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs text-ink/50">Trang chủ / Tiến độ & phân tích năng lực</p>
+          <p className="text-xs text-ink-soft">Trang chủ / Tiến độ & phân tích năng lực</p>
           <h1 className="serif mt-2 text-4xl">Báo cáo tiến độ & năng lực cá nhân</h1>
           <p className="mt-2 text-sm text-ink/60">
             {formatGoal(p.goal) ? `Mục tiêu ${formatGoal(p.goal)}` : <>Chưa đặt mục tiêu • <Link to="/settings#goal" className="font-semibold text-gold-deep underline">Đặt mục tiêu</Link></>}
@@ -33,22 +33,22 @@ export function ProgressPage() {
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="p-5">
-          <p className="text-xs text-ink/45">Điểm thi thử gần nhất</p>
+          <p className="text-xs text-ink-soft">Điểm thi thử gần nhất</p>
           <p className="serif text-4xl">{p.latestScore?.totalScore ?? '—'}</p>
           <p className="text-sm text-ink/60">
             {p.improvement === null ? (p.latestScore ? 'Bài thi thử đầu tiên' : 'Chưa có bài đủ 200 câu') : `${p.improvement >= 0 ? '+' : ''}${p.improvement} so với lần đầu`}
           </p>
         </Card>
         <Card className="p-5">
-          <p className="text-xs text-ink/45">Listening</p>
-          <p className="serif text-4xl">{p.latestScore?.listeningScore ?? '—'}<span className="text-lg text-ink/40"> /495</span></p>
+          <p className="text-xs text-ink-soft">Listening</p>
+          <p className="serif text-4xl">{p.latestScore?.listeningScore ?? '—'}<span className="text-lg text-ink-soft"> /495</span></p>
         </Card>
         <Card className="p-5">
-          <p className="text-xs text-ink/45">Reading</p>
-          <p className="serif text-4xl">{p.latestScore?.readingScore ?? '—'}<span className="text-lg text-ink/40"> /495</span></p>
+          <p className="text-xs text-ink-soft">Reading</p>
+          <p className="serif text-4xl">{p.latestScore?.readingScore ?? '—'}<span className="text-lg text-ink-soft"> /495</span></p>
         </Card>
         <Card className="p-5">
-          <p className="text-xs text-ink/45">Tỷ lệ đúng chung</p>
+          <p className="text-xs text-ink-soft">Tỷ lệ đúng chung</p>
           <p className="serif text-4xl">{p.totals.accuracy === null ? '—' : `${p.totals.accuracy}%`}</p>
           <p className="text-sm text-ink/60">
             {p.totals.answered} câu • {p.totals.attemptsFinished} bài
@@ -75,13 +75,13 @@ export function ProgressPage() {
               Chưa đủ dữ liệu để nhận xét. Hệ thống cần ít nhất {MIN_ANSWERS_FOR_INSIGHT} câu đã nộp ở một Part mới đánh giá điểm yếu.
             </p>
           )}
-          <p className="mt-6 text-xs text-ink/45">Tính từ các bài đã nộp của bạn — không phải dự đoán điểm thi thật.</p>
+          <p className="mt-6 text-xs text-ink-soft">Tính từ các bài đã nộp của bạn — không phải dự đoán điểm thi thật.</p>
         </Card>
       </div>
 
       <section>
         <h2 className="serif text-2xl">Phân tích chi tiết từng Part</h2>
-        <p className="mt-1 text-sm text-ink/55">Tỷ lệ đúng trên các câu bạn đã làm trong những bài đã nộp.</p>
+        <p className="mt-1 text-sm text-ink-soft">Tỷ lệ đúng trên các câu bạn đã làm trong những bài đã nộp.</p>
         <div className="mt-4"><PartBreakdown parts={p.parts} /></div>
       </section>
 

@@ -60,24 +60,23 @@ export function DailyGoalsCard() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">Mục tiêu mỗi ngày</p>
-          <h2 className="serif mt-1 text-2xl">Mục tiêu hôm nay</h2>
-          <p className="mt-1 text-sm text-ink/55">{dayLabel(data.day)}</p>
+          <h2 className="serif mt-1 text-2xl font-bold">Mục tiêu hôm nay</h2>
+          <p className="mt-1 text-sm text-ink-soft">{dayLabel(data.day)}</p>
         </div>
-        <div className="flex flex-col items-stretch gap-2 sm:items-end">
-          {data.yesterday ? <YesterdayCorner yesterday={data.yesterday} /> : null}
-          {sum.active > 0 ? (
-            <Button variant="navy" onClick={() => setEditing(true)}>
-              <SlidersHorizontal className="size-4" aria-hidden />
-              Mục tiêu ngày
-            </Button>
-          ) : null}
-        </div>
+        {sum.active > 0 ? (
+          <Button variant="navy" onClick={() => setEditing(true)}>
+            <SlidersHorizontal className="size-4" aria-hidden />
+            Mục tiêu ngày
+          </Button>
+        ) : null}
       </div>
+
+      {data.yesterday ? <YesterdayCorner yesterday={data.yesterday} /> : null}
 
       {sum.active === 0 ? (
         <div className="mt-5 rounded-2xl border border-dashed border-gold-deep/40 bg-teal-soft/50 p-5">
           <p className="font-semibold">Bạn chưa đặt mục tiêu mỗi ngày</p>
-          <p className="mt-1 max-w-2xl text-sm text-ink/65">
+          <p className="mt-1 max-w-2xl text-sm text-ink-soft">
             Chọn số bài Reading, số bài Listening và số từ vựng muốn hoàn thành mỗi ngày. Bảng này sẽ nhắc bạn mỗi lần đăng nhập.
           </p>
           <Button className="mt-4" onClick={() => setEditing(true)}>
@@ -108,7 +107,7 @@ export function DailyGoalsCard() {
               <p className="font-semibold">
                 Đã xong {sum.met}/{sum.active} mục tiêu
               </p>
-              <p className="mt-0.5 text-sm text-ink/60">
+              <p className="mt-0.5 text-sm text-ink-soft">
                 {sum.met === sum.active ? 'Bạn đã hoàn thành mục tiêu của hôm nay.' : 'Hoàn thành các mục còn lại trước khi hết ngày.'}
               </p>
             </div>
@@ -139,25 +138,81 @@ export function DailyGoalsCard() {
 }
 
 function YesterdayCorner({ yesterday }: { yesterday: NonNullable<DailyGoalsDto['yesterday']> }) {
-  const lines = DAILY_GOAL_KINDS.flatMap((kind) => {
+  const items = DAILY_GOAL_KINDS.flatMap((kind) => {
     const target = yesterday.done[kind] - yesterday.delta[kind]
     if (target <= 0) return []
     const delta = yesterday.delta[kind]
-    const { label, unit } = KINDS[kind]
-    if (delta < 0) return [{ kind, text: `${label} thiếu ${-delta} ${unit}`, tone: 'text-coral' }]
-    if (delta > 0) return [{ kind, text: `${label} thừa ${delta} ${unit}`, tone: 'text-olive' }]
-    return [{ kind, text: `${label} vừa đủ`, tone: 'text-ink/70' }]
+    const { label, unit, icon, to } = KINDS[kind]
+    return [{ kind, label, unit, icon, to, missing: Math.max(0, -delta), extra: Math.max(0, delta) }]
   })
+  if (items.length === 0) return null
+
+  if (yesterday.met) {
+    return (
+      <aside
+        aria-label="Kết quả mục tiêu hôm qua"
+        className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-olive/25 bg-success-soft px-4 py-2.5 text-xs"
+      >
+        <p className="flex items-center gap-2 font-semibold text-olive">
+          <Check className="size-4 shrink-0" aria-hidden />
+          Hôm qua đã hoàn thành đủ mục tiêu
+        </p>
+        <p className="text-ink-soft tabular-nums">
+          {items.map((item) => (item.extra > 0 ? `${item.label} +${item.extra} ${item.unit}` : `${item.label} đủ`)).join(' • ')}
+        </p>
+      </aside>
+    )
+  }
+
   return (
-    <aside className="w-full max-w-52 rounded-xl border border-gold/50 bg-white px-3 py-2 text-xs shadow-sm sm:w-52">
-      <p className={cn('font-semibold', yesterday.met ? 'text-olive' : 'text-coral')}>{yesterday.met ? 'Hôm qua đã xong' : 'Hôm qua chưa xong'}</p>
-      <ul className="mt-1 space-y-0.5">
-        {lines.map((line) => (
-          <li key={line.kind} className={line.tone}>
-            {line.text}
-          </li>
-        ))}
-      </ul>
+    <aside aria-label="Kết quả mục tiêu hôm qua" className="mt-4 rounded-2xl border border-danger/25 bg-danger-soft/45 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="size-2 shrink-0 rounded-full bg-crimson" aria-hidden="true" />
+          <p className="text-sm font-bold text-danger">Hôm qua chưa xong</p>
+        </div>
+        <p className="text-xs font-medium text-ink-soft">Bấm vào mục còn thiếu để bù ngay hôm nay</p>
+      </div>
+      <div className="mt-3 grid gap-2.5 sm:grid-cols-3">
+        {items.map((item) => {
+          const Icon = item.icon
+          if (item.missing > 0) {
+            return (
+              <Link
+                key={item.kind}
+                to={item.to}
+                className="flex items-center justify-between gap-3 rounded-xl border border-danger/30 bg-cream px-3.5 py-2.5 shadow-2xs transition hover:border-danger/60"
+              >
+                <div className="min-w-0">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-ink-soft">
+                    <Icon className="size-4 shrink-0 text-danger" aria-hidden />
+                    {item.label}
+                  </span>
+                  <span className="mt-0.5 block text-xs font-semibold text-danger">Còn thiếu</span>
+                </div>
+                <span className="inline-flex shrink-0 items-baseline gap-1 rounded-xl bg-danger-soft px-3 py-1.5 text-danger ring-1 ring-danger/25">
+                  <span className="serif text-2xl leading-none font-extrabold tabular-nums">{item.missing}</span>
+                  <span className="text-xs font-semibold">{item.unit}</span>
+                </span>
+              </Link>
+            )
+          }
+          return (
+            <div
+              key={item.kind}
+              className="flex items-center justify-between gap-3 rounded-xl border border-olive/25 bg-cream/80 px-3.5 py-2.5"
+            >
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-ink-soft">
+                <Check className="size-4 shrink-0 text-olive" aria-hidden />
+                {item.label}
+              </span>
+              <span className="rounded-full bg-success-soft px-2.5 py-0.5 text-xs font-semibold text-olive tabular-nums">
+                {item.extra > 0 ? `+${item.extra} ${item.unit}` : 'Đã đủ'}
+              </span>
+            </div>
+          )
+        })}
+      </div>
     </aside>
   )
 }
@@ -201,7 +256,7 @@ function GoalTile({ kind, done, target }: { kind: DailyGoalKind; done: number; t
   const off = target === 0
   const met = !off && done >= target
   return (
-    <Link to={to} className="group rounded-2xl border border-gold/50 bg-white p-4 transition hover:border-gold-deep">
+    <Link to={to} className="group rounded-2xl border border-gold/50 bg-cream p-4 transition hover:border-gold-deep">
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-2 text-sm font-semibold">
           <Icon className="size-4 text-gold-deep" aria-hidden />
@@ -215,14 +270,14 @@ function GoalTile({ kind, done, target }: { kind: DailyGoalKind; done: number; t
       </div>
       <p className="mt-3">
         <span className="text-2xl font-semibold tabular-nums">{done}</span>
-        <span className="ml-1 text-sm text-ink/50">{off ? unit : `/ ${target} ${unit}`}</span>
+        <span className="ml-1 text-sm text-ink-soft">{off ? unit : `/ ${target} ${unit}`}</span>
       </p>
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-paper-2">
         <div className={cn('h-full rounded-full', met ? 'bg-olive' : 'bg-gold-deep')} style={{ width: off ? '0%' : `${Math.min(100, (done / target) * 100)}%` }} />
       </div>
       <div className="mt-3 flex items-center justify-between text-xs text-ink/60">
         <span className={cn(met && 'font-semibold text-olive')}>{off ? 'Chưa đặt mục tiêu' : met ? 'Đạt mục tiêu' : `Còn ${target - done} ${unit}`}</span>
-        <ArrowRight className="size-4 text-ink/40 transition group-hover:text-gold-deep" aria-hidden />
+        <ArrowRight className="size-4 text-ink-soft transition group-hover:text-gold-deep" aria-hidden />
       </div>
     </Link>
   )
@@ -263,7 +318,7 @@ function GoalForm({ data, onClose, onSaved }: { data: DailyGoalsDto; onClose: ()
             <div key={kind} className="flex items-center justify-between gap-4 py-3">
               <div className="min-w-0">
                 <p className="text-sm font-semibold">{field}</p>
-                <p className="text-xs text-ink/55">
+                <p className="text-xs text-ink-soft">
                   {hint} Tối đa {max} {unit}.
                 </p>
               </div>
@@ -279,7 +334,7 @@ function GoalForm({ data, onClose, onSaved }: { data: DailyGoalsDto; onClose: ()
                   aria-label={field}
                   value={targets[kind]}
                   onChange={(e) => setKind(kind, Number(e.target.value))}
-                  className="h-9 w-16 rounded-xl border border-gold/60 bg-white text-center text-sm font-semibold tabular-nums outline-none focus:border-button focus:ring-2 focus:ring-button/30"
+                  className="h-9 w-16 rounded-xl border border-gold/60 bg-cream text-center text-sm font-semibold tabular-nums outline-none focus:border-button focus:ring-2 focus:ring-button/30"
                 />
                 <button type="button" className={stepCls} aria-label={`Tăng ${field}`} disabled={targets[kind] >= max} onClick={() => setKind(kind, targets[kind] + step)}>
                   <Plus className="size-4" />
@@ -306,4 +361,4 @@ function GoalForm({ data, onClose, onSaved }: { data: DailyGoalsDto; onClose: ()
   )
 }
 
-const stepCls = 'grid size-9 place-items-center rounded-full border border-ink/12 bg-white text-ink transition hover:bg-paper-2 disabled:opacity-40'
+const stepCls = 'grid size-9 place-items-center rounded-full border border-ink/12 bg-cream text-ink transition hover:bg-paper-2 disabled:opacity-40'

@@ -87,7 +87,7 @@ export function AssignmentsPage() {
         ))}
       </div>
       {start.error ? (
-        <p className="rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral" role="alert">
+        <p className="rounded-xl border border-danger/25 bg-danger-soft p-3 text-sm text-danger" role="alert">
           Không bắt đầu được bài tập. Kiểm tra hạn nộp hoặc liên hệ Thầy Minh.
         </p>
       ) : null}
@@ -104,7 +104,7 @@ export function AssignmentsPage() {
               <Card key={a.id} className="p-6">
                 <Badge tone={tone(st)}>{label(st)}</Badge>
                 <h2 className="mt-3 text-xl font-semibold">{a.title}</h2>
-                <p className="mt-1 text-sm text-ink/55">
+                <p className="mt-1 text-sm text-ink-soft">
                   {a.examTitle} • {a.parts.map((p) => partName(p.code).split(' — ')[0]).join(', ')} • {total} câu • {Math.round(a.durationSeconds / 60)} phút
                 </p>
                 {a.description ? <p className="mt-2 text-sm leading-6 text-ink/65">{a.description}</p> : null}

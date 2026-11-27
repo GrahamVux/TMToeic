@@ -140,7 +140,7 @@ export function AdminStudyPage() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-semibold">{lesson.title}</p>
-                  <p className="text-sm text-ink/55">{lesson.summary}</p>
+                  <p className="text-sm text-ink-soft">{lesson.summary}</p>
                 </div>
                 <button type="button" className="shrink-0 text-sm font-semibold text-coral underline underline-offset-4" onClick={() => void removeLesson.mutateAsync(lesson.id)}>
                   Xóa chuyên đề
@@ -274,7 +274,7 @@ function VocabStagingPanel({ onNotice, onSwitchBrowse }: { onNotice: (n: CornerN
       ) : (
         <label className="block text-sm">
           <span className="font-semibold">Chọn bộ từ</span>
-          <select className="mt-1 h-10 w-full rounded-xl border border-ink/12 bg-white px-3 text-sm" value={setId} onChange={(e) => setSetId(e.target.value)}>
+          <select className="mt-1 h-10 w-full rounded-xl border border-ink/12 bg-cream px-3 text-sm" value={setId} onChange={(e) => setSetId(e.target.value)}>
             <option value="">{namedSets.length === 0 ? 'Chưa có bộ nào' : 'Chọn bộ từ'}</option>
             {namedSets.map((s) => (
               <option key={s.id} value={s.id}>
@@ -294,7 +294,7 @@ function VocabStagingPanel({ onNotice, onSwitchBrowse }: { onNotice: (n: CornerN
         onFiles={handleFile}
       />
 
-      {err ? <p className="rounded-xl bg-[#f8dcd8] px-3 py-2 text-sm text-coral" role="alert">{err}</p> : null}
+      {err ? <p className="rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">{err}</p> : null}
 
       {rows.length > 0 ? (
         <div className="space-y-4 rounded-2xl border border-gold/40 bg-paper p-4">
@@ -326,7 +326,7 @@ function VocabStagingPanel({ onNotice, onSwitchBrowse }: { onNotice: (n: CornerN
             <button
               type="button"
               onClick={() => setActiveUnit('all')}
-              className={cn('rounded-full px-3 py-1 text-xs font-semibold', activeUnit === 'all' ? 'bg-ink text-white' : 'bg-white text-ink/70')}
+              className={cn('rounded-full px-3 py-1 text-xs font-semibold', activeUnit === 'all' ? 'bg-button text-button-ink' : 'bg-cream text-ink-soft')}
             >
               Tất cả ({rows.length})
             </button>
@@ -337,7 +337,7 @@ function VocabStagingPanel({ onNotice, onSwitchBrowse }: { onNotice: (n: CornerN
                   key={u}
                   type="button"
                   onClick={() => setActiveUnit(u)}
-                  className={cn('rounded-full px-3 py-1 text-xs font-semibold', activeUnit === u ? 'bg-button text-button-ink' : 'bg-white text-ink/70')}
+                  className={cn('rounded-full px-3 py-1 text-xs font-semibold', activeUnit === u ? 'bg-button text-button-ink' : 'bg-cream text-ink/70')}
                 >
                   Unit {u} ({count})
                 </button>
@@ -345,9 +345,9 @@ function VocabStagingPanel({ onNotice, onSwitchBrowse }: { onNotice: (n: CornerN
             })}
           </div>
 
-          <div className="max-h-[480px] overflow-auto rounded-xl border border-gold/25 bg-white">
+          <div className="max-h-[480px] overflow-auto rounded-xl border border-gold/25 bg-cream">
             <table className="w-full min-w-[780px] border-collapse text-left text-xs">
-              <thead className="sticky top-0 z-10 bg-paper-2 text-[11px] font-bold text-ink/70 uppercase">
+              <thead className="sticky top-0 z-10 bg-paper-2 text-[13px] font-bold text-ink/70 uppercase">
                 <tr>
                   <th className="w-20 px-2.5 py-2.5">Unit</th>
                   <th className="w-40 px-2.5 py-2.5">Từ vựng</th>
@@ -404,7 +404,7 @@ function VocabStagingPanel({ onNotice, onSwitchBrowse }: { onNotice: (n: CornerN
                       />
                     </td>
                     <td className="px-2 py-2.5 text-center">
-                      <span className={cn('inline-block rounded-full px-2 py-0.5 text-[10px] font-bold', row.status === 'NEW' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}>
+                      <span className={cn('inline-block rounded-full px-2 py-0.5 text-[12px] font-bold', row.status === 'NEW' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}>
                         {row.status === 'NEW' ? 'Mới' : 'Cập nhật'}
                       </span>
                     </td>
@@ -492,7 +492,7 @@ function VocabUnitBrowserPanel({ onNotice }: { onNotice: (n: CornerNoticeState) 
             <label className="block text-sm">
               <span className="font-semibold">Bộ từ vựng</span>
               <select
-                className="mt-1 h-10 w-full rounded-xl border border-gold/40 bg-white px-3 text-sm"
+                className="mt-1 h-10 w-full rounded-xl border border-gold/40 bg-cream px-3 text-sm"
                 value={effectiveSet?.id ?? ''}
                 onChange={(e) => setSelectedSetId(e.target.value)}
               >
@@ -526,10 +526,10 @@ function VocabUnitBrowserPanel({ onNotice }: { onNotice: (n: CornerNoticeState) 
 
           {effectiveSet && effectiveSet.id !== UNASSIGNED_VOCAB_SET ? (
             <form onSubmit={(e) => void addWord(e)} className="grid gap-2 rounded-2xl border border-gold/30 bg-paper p-3 sm:grid-cols-[1fr_110px_1.2fr_1.4fr_auto]">
-              <input className="h-9 rounded-xl border border-gold/35 bg-white px-2.5 text-xs font-semibold" value={newWord} onChange={(e) => setNewWord(e.target.value)} placeholder="Từ vựng mới" required />
-              <input className="h-9 rounded-xl border border-gold/35 bg-white px-2.5 text-xs" value={newPos} onChange={(e) => setNewPos(e.target.value)} placeholder="Loại từ" required />
-              <input className="h-9 rounded-xl border border-gold/35 bg-white px-2.5 text-xs" value={newMeaning} onChange={(e) => setNewMeaning(e.target.value)} placeholder="Nghĩa tiếng Việt" required />
-              <input className="h-9 rounded-xl border border-gold/35 bg-white px-2.5 text-xs" value={newExample} onChange={(e) => setNewExample(e.target.value)} placeholder="Câu mẫu (tuỳ chọn)" />
+              <input className="h-9 rounded-xl border border-gold/35 bg-cream px-2.5 text-xs font-semibold" value={newWord} onChange={(e) => setNewWord(e.target.value)} placeholder="Từ vựng mới" required />
+              <input className="h-9 rounded-xl border border-gold/35 bg-cream px-2.5 text-xs" value={newPos} onChange={(e) => setNewPos(e.target.value)} placeholder="Loại từ" required />
+              <input className="h-9 rounded-xl border border-gold/35 bg-cream px-2.5 text-xs" value={newMeaning} onChange={(e) => setNewMeaning(e.target.value)} placeholder="Nghĩa tiếng Việt" required />
+              <input className="h-9 rounded-xl border border-gold/35 bg-cream px-2.5 text-xs" value={newExample} onChange={(e) => setNewExample(e.target.value)} placeholder="Câu mẫu (tuỳ chọn)" />
               <Button type="submit" disabled={createEntry.isPending} className="h-9 px-3 text-xs">
                 <Plus className="size-3.5" /> Thêm vào Unit {unitIndex}
               </Button>
@@ -537,7 +537,7 @@ function VocabUnitBrowserPanel({ onNotice }: { onNotice: (n: CornerNoticeState) 
           ) : null}
 
           {unitDetail.isPending ? (
-            <p className="text-sm text-ink/55">Đang tải từ trong Unit {unitIndex}…</p>
+            <p className="text-sm text-ink-soft">Đang tải từ trong Unit {unitIndex}…</p>
           ) : (
             <div className="space-y-2">
               {(unitDetail.data?.items ?? []).map((item) => (
@@ -567,9 +567,9 @@ function VocabUnitBrowserPanel({ onNotice }: { onNotice: (n: CornerNoticeState) 
             {(search.data?.items ?? []).map((item) => (
               <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                 <div>
-                  <span className="font-semibold">{item.word}</span> <span className="text-ink/50">({item.partOfSpeech})</span> — {item.meaning}
-                  {item.example ? <p className="text-xs italic text-ink/55">{item.example}</p> : null}
-                  {item.set ? <p className="text-xs text-ink/45">{item.set.topic} · {item.set.title} · Unit {item.set.unit}</p> : null}
+                  <span className="font-semibold">{item.word}</span> <span className="text-ink-soft">({item.partOfSpeech})</span> — {item.meaning}
+                  {item.example ? <p className="text-xs italic text-ink-soft">{item.example}</p> : null}
+                  {item.set ? <p className="text-xs text-ink-soft">{item.set.topic} · {item.set.title} · Unit {item.set.unit}</p> : null}
                 </div>
                 <button type="button" className="font-semibold text-coral underline underline-offset-4" onClick={() => void removeVocab.mutateAsync(item.id)}>
                   Xóa
@@ -630,15 +630,15 @@ function EditableDbVocabRow({
           value={unit}
           aria-label="Unit"
           onChange={(e) => setUnit(Math.max(1, Math.trunc(Number(e.target.value) || 1)))}
-          className="h-9 rounded-lg border border-gold/35 bg-white px-2 text-center text-xs font-bold"
+          className="h-9 rounded-lg border border-gold/35 bg-cream px-2 text-center text-xs font-bold"
         />
       ) : (
-        <span className="text-center text-xs font-semibold text-ink/50">U{currentUnit}</span>
+        <span className="text-center text-xs font-semibold text-ink-soft">U{currentUnit}</span>
       )}
-      <input className="h-9 rounded-lg border border-gold/35 bg-white px-2.5 text-xs font-bold" value={word} onChange={(e) => setWord(e.target.value)} />
-      <input className="h-9 rounded-lg border border-gold/35 bg-white px-2.5 text-xs" value={pos} onChange={(e) => setPos(e.target.value)} />
-      <input className="h-9 rounded-lg border border-gold/35 bg-white px-2.5 text-xs" value={meaning} onChange={(e) => setMeaning(e.target.value)} />
-      <input className="h-9 rounded-lg border border-gold/35 bg-white px-2.5 text-xs" value={example} placeholder="Câu mẫu…" onChange={(e) => setExample(e.target.value)} />
+      <input className="h-9 rounded-lg border border-gold/35 bg-cream px-2.5 text-xs font-bold" value={word} onChange={(e) => setWord(e.target.value)} />
+      <input className="h-9 rounded-lg border border-gold/35 bg-cream px-2.5 text-xs" value={pos} onChange={(e) => setPos(e.target.value)} />
+      <input className="h-9 rounded-lg border border-gold/35 bg-cream px-2.5 text-xs" value={meaning} onChange={(e) => setMeaning(e.target.value)} />
+      <input className="h-9 rounded-lg border border-gold/35 bg-cream px-2.5 text-xs" value={example} placeholder="Câu mẫu…" onChange={(e) => setExample(e.target.value)} />
       <div className="flex items-center justify-end gap-1.5">
         <Button
           type="button"

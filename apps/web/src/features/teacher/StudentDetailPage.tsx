@@ -66,9 +66,9 @@ export function StudentDetailPage() {
 
       <h2 className="serif text-2xl">Phân tích điểm số</h2>
 
-      {progress.isPending ? <p className="text-sm text-ink/55">Đang tải số liệu…</p> : null}
+      {progress.isPending ? <p className="text-sm text-ink-soft">Đang tải số liệu…</p> : null}
       {progress.error ? (
-        <div className="rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral" role="alert">
+        <div className="rounded-xl border border-danger/25 bg-danger-soft p-3 text-sm text-danger" role="alert">
           Không tải được số liệu học tập.
           <Button className="ml-3" variant="paper" onClick={() => void progress.refetch()}>Thử lại</Button>
         </div>
@@ -78,29 +78,29 @@ export function StudentDetailPage() {
         <>
           <div className="grid gap-4 md:grid-cols-4">
             <Card className="p-5">
-              <p className="text-xs text-ink/50">Điểm gần nhất</p>
+              <p className="text-xs text-ink-soft">Điểm gần nhất</p>
               <p className="serif mt-2 text-4xl">{p.latestScore?.totalScore ?? '—'}</p>
               <p className="mt-1 text-sm text-gold-deep">
                 {p.improvement === null ? (p.latestScore ? 'Mới có 1 bài' : 'Chưa có bài đủ 200 câu') : `${p.improvement >= 0 ? '+' : ''}${p.improvement} điểm so với lần đầu`}
               </p>
             </Card>
             <Card className="p-5">
-              <p className="text-xs text-ink/50">Hoạt động</p>
-              <p className="serif mt-2 text-4xl">{p.totals.attemptsFinished}<span className="text-lg text-ink/40"> bài</span></p>
-              <p className="mt-1 text-xs text-ink/50">
+              <p className="text-xs text-ink-soft">Hoạt động</p>
+              <p className="serif mt-2 text-4xl">{p.totals.attemptsFinished}<span className="text-lg text-ink-soft"> bài</span></p>
+              <p className="mt-1 text-xs text-ink-soft">
                 {p.totals.answered} câu • {p.totals.accuracy === null ? 'chưa có tỷ lệ đúng' : `${p.totals.accuracy}% đúng`} • chuỗi {p.streak.days} ngày
               </p>
             </Card>
             <Card className="p-5">
-              <p className="text-xs text-ink/50">Điểm yếu</p>
+              <p className="text-xs text-ink-soft">Điểm yếu</p>
               <p className="mt-3 text-sm leading-6">
                 {p.weakestPart ? `${partName(p.weakestPart.partCode)} — ${p.weakestPart.accuracy}% đúng (${p.weakestPart.answered} câu)` : 'Chưa đủ dữ liệu'}
               </p>
             </Card>
             <Card className="p-5">
-              <p className="text-xs text-ink/50">{target ? `So với mục tiêu ${formatGoal(target)}` : 'Mục tiêu'}</p>
+              <p className="text-xs text-ink-soft">{target ? `So với mục tiêu ${formatGoal(target)}` : 'Mục tiêu'}</p>
               <p className="serif mt-2 text-4xl">{p.remainingToTarget ?? '—'}</p>
-              <p className="mt-1 text-xs text-ink/50">
+              <p className="mt-1 text-xs text-ink-soft">
                 {!target ? 'Học viên chưa đặt mục tiêu' : target.track === 'FOUR_SKILL' ? 'Không so sánh với mock L&R' : p.latestScore ? 'điểm còn lại đến mục tiêu' : 'chưa có điểm để so sánh'}
               </p>
             </Card>
@@ -113,10 +113,10 @@ export function StudentDetailPage() {
 
       <section id="bai-lam">
         <h3 className="serif text-2xl">Kết quả & bài làm chi tiết</h3>
-        <p className="mt-1 text-sm text-ink/55">Mỗi lần nộp: điểm tổng, đúng/sai theo part, và từng câu học viên đã chọn.</p>
-        {sittings.isPending ? <p className="mt-3 text-sm text-ink/55">Đang tải bài làm…</p> : null}
+        <p className="mt-1 text-sm text-ink-soft">Mỗi lần nộp: điểm tổng, đúng/sai theo part, và từng câu học viên đã chọn.</p>
+        {sittings.isPending ? <p className="mt-3 text-sm text-ink-soft">Đang tải bài làm…</p> : null}
         {sittings.error ? (
-          <div className="mt-3 rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral" role="alert">
+          <div className="mt-3 rounded-xl border border-danger/25 bg-danger-soft p-3 text-sm text-danger" role="alert">
             Không tải được danh sách bài làm.
             <Button className="ml-3" variant="paper" onClick={() => void sittings.refetch()}>Thử lại</Button>
           </div>
@@ -133,7 +133,7 @@ export function StudentDetailPage() {
 function Info({ label, value }: { label: string; value?: string | null }) {
   return (
     <div>
-      <dt className="text-xs text-ink/50">{label}</dt>
+      <dt className="text-xs text-ink-soft">{label}</dt>
       <dd className="mt-1 font-medium">{value || '—'}</dd>
     </div>
   )

@@ -19,12 +19,12 @@ const CARD_PALETTE: ReadonlyArray<{
   dot: string
   cardClass: string
 }> = [
-  { id: 'default', label: 'Mặc định', dot: '#94a3b8', cardClass: 'border-gold/35 bg-cream' },
-  { id: 'rose', label: 'Hay quên', dot: '#e11d48', cardClass: 'border-rose-300 bg-rose-50/70 backdrop-blur-md dark:bg-rose-950/70' },
-  { id: 'amber', label: 'Cần chú ý', dot: '#d97706', cardClass: 'border-amber-300 bg-amber-50/70 backdrop-blur-md dark:bg-amber-950/70' },
-  { id: 'emerald', label: 'Đã thuộc', dot: '#10b981', cardClass: 'border-emerald-300 bg-emerald-50/70 backdrop-blur-md dark:bg-emerald-950/70' },
-  { id: 'sky', label: 'Từ bẫy ETS', dot: '#0284c7', cardClass: 'border-sky-300 bg-sky-50/70 backdrop-blur-md dark:bg-sky-950/70' },
-  { id: 'violet', label: 'Cụm từ / Collocation', dot: '#7c3aed', cardClass: 'border-violet-300 bg-violet-50/70 backdrop-blur-md dark:bg-violet-950/70' },
+  { id: 'default', label: 'Mặc định', dot: '#94a3b8', cardClass: 'ui-card border-gold/35 bg-cream' },
+  { id: 'rose', label: 'Hay quên', dot: '#e11d48', cardClass: 'border-rose-300 bg-rose-50/85 dark:border-rose-500/40 dark:bg-rose-950/55' },
+  { id: 'amber', label: 'Cần chú ý', dot: '#d97706', cardClass: 'border-amber-300 bg-amber-50/85 dark:border-amber-500/40 dark:bg-amber-950/55' },
+  { id: 'emerald', label: 'Đã thuộc', dot: '#10b981', cardClass: 'border-emerald-300 bg-emerald-50/85 dark:border-emerald-500/40 dark:bg-emerald-950/55' },
+  { id: 'sky', label: 'Từ bẫy ETS', dot: '#0284c7', cardClass: 'border-sky-300 bg-sky-50/85 dark:border-sky-500/40 dark:bg-sky-950/55' },
+  { id: 'violet', label: 'Cụm từ / Collocation', dot: '#7c3aed', cardClass: 'border-violet-300 bg-violet-50/85 dark:border-violet-500/40 dark:bg-violet-950/55' },
 ]
 
 function paletteOf(color: NotebookCardColor) {
@@ -124,7 +124,7 @@ export function NotebookPage() {
           <label className="block text-xs font-semibold text-ink/70">
             Lọc theo Chủ đề
             <select
-              className="mt-1 h-9 w-full rounded-xl border border-gold/35 bg-white px-3 text-sm font-medium"
+              className="mt-1 h-9 w-full rounded-xl border border-gold/35 bg-cream px-3 text-sm font-medium"
               value={topicFilter}
               onChange={(e) => setTopicFilter(e.target.value)}
             >
@@ -141,7 +141,7 @@ export function NotebookPage() {
           <label className="block text-xs font-semibold text-ink/70">
             Lọc theo Unit
             <select
-              className="mt-1 h-9 w-full rounded-xl border border-gold/35 bg-white px-3 text-sm font-medium"
+              className="mt-1 h-9 w-full rounded-xl border border-gold/35 bg-cream px-3 text-sm font-medium"
               value={unitFilter}
               onChange={(e) => setUnitFilter(e.target.value)}
             >
@@ -162,7 +162,7 @@ export function NotebookPage() {
             <button
               type="button"
               onClick={() => setColorFilter('all')}
-              className={cn('rounded-full px-2.5 py-1 text-xs font-semibold', colorFilter === 'all' ? 'bg-ink text-white' : 'bg-paper-2 text-ink/70')}
+              className={cn('rounded-full px-2.5 py-1 text-xs font-semibold', colorFilter === 'all' ? 'bg-button text-button-ink' : 'bg-paper-2 text-ink/70')}
             >
               Tất cả
             </button>
@@ -174,8 +174,8 @@ export function NotebookPage() {
                 aria-label={`Lọc màu ${c.label}`}
                 onClick={() => setColorFilter(c.id)}
                 className={cn(
-                  'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-semibold transition',
-                  colorFilter === c.id ? 'border-ink bg-white ring-2 ring-button/40' : 'border-gold/30 bg-paper',
+                  'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[13px] font-semibold transition',
+                  colorFilter === c.id ? 'border-button bg-cream ring-2 ring-button/40' : 'border-gold/30 bg-paper',
                 )}
               >
                 <span className="size-2.5 rounded-full" style={{ background: c.dot }} />
@@ -346,7 +346,7 @@ function ExcelList() {
 }
 
 function NoteGrid({ items, empty, onNotice }: { items: NotebookEntryDto[]; empty: string; onNotice: (n: CornerNoticeState) => void }) {
-  if (items.length === 0) return <p className="text-sm text-ink/55">{empty}</p>
+  if (items.length === 0) return <p className="text-sm text-ink-soft">{empty}</p>
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {items.map((item) => (
@@ -377,31 +377,31 @@ function NoteCard({ item, onNotice }: { item: NotebookEntryDto; onNotice: (n: Co
   }
 
   return (
-    <Card className={cn('border-2 p-5 transition-colors', palette.cardClass)}>
+    <section className={cn('rounded-2xl border-2 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] transition-colors', palette.cardClass)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
-            {item.topic ? <span className="rounded-full bg-white/80 px-2.5 py-0.5 text-[11px] font-semibold text-gold-deep">{item.topic}</span> : null}
-            {item.unit != null ? <span className="rounded-full bg-white/80 px-2.5 py-0.5 text-[11px] font-semibold text-ink/75">Unit {item.unit}</span> : null}
-            <span className="rounded-full bg-white/65 px-2 py-0.5 text-[10px] font-semibold text-ink/55">
+            {item.topic ? <span className="rounded-full bg-cream/80 px-2.5 py-0.5 text-[13px] font-semibold text-gold-deep dark:bg-slate-900/60">{item.topic}</span> : null}
+            {item.unit != null ? <span className="rounded-full bg-cream/80 px-2.5 py-0.5 text-[13px] font-semibold text-ink/80 dark:bg-slate-900/60">Unit {item.unit}</span> : null}
+            <span className="rounded-full bg-cream/70 px-2 py-0.5 text-[13px] font-semibold text-ink-soft dark:bg-slate-900/55">
               {item.source === 'CATALOG' ? 'Từ kho' : item.source === 'MANUAL' ? 'Tự thêm' : 'Bài đọc'}
             </span>
           </div>
           <h2 className="serif mt-1.5 text-3xl text-ink">{item.word}</h2>
-          {item.partOfSpeech ? <p className="text-sm font-semibold text-gold-deep">{item.partOfSpeech}</p> : <p className="text-sm text-ink/45">Chưa có loại từ</p>}
+          {item.partOfSpeech ? <p className="text-sm font-semibold text-gold-deep">{item.partOfSpeech}</p> : <p className="text-sm text-ink-soft">Chưa có loại từ</p>}
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-2">
           <button
             type="button"
             aria-label="Xóa từ khỏi sổ tay"
-            className="rounded-lg p-1.5 text-coral hover:bg-red-100/70"
+            className="rounded-lg p-1.5 text-danger hover:bg-danger-soft"
             disabled={remove.isPending}
             onClick={() => void remove.mutateAsync(item.id)}
           >
             <Trash2 className="size-4" />
           </button>
-          <div className="flex items-center gap-1 rounded-full border border-black/10 bg-white/85 px-2 py-1" title="Đổi màu ô từ vựng">
+          <div className="flex items-center gap-1 rounded-full border border-ink/10 bg-cream/85 px-2 py-1 dark:bg-slate-900/65" title="Đổi màu ô từ vựng">
             {CARD_PALETTE.map((c) => (
               <button
                 key={c.id}
@@ -420,7 +420,7 @@ function NoteCard({ item, onNotice }: { item: NotebookEntryDto; onNotice: (n: Co
       {!editing && item.meaning ? (
         <div className="mt-3">
           <p className="text-sm font-medium leading-6 text-ink">{item.meaning}</p>
-          {item.example ? <p className="mt-1.5 rounded-xl bg-white/75 px-3 py-2 text-xs italic text-ink/75">“{item.example}”</p> : null}
+          {item.example ? <p className="mt-1.5 rounded-xl bg-cream/75 px-3 py-2 text-xs italic text-ink/85 dark:bg-slate-900/55">“{item.example}”</p> : null}
           <button type="button" className="mt-2.5 text-xs font-semibold text-gold-deep underline underline-offset-4" onClick={() => setEditing(true)}>
             Chỉnh sửa nghĩa, câu mẫu, Unit
           </button>
@@ -451,14 +451,14 @@ function NoteCard({ item, onNotice }: { item: NotebookEntryDto; onNotice: (n: Co
           }}
         >
           <div className="grid gap-2 sm:grid-cols-2">
-            <input className="h-9 w-full rounded-xl border border-ink/12 bg-white px-3 text-sm" value={partOfSpeech} placeholder="Loại từ (VD: noun)" onChange={(e) => setPartOfSpeech(e.target.value)} required />
-            <input className="h-9 w-full rounded-xl border border-ink/12 bg-white px-3 text-sm" value={topic} placeholder="Chủ đề (VD: Công sở)" onChange={(e) => setTopic(e.target.value)} />
+            <input className="h-9 w-full rounded-xl border border-ink/12 bg-cream px-3 text-sm" value={partOfSpeech} placeholder="Loại từ (VD: noun)" onChange={(e) => setPartOfSpeech(e.target.value)} required />
+            <input className="h-9 w-full rounded-xl border border-ink/12 bg-cream px-3 text-sm" value={topic} placeholder="Chủ đề (VD: Công sở)" onChange={(e) => setTopic(e.target.value)} />
           </div>
           <div className="grid gap-2 sm:grid-cols-[1fr_96px]">
-            <input className="h-9 w-full rounded-xl border border-ink/12 bg-white px-3 text-sm" value={meaning} placeholder="Nghĩa tiếng Việt" onChange={(e) => setMeaning(e.target.value)} required />
-            <input type="number" min={1} max={500} className="h-9 w-full rounded-xl border border-ink/12 bg-white px-2.5 text-sm" value={unitStr} placeholder="Unit" onChange={(e) => setUnitStr(e.target.value)} />
+            <input className="h-9 w-full rounded-xl border border-ink/12 bg-cream px-3 text-sm" value={meaning} placeholder="Nghĩa tiếng Việt" onChange={(e) => setMeaning(e.target.value)} required />
+            <input type="number" min={1} max={500} className="h-9 w-full rounded-xl border border-ink/12 bg-cream px-2.5 text-sm" value={unitStr} placeholder="Unit" onChange={(e) => setUnitStr(e.target.value)} />
           </div>
-          <input className="h-9 w-full rounded-xl border border-ink/12 bg-white px-3 text-sm" value={example} placeholder="Câu mẫu minh họa" onChange={(e) => setExample(e.target.value)} />
+          <input className="h-9 w-full rounded-xl border border-ink/12 bg-cream px-3 text-sm" value={example} placeholder="Câu mẫu minh họa" onChange={(e) => setExample(e.target.value)} />
           {error ? <p className="text-sm text-coral">{error}</p> : null}
           <div className="flex flex-wrap gap-2">
             <Button type="submit" disabled={update.isPending} className="h-9 px-3 text-xs">
@@ -472,14 +472,14 @@ function NoteCard({ item, onNotice }: { item: NotebookEntryDto; onNotice: (n: Co
           </div>
         </form>
       )}
-    </Card>
+    </section>
   )
 }
 
 function Metric({ label, value }: { label: string; value: number }) {
   return (
     <div>
-      <p className="text-xs text-ink/45">{label}</p>
+      <p className="text-xs text-ink-soft">{label}</p>
       <p className="serif text-2xl">{value}</p>
     </div>
   )

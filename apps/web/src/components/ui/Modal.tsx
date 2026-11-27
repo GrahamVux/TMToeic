@@ -23,7 +23,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-ink/35 p-4"
+      className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4"
       onMouseDown={(e) => {
         if (dismissible && e.target === e.currentTarget) onClose()
       }}

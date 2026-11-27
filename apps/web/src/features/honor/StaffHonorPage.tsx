@@ -110,12 +110,12 @@ export function StaffHonorPage() {
   return (
     <div className="space-y-8">
       {notice ? (
-        <div role="status" className="flex items-center gap-2 rounded-2xl border border-olive/35 bg-[#e9f5ee] px-4 py-3 text-sm font-medium text-ink">
-          <CheckCircle2 className="size-4 text-olive" /> {notice}
+        <div role="status" className="flex items-center gap-2 rounded-2xl border border-success/35 bg-success-soft px-4 py-3 text-sm font-medium text-ink">
+          <CheckCircle2 className="size-4 text-success" /> {notice}
         </div>
       ) : null}
       {actionError ? (
-        <p role="alert" className="rounded-2xl bg-[#f8dcd8] px-4 py-3 text-sm text-coral">
+        <p role="alert" className="rounded-2xl border border-danger/25 bg-danger-soft px-4 py-3 text-sm text-danger">
           {actionError}
         </p>
       ) : null}
@@ -135,7 +135,7 @@ export function StaffHonorPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="serif text-2xl">Cấu hình mức điểm thưởng Top 3</h2>
-                <p className="text-xs text-ink/55">Thay đổi áp dụng cho các kỳ chốt tự động và chốt sớm kế tiếp.</p>
+                <p className="text-xs text-ink-soft">Thay đổi áp dụng cho các kỳ chốt tự động và chốt sớm kế tiếp.</p>
               </div>
               <Button type="button" disabled={updateConfig.isPending} onClick={() => void saveConfig()}>
                 {updateConfig.isPending ? 'Đang lưu…' : 'Lưu cấu hình thưởng'}
@@ -174,9 +174,9 @@ export function StaffHonorPage() {
                                   step={10}
                                   value={tier.points}
                                   onChange={(e) => setTierPoints(scope, p, tier.place, Math.max(0, Math.trunc(Number(e.target.value) || 0)))}
-                                  className="h-8 w-20 rounded-lg border border-gold/45 bg-white px-2 text-right text-xs font-bold text-ink"
+                                  className="h-8 w-20 rounded-lg border border-gold/45 bg-cream px-2 text-right text-xs font-bold text-ink"
                                 />
-                                <span className="text-ink/55">điểm</span>
+                                <span className="text-ink-soft">điểm</span>
                               </span>
                             </label>
                           ))}
@@ -195,7 +195,7 @@ export function StaffHonorPage() {
                 <PlusCircle className="size-5 text-gold-deep" />
                 <h3 className="serif text-lg">Cộng / Trừ điểm thủ công</h3>
               </div>
-              <p className="mt-1 text-xs text-ink/55">Ghi nhận trực tiếp vào sổ cái ví điểm của học viên.</p>
+              <p className="mt-1 text-xs text-ink-soft">Ghi nhận trực tiếp vào sổ cái ví điểm của học viên.</p>
               <div className="mt-4 space-y-3">
                 <label className="block text-xs font-medium text-ink/70">
                   Tìm học viên (tên hoặc mã HV)
@@ -212,7 +212,7 @@ export function StaffHonorPage() {
                 <label className="block text-xs font-medium text-ink/70">
                   Chọn tài khoản
                   <select
-                    className="mt-1 h-9 w-full rounded-xl border border-ink/12 bg-white px-3 text-sm"
+                    className="mt-1 h-9 w-full rounded-xl border border-ink/12 bg-cream px-3 text-sm"
                     value={selectedStudentId}
                     onChange={(e) => setSelectedStudentId(e.target.value)}
                   >
@@ -248,7 +248,7 @@ export function StaffHonorPage() {
                   <History className="size-5 text-gold-deep" />
                   <h3 className="serif text-lg">Lịch sử các kỳ đã chốt & trao thưởng</h3>
                 </div>
-                <span className="text-xs text-ink/50">{data.settlements.length} kỳ gần nhất</span>
+                <span className="text-xs text-ink-soft">{data.settlements.length} kỳ gần nhất</span>
               </div>
               {data.settlements.length === 0 ? (
                 <p className="mt-4 rounded-2xl bg-paper p-4 text-sm text-ink/60">
@@ -262,19 +262,19 @@ export function StaffHonorPage() {
                         <p className="text-sm font-semibold text-ink">
                           {s.cycleKey} • <span className="text-gold-deep">{s.className ?? 'Toàn Trung Tâm'}</span>
                         </p>
-                        <span className="text-xs text-ink/50">
+                        <span className="text-xs text-ink-soft">
                           {new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(s.settledAt))}
                         </span>
                       </div>
                       <div className="mt-2.5 flex flex-wrap gap-2">
                         {s.winners.length === 0 ? (
-                          <span className="text-xs text-ink/50">Không có học viên đạt điều kiện sàn Top 3 trong kỳ này.</span>
+                          <span className="text-xs text-ink-soft">Không có học viên đạt điều kiện sàn Top 3 trong kỳ này.</span>
                         ) : (
                           s.winners.map((w) => (
-                            <span key={w.place} className="inline-flex items-center gap-1.5 rounded-xl border border-gold/35 bg-white px-2.5 py-1 text-xs">
+                            <span key={w.place} className="inline-flex items-center gap-1.5 rounded-xl border border-gold/35 bg-cream px-2.5 py-1 text-xs">
                               <strong>#{w.place} {w.name}</strong>
                               <span className="font-semibold text-olive">+{w.points}đ</span>
-                              <span className="text-ink/50">• {getFrameDef(w.frameId).name}</span>
+                              <span className="text-ink-soft">• {getFrameDef(w.frameId).name}</span>
                             </span>
                           ))
                         )}

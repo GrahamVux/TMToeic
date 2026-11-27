@@ -9,9 +9,9 @@ import { notebookSavedMessage, useSaveNotebookWord } from './study.queries'
 import { textSegments } from './text-segments'
 
 const COLOR_CLASS: Record<ReadingMarkColor, string> = {
-  yellow: 'bg-[#fff3a3]',
-  blue: 'bg-[#c4ebfb]',
-  green: 'bg-[#d6f5d0]',
+  yellow: 'bg-[#fff3a3] text-slate-900',
+  blue: 'bg-[#c4ebfb] text-slate-900',
+  green: 'bg-[#d6f5d0] text-slate-900',
 }
 
 const COLORS: ReadingMarkColor[] = ['yellow', 'blue', 'green']
@@ -220,7 +220,7 @@ export function SelectableText({
         ? createPortal(
             <div
               ref={barRef}
-              className="fixed z-[80] rounded-2xl bg-ink/92 p-2 text-white shadow-xl"
+              className="fixed z-[80] rounded-2xl bg-slate-900/95 p-2 text-white shadow-xl"
               style={{ top: picked.top, left: Math.max(8, Math.min(picked.left, window.innerWidth - 340)) }}
               onMouseDown={(event) => event.preventDefault()}
             >
@@ -269,7 +269,7 @@ export function SelectableText({
                     value={note}
                     onChange={(event) => setNote(event.target.value)}
                     placeholder="Ghi chú cho chỗ này"
-                    className="h-9 min-w-0 flex-1 rounded-lg bg-white px-3 text-sm text-ink"
+                    className="h-9 min-w-0 flex-1 rounded-lg bg-cream px-3 text-sm text-ink"
                     autoFocus
                   />
                   <button type="submit" className="rounded-lg bg-button px-3 text-sm font-semibold text-button-ink">
@@ -300,7 +300,7 @@ export function SelectableText({
 
       {toast
         ? createPortal(
-            <p className="fixed bottom-20 left-1/2 z-[80] max-w-sm -translate-x-1/2 rounded-full bg-ink px-4 py-2 text-center text-sm text-white shadow-lg" role="status">
+            <p className="fixed bottom-20 left-1/2 z-[80] max-w-sm -translate-x-1/2 rounded-full bg-slate-900 px-4 py-2 text-center text-sm text-white shadow-lg" role="status">
               {toast}
             </p>,
             document.body,

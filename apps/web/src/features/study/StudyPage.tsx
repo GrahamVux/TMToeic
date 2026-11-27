@@ -26,7 +26,7 @@ function GrammarHome() {
     <section>
       <div className="mb-4 flex items-end justify-between gap-3">
         <h2 className="serif text-2xl">Chuyên đề ngữ pháp</h2>
-        <p className="text-sm text-ink/55">
+        <p className="text-sm text-ink-soft">
           Đã học {completed}/{items.length}
         </p>
       </div>

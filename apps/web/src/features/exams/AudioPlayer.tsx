@@ -157,7 +157,7 @@ function TrackAudio({
                 className={cn('mt-1 h-1.5 w-full accent-gold-deep', !seekable && 'cursor-not-allowed opacity-70')}
               />
             </div>
-            <span className="font-mono text-xs text-ink/60 tabular-nums" aria-label="Thời gian">
+            <span className="font-mono text-xs text-ink-soft tabular-nums" aria-label="Thời gian">
               {formatClock(time)} / {duration ? formatClock(duration) : '--:--'}
             </span>
             {speedControl ? (
@@ -169,7 +169,7 @@ function TrackAudio({
                   setRate(next)
                   if (ref.current) ref.current.playbackRate = next
                 }}
-                className="rounded-lg border border-ink/10 bg-white px-2 py-1 text-xs"
+                className="rounded-lg border border-ink/15 bg-cream px-2.5 py-1 text-xs font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
               >
                 {PLAYBACK_RATES.map((r) => (
                   <option key={r} value={r}>{r}x</option>
@@ -177,7 +177,7 @@ function TrackAudio({
               </select>
             ) : null}
           </div>
-          <p className="mt-2 text-xs text-ink/55" role="status" aria-live="polite">
+          <p className="mt-2 text-xs text-ink-soft" role="status" aria-live="polite">
             {failed
               ? 'Không phát được audio (link hết hạn hoặc mất kết nối). Hãy tải lại trang rồi thử lại — đáp án của bạn vẫn được lưu.'
               : recovering

@@ -50,7 +50,7 @@ export function ReviewQuestionCards({
                   </div>
                 ) : null}
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm text-ink/50">
+                  <span className="text-sm text-ink-soft">
                     {partName(q.partCode)} • Câu {q.number}
                   </span>
                   {q.isCorrect === true ? <Badge tone="olive">Đúng</Badge> : q.isCorrect === false ? <Badge tone="danger">Sai</Badge> : <Badge tone="paper">Chưa làm</Badge>}
@@ -69,7 +69,7 @@ export function ReviewQuestionCards({
                   <>
                     {q.prompt ? (
                       <SelectableText
-                        className="mt-2 text-lg leading-8 font-medium"
+                        className="mt-2 max-w-[68ch] text-lg leading-8 font-medium"
                         text={q.prompt}
                         markTarget={listening ? undefined : { kind: 'prompt', id: q.id }}
                       />
@@ -83,14 +83,14 @@ export function ReviewQuestionCards({
                             key={o.key}
                             className={cn(
                               'rounded-xl border px-4 py-2.5 text-sm',
-                              isCorrect ? 'border-olive/50 bg-[#e4efd8]' : isPicked ? 'border-coral/50 bg-[#f8dcd8]' : 'border-ink/10',
+                              isCorrect ? 'border-success/40 bg-success-soft text-ink' : isPicked ? 'border-danger/40 bg-danger-soft text-ink' : 'border-ink/12',
                             )}
                           >
                             <span className="mr-2 font-bold">{o.key}.</span>
                             {listening || !o.text ? o.text : <SelectableText as="span" text={o.text} markTarget={{ kind: 'option', id: q.id, optionKey: o.key }} />}
-                            {isCorrect ? <span className="ml-2 text-xs font-semibold text-olive">Đáp án đúng</span> : null}
+                            {isCorrect ? <span className="ml-2 text-xs font-semibold text-success">Đáp án đúng</span> : null}
                             {isPicked && !isCorrect ? (
-                              <span className="ml-2 text-xs font-semibold text-coral">{staffView ? 'Học viên chọn' : 'Bạn chọn'}</span>
+                              <span className="ml-2 text-xs font-semibold text-danger">{staffView ? 'Học viên chọn' : 'Bạn chọn'}</span>
                             ) : null}
                           </li>
                         )
@@ -99,9 +99,9 @@ export function ReviewQuestionCards({
                   </>
                 )}
                 {q.explanation ? (
-                  <div className="mt-4 rounded-xl bg-[#f7f1e4] p-3 text-sm">
-                    <p className="text-xs font-semibold tracking-wide text-gold-deep uppercase">Giải thích</p>
-                    <p className="mt-1 leading-6 whitespace-pre-line">{q.explanation}</p>
+                  <div className="mt-4 max-w-[68ch] rounded-xl border border-warn/25 bg-warn-soft p-3.5 text-sm text-ink">
+                    <p className="text-xs font-semibold tracking-wide text-warn uppercase">Giải thích</p>
+                    <p className="mt-1 leading-[1.7] whitespace-pre-line text-ink/90">{q.explanation}</p>
                   </div>
                 ) : null}
               </div>

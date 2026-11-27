@@ -64,11 +64,11 @@ function ReviewDock({
   return (
     <nav
       ref={dockRef}
-      className="fixed z-20 flex max-h-[calc(100vh-6.5rem)] flex-col gap-1 overflow-y-auto rounded-2xl border border-gold/40 bg-white/95 p-2 shadow-[0_12px_32px_rgba(30,51,60,0.14)] backdrop-blur-md"
+      className="fixed z-20 flex max-h-[calc(100vh-6.5rem)] flex-col gap-1 overflow-y-auto rounded-2xl border border-gold/40 bg-cream/95 p-2 shadow-[0_12px_32px_rgba(30,51,60,0.14)] backdrop-blur-md"
       style={{ top: pos?.top ?? 72, left: pos?.left ?? 16, width: pos?.width ?? 148 }}
       aria-label="Đến từng part"
     >
-      <p className="px-1 pb-1 text-[10px] font-semibold tracking-[0.14em] text-gold-deep uppercase">Đến part</p>
+      <p className="px-1 pb-1 text-[12px] font-semibold tracking-[0.14em] text-gold-deep uppercase">Đến part</p>
       {parts.map((code) => (
         <button
           key={code}
@@ -221,7 +221,7 @@ export function ImportReview({
               onChange={(e) => setForm((current) => ({ ...current, durationSeconds: Math.max(60, (Number(e.target.value) || 1) * 60) }))}
             />
           </label>
-          <p className="self-end text-sm text-ink/55">
+          <p className="self-end text-sm text-ink-soft">
             {form.questions.length} câu
             {form.parts.map((part) => ` • ${shortPart(part.partCode)}`).join('')}
           </p>
@@ -263,7 +263,7 @@ export function ImportReview({
                         groups: current.groups.map((item, i) => (i === groupIndex ? { ...item, instructions: e.target.value } : item)),
                       }))
                     }
-                    className="mt-1 w-full rounded-xl border border-ink/10 bg-white px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm"
                   />
                 </label>
                 {group.passages.map((passage, passageIndex) => (
@@ -282,7 +282,7 @@ export function ImportReview({
                           ),
                         }))
                       }
-                      className="mt-1 w-full rounded-xl border border-ink/10 bg-white px-3 py-2 text-sm"
+                      className="mt-1 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm"
                     />
                   </label>
                 ))}
@@ -290,7 +290,7 @@ export function ImportReview({
             ))}
             {questions.map(({ question, index }) => (
               <Card key={`${question.partCode}-${question.number}`} className="p-5">
-                <p className="text-sm text-ink/50">
+                <p className="text-sm text-ink-soft">
                   {shortPart(question.partCode)} • Câu {question.number}
                   {question.groupKey ? ` • nhóm ${question.groupKey}` : ''}
                 </p>
@@ -300,7 +300,7 @@ export function ImportReview({
                     value={question.prompt}
                     rows={2}
                     onChange={(e) => patchQuestion(index, { ...question, prompt: e.target.value })}
-                    className="mt-1 w-full rounded-xl border border-ink/10 bg-white px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm"
                   />
                 </label>
                 <div className="mt-3 grid gap-2">
@@ -324,7 +324,7 @@ export function ImportReview({
                     rows={3}
                     placeholder="Vì sao đáp án này đúng."
                     onChange={(e) => patchQuestion(index, { ...question, explanation: e.target.value })}
-                    className="mt-1 w-full rounded-xl border border-ink/10 bg-white px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-xl border border-ink/10 bg-cream px-3 py-2 text-sm"
                   />
                 </label>
               </Card>
@@ -333,9 +333,9 @@ export function ImportReview({
         )
       })}
 
-      {missingExplanation > 0 ? <p className="text-sm text-ink/55">{missingExplanation} câu chưa có lời giải thích. Vẫn có thể lưu.</p> : null}
+      {missingExplanation > 0 ? <p className="text-sm text-ink-soft">{missingExplanation} câu chưa có lời giải thích. Vẫn có thể lưu.</p> : null}
       {problems.length > 0 ? (
-        <ul className="rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral" role="alert">
+        <ul className="rounded-xl border border-danger/25 bg-danger-soft p-3 text-sm text-danger" role="alert">
           {problems.map((problem) => (
             <li key={problem}>{problem}</li>
           ))}

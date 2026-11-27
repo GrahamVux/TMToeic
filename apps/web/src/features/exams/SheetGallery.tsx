@@ -17,7 +17,7 @@ export function SheetGallery({ images, embedded = false, fit = 'frame' }: { imag
             <button type="button" className="rounded-full bg-paper px-3 py-1 font-semibold" onClick={() => setIndex((i) => (i - 1 + images.length) % images.length)}>
               Trước
             </button>
-            <span className="text-ink/55">
+            <span className="text-ink-soft">
               {Math.min(index, images.length - 1) + 1}/{images.length}
             </span>
             <button type="button" className="rounded-full bg-paper px-3 py-1 font-semibold" onClick={() => setIndex((i) => (i + 1) % images.length)}>

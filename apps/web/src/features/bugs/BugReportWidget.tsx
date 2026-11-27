@@ -54,14 +54,14 @@ export function BugReportWidget() {
           role="dialog"
           aria-label="Báo lỗi cho quản trị viên"
         >
-          <div className="flex items-start justify-between gap-3 border-b border-gold/25 bg-white px-4 py-3">
+          <div className="flex items-start justify-between gap-3 border-b border-gold/25 bg-cream px-4 py-3">
             <div>
               <p className="text-sm font-semibold text-ink">Báo lỗi</p>
-              <p className="mt-0.5 text-xs text-ink/55">Gửi sự cố tới tài khoản quản trị để được xử lý.</p>
+              <p className="mt-0.5 text-xs text-ink-soft">Gửi sự cố tới tài khoản quản trị để được xử lý.</p>
             </div>
             <button
               type="button"
-              className="flex size-8 items-center justify-center rounded-full text-ink/50 hover:bg-paper hover:text-ink"
+              className="flex size-8 items-center justify-center rounded-full text-ink-soft hover:bg-paper hover:text-ink"
               aria-label="Đóng"
               onClick={() => setOpen(false)}
             >
@@ -72,7 +72,7 @@ export function BugReportWidget() {
             <label className="block text-xs font-medium text-ink/60">
               Nhóm sự cố
               <select
-                className="mt-1 h-10 w-full rounded-xl border border-gold/40 bg-white px-3 text-sm text-ink outline-none focus:border-button"
+                className="mt-1 h-10 w-full rounded-xl border border-gold/40 bg-cream px-3 text-sm text-ink outline-none focus:border-button"
                 value={category}
                 onChange={(e) => setCategory(e.target.value as BugReportCategory)}
               >
@@ -86,14 +86,14 @@ export function BugReportWidget() {
             <label className="block text-xs font-medium text-ink/60">
               Mô tả
               <textarea
-                className="mt-1 min-h-24 w-full rounded-xl border border-gold/40 bg-white px-3 py-2 text-sm text-ink outline-none focus:border-button focus:ring-2 focus:ring-button/30"
+                className="mt-1 min-h-24 w-full rounded-xl border border-gold/40 bg-cream px-3 py-2 text-sm text-ink outline-none focus:border-button focus:ring-2 focus:ring-button/30"
                 value={message}
                 maxLength={2000}
                 placeholder="Ví dụ: Không nghe được audio Part 3 trên trang luyện tập…"
                 onChange={(e) => setMessage(e.target.value)}
               />
             </label>
-            <p className="text-[11px] text-ink/45">Trang hiện tại: {location.pathname || '/'}</p>
+            <p className="text-[13px] text-ink-soft">Trang hiện tại: {location.pathname || '/'}</p>
             {send.error ? (
               <p className="text-sm text-coral" role="alert">
                 {send.error instanceof ApiError ? send.error.message : 'Không gửi được. Thử lại sau.'}
@@ -107,10 +107,10 @@ export function BugReportWidget() {
             </div>
             {mine.data?.items.length ? (
               <div className="border-t border-gold/20 pt-3">
-                <p className="text-xs font-semibold text-ink/55">Báo cáo gần đây</p>
+                <p className="text-xs font-semibold text-ink-soft">Báo cáo gần đây</p>
                 <ul className="mt-2 space-y-2">
                   {mine.data.items.slice(0, 5).map((item) => (
-                    <li key={item.id} className="rounded-xl bg-white px-3 py-2">
+                    <li key={item.id} className="rounded-xl bg-cream px-3 py-2">
                       <div className="flex items-center justify-between gap-2">
                         <p className="truncate text-xs font-medium text-ink">{BUG_REPORT_CATEGORY_LABEL[item.category]}</p>
                         <Badge tone={STATUS_TONE[item.status]}>{BUG_REPORT_STATUS_LABEL[item.status]}</Badge>

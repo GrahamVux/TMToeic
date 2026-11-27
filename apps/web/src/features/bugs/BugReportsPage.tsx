@@ -78,7 +78,7 @@ export function BugReportsPage() {
             className={
               status === c.id
                 ? 'rounded-full bg-button px-3 py-1.5 text-xs font-semibold text-button-ink'
-                : 'rounded-full border border-gold/40 bg-white px-3 py-1.5 text-xs font-semibold text-ink/70 hover:bg-teal-soft'
+                : 'rounded-full border border-gold/40 bg-cream px-3 py-1.5 text-xs font-semibold text-ink/70 hover:bg-teal-soft'
             }
           >
             {c.label}
@@ -93,7 +93,7 @@ export function BugReportsPage() {
         </p>
       ) : null}
 
-      {list.isPending ? <p className="text-sm text-ink/55">Đang tải báo lỗi…</p> : null}
+      {list.isPending ? <p className="text-sm text-ink-soft">Đang tải báo lỗi…</p> : null}
 
       {!list.isPending && (list.data?.items.length ?? 0) === 0 ? (
         <Card className="p-6">
@@ -111,9 +111,9 @@ export function BugReportsPage() {
                     <Link className="text-gold-deep hover:underline" to={`/admin/students/${item.reporter.id}`}>
                       {item.reporter.fullName}
                     </Link>
-                    {item.reporter.studentCode ? <span className="ml-2 text-xs font-normal text-ink/50">{item.reporter.studentCode}</span> : null}
+                    {item.reporter.studentCode ? <span className="ml-2 text-xs font-normal text-ink-soft">{item.reporter.studentCode}</span> : null}
                   </p>
-                  <p className="mt-1 text-xs text-ink/50">
+                  <p className="mt-1 text-xs text-ink-soft">
                     {BUG_REPORT_CATEGORY_LABEL[item.category]} • {item.pagePath} • {dateFmt.format(new Date(item.createdAt))}
                   </p>
                 </div>
@@ -121,7 +121,7 @@ export function BugReportsPage() {
               </div>
               <p className="mt-3 whitespace-pre-wrap text-sm text-ink/80">{item.message}</p>
               {item.resolvedByName ? (
-                <p className="mt-2 text-xs text-ink/45">
+                <p className="mt-2 text-xs text-ink-soft">
                   {BUG_REPORT_STATUS_LABEL[item.status]} bởi {item.resolvedByName}
                   {item.resolvedAt ? ` • ${dateFmt.format(new Date(item.resolvedAt))}` : ''}
                 </p>
@@ -129,7 +129,7 @@ export function BugReportsPage() {
               <label className="mt-4 block text-xs font-medium text-ink/60">
                 Ghi chú phản hồi (học viên sẽ thấy)
                 <textarea
-                  className="mt-1 min-h-16 w-full rounded-xl border border-gold/40 bg-white px-3 py-2 text-sm outline-none focus:border-button"
+                  className="mt-1 min-h-16 w-full rounded-xl border border-gold/40 bg-cream px-3 py-2 text-sm outline-none focus:border-button"
                   value={notes[item.id] ?? item.adminNote ?? ''}
                   onChange={(e) => setNotes((n) => ({ ...n, [item.id]: e.target.value }))}
                   placeholder="Đã sửa / cần thêm thông tin…"

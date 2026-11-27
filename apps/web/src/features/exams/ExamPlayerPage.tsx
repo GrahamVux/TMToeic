@@ -180,7 +180,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
           <p className="text-xs text-gold-deep">{MODE_LABEL[attempt.mode] ?? attempt.mode} • {attempt.totalQuestions} câu</p>
           <h1 className="serif text-2xl">{attempt.examTitle}</h1>
           {attempt.focusWatch ? (
-            <p className="mt-1 max-w-md text-xs text-ink/55">Rời tab hoặc chuyển sang cửa sổ khác sẽ được ghi lại cho giáo viên.</p>
+            <p className="mt-1 max-w-md text-xs text-ink-soft">Rời tab hoặc chuyển sang cửa sổ khác sẽ được ghi lại cho giáo viên.</p>
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -190,7 +190,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
           {attempt.remainingSeconds !== null ? (
             <Countdown remainingSeconds={attempt.remainingSeconds} onExpire={() => void finish('time')} />
           ) : (
-            <span className="rounded-full bg-paper px-3 py-1 text-sm text-ink/55">Không giới hạn thời gian</span>
+            <span className="rounded-full bg-paper px-3 py-1 text-sm text-ink-soft">Không giới hạn thời gian</span>
           )}
           <Button variant="danger" disabled={finishing} onClick={() => setConfirm(true)}>Nộp bài</Button>
         </div>
@@ -271,10 +271,10 @@ function Player({ data }: { data: AttemptPlayerDto }) {
               </>
             )}
             <div className="exam-scale" style={examTextStyle(textZoom)}>
-            <p className="text-sm text-ink/50">
+            <p className="text-sm text-ink-soft">
               {partName(question.partCode)} • {grouped ? `Câu ${visible[0].number}–${visible[visible.length - 1].number}` : `Câu ${question.number}`}
             </p>
-            {grouped ? <p className="mt-1 text-xs text-ink/45">Cùng một đoạn nghe. Chọn đáp án cho cả nhóm, rồi mới sang đoạn tiếp theo.</p> : null}
+            {grouped ? <p className="mt-1 text-xs text-ink-soft">Cùng một đoạn nghe. Chọn đáp án cho cả nhóm, rồi mới sang đoạn tiếp theo.</p> : null}
             <div className="space-y-8">
               {visible.map((item) => (
                 <div key={item.id}>
@@ -287,11 +287,11 @@ function Player({ data }: { data: AttemptPlayerDto }) {
                     />
                   ) : (
                     <>
-                      {grouped ? <p className="mt-3 text-sm font-semibold text-ink/55">Câu {item.number}</p> : null}
+                      {grouped ? <p className="mt-3 text-sm font-semibold text-ink-soft">Câu {item.number}</p> : null}
                       {item.prompt ? (
                         <SelectableText
                           as="h2"
-                          className="mt-1 text-xl leading-8 font-medium"
+                          className="mt-1 max-w-[68ch] text-xl leading-8 font-medium"
                           text={item.prompt}
                           markTarget={listening ? undefined : { kind: 'prompt', id: item.id }}
                         />
@@ -309,7 +309,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
                                 if (!window.getSelection()?.isCollapsed) return
                                 choose(item.id, option.key)
                               }}
-                              className={cn('rounded-2xl border px-4 py-3 text-left transition', selected ? 'border-gold-deep bg-teal-soft' : 'border-ink/10 hover:bg-paper')}
+                              className={cn('rounded-2xl border px-4 py-3 text-left transition', selected ? 'border-gold-deep bg-teal-soft' : 'border-ink/12 hover:bg-paper')}
                             >
                               <span className="mr-3 font-bold">{option.key}.</span>
                               {listening || !option.text ? (
@@ -326,7 +326,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
                 </div>
               ))}
             </div>
-            {visible.some((item) => item.type !== FILL_QUESTION_TYPE) ? <p className="mt-3 text-xs text-ink/40">Bấm lại đáp án đã chọn để bỏ chọn.</p> : null}
+            {visible.some((item) => item.type !== FILL_QUESTION_TYPE) ? <p className="mt-3 text-xs text-ink-soft">Bấm lại đáp án đã chọn để bỏ chọn.</p> : null}
             <div className="mt-6 flex justify-between">
               <Button variant="ghost" disabled={screen.start === 0} onClick={goPrev}>{grouped ? 'Nhóm trước' : 'Câu trước'}</Button>
               <Button variant="navy" disabled={screen.end >= questions.length - 1} onClick={goNext}>{grouped ? 'Nhóm tiếp' : 'Câu tiếp'}</Button>
@@ -354,12 +354,12 @@ function Player({ data }: { data: AttemptPlayerDto }) {
                   )}
                 >
                   <span className="block text-xs font-semibold">{label}</span>
-                  <span className={cn('text-[11px]', question.partCode === code ? 'text-white/80' : 'text-ink/50')}>{done}/{inPart.length} đã chọn</span>
+                  <span className={cn('text-[13px] tabular-nums', question.partCode === code ? 'text-button-ink/80' : 'text-ink-soft')}>{done}/{inPart.length} đã chọn</span>
                 </button>
               )
             })}
           </div>
-          <p className="mt-4 text-xs font-semibold text-ink/55">{partName(question.partCode)}</p>
+          <p className="mt-4 text-xs font-semibold text-ink-soft">{partName(question.partCode)}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {sheetScreens.filter((span) => questions[span.start]?.partCode === question.partCode).map((span) => {
               const items = questions.slice(span.start, span.end + 1)
@@ -377,7 +377,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
                       ? `Nhóm câu ${items[0].number}–${items[items.length - 1].number}, câu ${item.number}${answered ? ', đã chọn' : ', chưa làm'}`
                       : `Câu ${item.number}${answered ? ', đã chọn' : ', chưa làm'}`}
                     className={cn(
-                      'h-9 min-w-9 rounded-lg px-1 text-sm font-semibold',
+                      'h-9 min-w-9 rounded-lg px-1 text-sm font-semibold tabular-nums',
                       onScreen && answered ? 'bg-gold text-ink ring-2 ring-gold-deep' : onScreen ? 'bg-button text-button-ink' : answered ? 'bg-gold text-ink' : 'bg-paper',
                     )}
                   >
@@ -398,10 +398,10 @@ function Player({ data }: { data: AttemptPlayerDto }) {
       </div>
 
       {confirm ? (
-        <div className="fixed inset-0 z-40 grid place-items-center bg-ink/30 p-4" role="dialog" aria-modal="true" aria-labelledby="submit-title">
+        <div className="fixed inset-0 z-40 grid place-items-center bg-slate-950/50 p-4 backdrop-blur-[2px]" role="dialog" aria-modal="true" aria-labelledby="submit-title">
           <Card className="w-full max-w-md p-6">
             <h2 id="submit-title" className="serif text-2xl">Nộp bài?</h2>
-            <p className="mt-2 text-sm text-ink/65">
+            <p className="mt-2 text-sm text-ink-soft">
               Bạn đã trả lời {answered}/{questions.length} câu. Câu chưa làm sẽ tính là bỏ trống. Sau khi nộp sẽ không sửa được đáp án.
             </p>
             <div className="mt-5 flex justify-end gap-3">
@@ -415,7 +415,7 @@ function Player({ data }: { data: AttemptPlayerDto }) {
       ) : null}
 
       {finishing && !confirm ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-ink/40 text-white" role="status">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/65 font-semibold text-white" role="status">
           Hết giờ — đang nộp bài…
         </div>
       ) : null}
@@ -438,17 +438,17 @@ function FillBlank({ prompt, blankIndex, value, onChange }: { prompt: string; bl
                   value={value}
                   onChange={(e) => onChange(e.target.value)}
                   aria-label={`Chỗ trống ${index + 1}`}
-                  className="exam-blank mx-1 inline-block rounded-lg border border-gold-deep bg-white text-center"
+                  className="exam-blank mx-1 inline-block rounded-lg border border-gold-deep bg-cream text-center text-ink focus:outline-none focus:ring-2 focus:ring-button/40"
                   autoComplete="off"
                 />
               ) : (
-                <span className="mx-1 text-ink/35">({index + 1})</span>
+                <span className="mx-1 text-ink-soft">({index + 1})</span>
               )
             ) : null}
           </span>
         ))}
       </p>
-      <p className="mt-3 text-xs text-ink/40">Gõ từ vào ô. Xóa hết chữ để bỏ trống chỗ này.</p>
+      <p className="mt-3 text-xs text-ink-soft">Gõ từ vào ô. Xóa hết chữ để bỏ trống chỗ này.</p>
     </div>
   )
 }
@@ -456,9 +456,9 @@ function FillBlank({ prompt, blankIndex, value, onChange }: { prompt: string; bl
 function SaveIndicator({ status, pending }: { status: SaveStatus; pending: number }) {
   const map: Record<SaveStatus, { text: string; tone: string }> = {
     saved: { text: 'Đã lưu', tone: 'text-olive' },
-    saving: { text: `Đang lưu${pending > 1 ? ` (${pending})` : ''}…`, tone: 'text-ink/55' },
+    saving: { text: `Đang lưu${pending > 1 ? ` (${pending})` : ''}…`, tone: 'text-ink-soft' },
     offline: { text: 'Mất kết nối — đang thử lại', tone: 'text-warn' },
-    error: { text: 'Lỗi lưu đáp án', tone: 'text-coral' },
+    error: { text: 'Lỗi lưu đáp án', tone: 'text-danger' },
   }
   const { text, tone } = map[status]
   return <span className={cn('text-xs font-semibold', tone)} role="status" aria-live="polite">{text}</span>
@@ -491,7 +491,10 @@ function Countdown({ remainingSeconds, onExpire }: { remainingSeconds: number; o
 
   return (
     <span
-      className={cn('rounded-full px-3 py-1 font-mono text-sm', left <= 300 ? 'bg-[#f8dcd8] text-coral' : 'bg-paper text-gold-deep')}
+      className={cn(
+        'rounded-full px-3 py-1 font-mono text-sm font-semibold tabular-nums',
+        left <= 300 ? 'bg-danger-soft text-danger ring-1 ring-danger/25' : 'bg-paper text-gold-deep',
+      )}
       role="timer"
       aria-label={`Còn lại ${formatClock(left)}`}
     >

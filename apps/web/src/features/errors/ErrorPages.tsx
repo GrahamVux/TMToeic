@@ -40,15 +40,17 @@ function ErrorShell({
   const navigate = useNavigate()
   return (
     <div className="relative min-h-screen overflow-hidden bg-paper text-ink">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(185,228,236,0.7),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(232,246,249,0.95),transparent_40%)]" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-linear-to-r from-button via-navy to-crimson" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 site-wash" />
       <div className="relative mx-auto flex min-h-screen max-w-lg flex-col justify-center px-6 py-16">
         <BrandMark />
-        <div className="mt-10 rounded-3xl border border-gold/40 bg-cream p-8 text-center shadow-[0_20px_60px_rgba(43,138,156,0.12)]">
-          <div className="mx-auto grid size-14 place-items-center rounded-full bg-teal-soft text-gold-deep">{icon}</div>
-          <p className="mt-4 text-xs font-semibold text-gold-deep uppercase">{code}</p>
-          <h1 className="serif mt-2 text-3xl">{title}</h1>
-          <p className="mt-3 text-sm leading-7 text-ink/65">{body}</p>
-          <p className="mt-4 text-sm text-ink/55">Nếu cần hỗ trợ, vui lòng liên hệ Thầy Minh.</p>
+        <div className="relative mt-10 overflow-hidden rounded-3xl border border-gold/40 bg-cream p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
+          <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px] bg-linear-to-r from-button via-navy to-crimson" />
+          <div className="mx-auto grid size-14 place-items-center rounded-full bg-teal-soft text-navy">{icon}</div>
+          <p className="mt-4 text-xs font-semibold text-navy uppercase">{code}</p>
+          <h1 className="serif mt-2 text-3xl font-bold">{title}</h1>
+          <p className="mt-3 text-sm leading-7 text-ink-soft">{body}</p>
+          <p className="mt-4 text-sm text-ink-soft">Nếu cần hỗ trợ, vui lòng liên hệ Thầy Minh.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Button variant="navy" onClick={() => navigate(-1)}>
               Quay lại

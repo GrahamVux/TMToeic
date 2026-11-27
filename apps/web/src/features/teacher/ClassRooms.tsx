@@ -40,7 +40,7 @@ export function CreateClassButton() {
               <label className="text-sm font-medium" htmlFor="class-name">Tên lớp</label>
               <Input id="class-name" className="mt-1" value={name} onChange={(e) => setName(e.target.value)} placeholder="VD: K42 - TOEIC 850+" required minLength={2} autoFocus />
             </div>
-            {error ? <p role="alert" className="rounded-xl bg-[#f8dcd8] px-3 py-2 text-sm text-coral">{error}</p> : null}
+            {error ? <p role="alert" className="rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p> : null}
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Hủy</Button>
               <Button type="submit" disabled={create.isPending || name.trim().length < 2}>{create.isPending ? 'Đang tạo…' : 'Tạo lớp'}</Button>
@@ -88,14 +88,14 @@ export function ClassSwitcher({
       </div>
       {needle ? (
         shown.length === 0 ? (
-          <p className="text-right text-sm text-ink/55">Không có lớp khớp “{query.trim()}”.</p>
+          <p className="text-right text-sm text-ink-soft">Không có lớp khớp “{query.trim()}”.</p>
         ) : (
           <div className="space-y-2">
             {shown.map((room) => (
-              <div key={room.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold/40 bg-white px-4 py-3">
+              <div key={room.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold/40 bg-cream px-4 py-3">
                 <div className="min-w-0">
                   <p className="truncate font-semibold">{room.name}{room.closedAt ? ' · đã đóng' : ''}</p>
-                  <p className="text-sm text-ink/55">{room.memberCount} học viên</p>
+                  <p className="text-sm text-ink-soft">{room.memberCount} học viên</p>
                 </div>
                 <Button type="button" variant={selectedId === room.id ? 'navy' : 'gold'} className="px-3 py-1.5 text-xs" onClick={() => pick(room.id)}>
                   Quản lý lớp
@@ -115,12 +115,12 @@ function ClassPill({ active, label, count, onClick }: { active: boolean; label: 
       type="button"
       className={cn(
         'flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold whitespace-nowrap',
-        active ? 'border-gold-deep bg-button text-button-ink' : 'border-ink/10 bg-white text-ink/75 hover:border-gold-deep',
+        active ? 'border-gold-deep bg-button text-button-ink' : 'border-ink/10 bg-cream text-ink/75 hover:border-gold-deep',
       )}
       onClick={onClick}
     >
       {label}
-      {count !== undefined ? <span className={cn('rounded-full px-1.5 text-[11px] tabular-nums', active ? 'bg-white/20' : 'bg-paper-2 text-ink/55')}>{count}</span> : null}
+      {count !== undefined ? <span className={cn('rounded-full px-1.5 text-[13px] tabular-nums', active ? 'bg-button-ink/20' : 'bg-paper-2 text-ink-soft')}>{count}</span> : null}
     </button>
   )
 }
@@ -132,7 +132,7 @@ export function ClassRooms({ selectedId, onSelect }: { selectedId: string; onSel
 
   return (
     <section className="space-y-4">
-      {classes.isPending ? <p className="text-sm text-ink/55">Đang tải lớp…</p> : null}
+      {classes.isPending ? <p className="text-sm text-ink-soft">Đang tải lớp…</p> : null}
       {!classes.isPending && rooms.length === 0 ? (
         <Card className="p-5">
           <p className="text-sm text-ink/70">Chưa có lớp. Bấm Tạo lớp, rồi gán giáo viên và thêm học viên.</p>
@@ -186,7 +186,7 @@ function ClassWorkspace({ room }: { room: ClassSummaryDto }) {
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="serif text-2xl">{room.name}</h2>
-            <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-semibold', room.closedAt ? 'bg-[#f8dcd8] text-coral' : 'bg-teal-soft text-gold-deep')}>
+            <span className={cn('rounded-full px-2 py-0.5 text-[13px] font-semibold', room.closedAt ? 'border border-danger/25 bg-danger-soft text-danger' : 'bg-teal-soft text-gold-deep')}>
               {room.closedAt ? 'Đã đóng' : 'Đang mở'}
             </span>
           </div>
@@ -195,7 +195,7 @@ function ClassWorkspace({ room }: { room: ClassSummaryDto }) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {room.closedAt ? <p className="text-sm text-ink/55">Lớp đã đóng nên không thêm học viên.</p> : <AddStudentActions classId={room.id} className={room.name} prominent />}
+          {room.closedAt ? <p className="text-sm text-ink-soft">Lớp đã đóng nên không thêm học viên.</p> : <AddStudentActions classId={room.id} className={room.name} prominent />}
           <Button type="button" variant="paper" className="px-3 py-1.5 text-xs" disabled={setClosed.isPending || remove.isPending} onClick={() => run('close')}>
             {room.closedAt ? 'Mở lại lớp' : 'Đóng lớp'}
           </Button>
@@ -206,15 +206,15 @@ function ClassWorkspace({ room }: { room: ClassSummaryDto }) {
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {room.teachers.length === 0 ? <p className="text-sm text-ink/55">Chưa gán giáo viên cho lớp này.</p> : null}
+        {room.teachers.length === 0 ? <p className="text-sm text-ink-soft">Chưa gán giáo viên cho lớp này.</p> : null}
         {room.teachers.map((teacher) => {
           const account = roster.find((item) => item.id === teacher.id)
           return (
-            <div key={teacher.id} className="flex items-center gap-3 rounded-2xl border border-gold/40 bg-white px-3 py-3">
+            <div key={teacher.id} className="flex items-center gap-3 rounded-2xl border border-gold/40 bg-cream px-3 py-3">
               <AccountAvatar name={teacher.fullName} url={teacher.avatarUrl} frameId={teacher.avatarFrame} className="size-10 text-sm" />
               <div className="min-w-0">
                 <p className="truncate font-semibold">{teacher.fullName}</p>
-                <p className="truncate text-xs text-ink/50">{account?.username ?? 'Giáo viên của lớp'}</p>
+                <p className="truncate text-xs text-ink-soft">{account?.username ?? 'Giáo viên của lớp'}</p>
               </div>
             </div>
           )
@@ -226,7 +226,7 @@ function ClassWorkspace({ room }: { room: ClassSummaryDto }) {
           {editingTeachers ? 'Xong' : 'Sửa giáo viên của lớp'}
         </Button>
         {editingTeachers ? (
-          roster.length === 0 ? <p className="mt-2 text-sm text-ink/55">Chưa có tài khoản giáo viên. Tạo ở mục Tài khoản giáo viên bên dưới.</p> : (
+          roster.length === 0 ? <p className="mt-2 text-sm text-ink-soft">Chưa có tài khoản giáo viên. Tạo ở mục Tài khoản giáo viên bên dưới.</p> : (
             <div className="mt-3 flex flex-wrap gap-3">
               {roster.map((teacher) => (
                 <label key={teacher.id} className="flex items-center gap-2 rounded-full bg-paper px-3 py-1.5 text-sm">
@@ -263,13 +263,13 @@ function ClassRoster({ classId, memberCount }: { classId: string; memberCount: n
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h3 className="serif text-xl">Tài khoản học viên</h3>
-          <p className="mt-1 text-sm text-ink/55">Danh sách tài khoản đang ở lớp này.</p>
+          <p className="mt-1 text-sm text-ink-soft">Danh sách tài khoản đang ở lớp này.</p>
         </div>
         <p className="text-sm font-semibold text-gold-deep">{total} học viên</p>
       </div>
-      {students.isPending ? <p className="mt-3 text-sm text-ink/55">Đang tải tài khoản…</p> : null}
+      {students.isPending ? <p className="mt-3 text-sm text-ink-soft">Đang tải tài khoản…</p> : null}
       {students.isError ? <p className="mt-3 text-sm text-coral">Không tải được danh sách học viên.</p> : null}
-      {!students.isPending && items.length === 0 ? <p className="mt-3 text-sm text-ink/55">Lớp chưa có học viên.</p> : null}
+      {!students.isPending && items.length === 0 ? <p className="mt-3 text-sm text-ink-soft">Lớp chưa có học viên.</p> : null}
       {items.length > 0 ? (
         <ul className="mt-3 divide-y divide-gold/25">
           {items.map((student) => (
@@ -278,7 +278,7 @@ function ClassRoster({ classId, memberCount }: { classId: string; memberCount: n
                 <AccountAvatar name={student.fullName} url={student.avatarUrl} frameId={student.avatarFrame} className="size-9 text-xs" />
                 <div className="min-w-0">
                   <p className="truncate font-semibold">{student.fullName}</p>
-                  <p className="truncate text-xs text-ink/50">{accountLine(student)}</p>
+                  <p className="truncate text-xs text-ink-soft">{accountLine(student)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -323,7 +323,7 @@ export function TeacherClassPanels({
   const classes = useClasses()
   const rooms = classes.data ?? []
   const room = rooms.find((item) => item.id === selectedId) ?? null
-  if (classes.isPending) return <p className="text-sm text-ink/55">Đang tải lớp…</p>
+  if (classes.isPending) return <p className="text-sm text-ink-soft">Đang tải lớp…</p>
   if (rooms.length === 0) {
     return (
       <Card className="p-5">
@@ -344,11 +344,11 @@ export function TeacherClassPanels({
               </p>
             </div>
             {room.closedAt ? (
-              <p className="text-sm text-ink/55">Lớp đã đóng nên không thêm học viên.</p>
+              <p className="text-sm text-ink-soft">Lớp đã đóng nên không thêm học viên.</p>
             ) : canCreate ? (
               <AddStudentActions classId={room.id} className={room.name} prominent />
             ) : (
-              <p className="text-sm text-ink/55">Tài khoản chưa có quyền tạo học viên.</p>
+              <p className="text-sm text-ink-soft">Tài khoản chưa có quyền tạo học viên.</p>
             )}
           </div>
           <ClassRoster key={room.id} classId={room.id} memberCount={room.memberCount} />
@@ -367,7 +367,7 @@ export function ClassSelect({ userId, classId }: { userId: string; classId: stri
   const assign = useAssignClass()
   return (
     <select
-      className="mt-1 max-w-40 rounded-lg border border-gold/40 bg-white px-2 py-1 text-xs"
+      className="mt-1 max-w-40 rounded-lg border border-gold/40 bg-cream px-2 py-1 text-xs"
       aria-label="Lớp của học viên"
       value={classId ?? ''}
       disabled={assign.isPending}

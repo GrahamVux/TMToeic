@@ -81,7 +81,7 @@ export function ViewAsPage() {
             }}
             className={cn(
               'flex items-start gap-3 rounded-2xl border p-4 text-left transition',
-              role === t.role ? 'border-gold-deep bg-teal-soft shadow-sm' : 'border-gold/30 bg-white hover:border-gold-deep/60',
+              role === t.role ? 'border-gold-deep bg-teal-soft shadow-sm' : 'border-gold/30 bg-cream hover:border-gold-deep/60',
             )}
           >
             <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-full', role === t.role ? 'bg-button text-button-ink' : 'bg-teal-soft text-gold-deep')}>
@@ -89,7 +89,7 @@ export function ViewAsPage() {
             </span>
             <span>
               <span className="block text-sm font-semibold">{t.label}</span>
-              <span className="mt-0.5 block text-[13px] text-ink/60">{t.hint}</span>
+              <span className="mt-0.5 block text-[15px] text-ink/60">{t.hint}</span>
             </span>
           </button>
         ))}
@@ -117,7 +117,7 @@ export function ViewAsPage() {
 
         {error ? <p className="mt-3 text-sm text-coral" role="alert">{error}</p> : null}
 
-        <p className="mt-4 text-sm text-ink/55">
+        <p className="mt-4 text-sm text-ink-soft">
           {list.isPending ? 'Đang tải…' : `${list.data?.total ?? 0} ${role === 'STUDENT' ? 'học sinh' : 'giáo viên'} đang hoạt động`}
           {list.data && list.data.total > list.data.items.length ? ` · hiển thị ${list.data.items.length} đầu tiên, hãy tìm theo tên để thu hẹp` : ''}
         </p>
@@ -131,11 +131,11 @@ export function ViewAsPage() {
                   <p className="flex items-center gap-2 text-sm font-semibold">
                     <AccountAvatar name={user.fullName} url={user.avatarUrl} frameId={user.avatarFrame} /><span className="truncate">{user.fullName}</span>
                   </p>
-                  <p className="mt-0.5 text-xs text-ink/55">
+                  <p className="mt-0.5 text-xs text-ink-soft">
                     {role === 'STUDENT' ? `Mã HV: ${user.studentCode ?? user.username}${user.className ? ` · Lớp ${user.className}` : ''}` : user.username}
                   </p>
                   {role === 'TEACHER' ? (
-                    <p className="mt-1 text-xs text-ink/55">{grants.length ? grants.join(' · ') : 'Chưa được cấp quyền nào'}</p>
+                    <p className="mt-1 text-xs text-ink-soft">{grants.length ? grants.join(' · ') : 'Chưa được cấp quyền nào'}</p>
                   ) : null}
                 </div>
                 <Button type="button" disabled={opening !== null} onClick={() => void open(user)}>
@@ -146,7 +146,7 @@ export function ViewAsPage() {
             )
           })}
         </ul>
-        {list.data && list.data.items.length === 0 ? <p className="py-6 text-center text-sm text-ink/50">Không có tài khoản phù hợp với {current.label.toLowerCase()}.</p> : null}
+        {list.data && list.data.items.length === 0 ? <p className="py-6 text-center text-sm text-ink-soft">Không có tài khoản phù hợp với {current.label.toLowerCase()}.</p> : null}
       </Card>
     </div>
   )

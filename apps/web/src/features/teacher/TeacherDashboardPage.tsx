@@ -121,7 +121,7 @@ export function TeacherDashboardPage() {
 
       <div className="overflow-x-auto rounded-2xl border border-gold/35 bg-cream">
         <table className="min-w-full text-left text-sm">
-          <thead className="bg-paper text-xs tracking-wide text-ink/45 uppercase">
+          <thead className="bg-paper text-xs tracking-wide text-ink-soft uppercase">
             <tr>
               <th className="px-4 py-3">Học viên</th>
               <th className="px-4 py-3">Lớp</th>
@@ -133,10 +133,10 @@ export function TeacherDashboardPage() {
           </thead>
           <tbody>
             {students.isPending ? (
-              <tr><td colSpan={6} className="px-4 py-10 text-center text-ink/50">Đang tải danh sách…</td></tr>
+              <tr><td colSpan={6} className="px-4 py-10 text-center text-ink-soft">Đang tải danh sách…</td></tr>
             ) : !students.data?.items.length ? (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-ink/55">
+                <td colSpan={6} className="px-4 py-10 text-center text-ink-soft">
                   {q || status ? 'Không có học viên khớp bộ lọc.' : 'Chưa có học viên nào. Hãy nhập file Excel để tạo tài khoản.'}
                 </td>
               </tr>
@@ -148,7 +148,7 @@ export function TeacherDashboardPage() {
                       <AccountAvatar name={u.fullName} url={u.avatarUrl} frameId={u.avatarFrame} className="size-9 text-xs" />
                       <div>
                         <p className="font-semibold">{u.fullName}</p>
-                        <p className="text-xs text-ink/50">{u.studentCode}{u.email ? ` • ${u.email}` : ''}</p>
+                        <p className="text-xs text-ink-soft">{u.studentCode}{u.email ? ` • ${u.email}` : ''}</p>
                       </div>
                     </div>
                   </td>
@@ -209,9 +209,9 @@ export function TeacherDashboardPage() {
 function Stat({ title, value, meta }: { title: string; value?: number; meta: string }) {
   return (
     <Card className="p-5">
-      <p className="text-xs text-ink/50">{title}</p>
+      <p className="text-xs text-ink-soft">{title}</p>
       <p className="serif mt-2 text-4xl">{value ?? '—'}</p>
-      <p className="mt-1 text-xs text-ink/50">{meta}</p>
+      <p className="mt-1 text-xs text-ink-soft">{meta}</p>
     </Card>
   )
 }
@@ -223,11 +223,11 @@ function NeedsAttention() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="serif text-2xl">Học viên cần lưu tâm</h2>
-          <p className="mt-1 text-xs text-ink/50">Tỉ lệ đúng dưới {SUPPORT_ACCURACY_BELOW}%, từ {INACTIVE_AFTER_DAYS} ngày không làm bài, hoặc bài giao đã quá hạn mà chưa nộp.</p>
+          <p className="mt-1 text-xs text-ink-soft">Tỉ lệ đúng dưới {SUPPORT_ACCURACY_BELOW}%, từ {INACTIVE_AFTER_DAYS} ngày không làm bài, hoặc bài giao đã quá hạn mà chưa nộp.</p>
         </div>
         <Link to="/admin/reports#luu-tam"><Button variant="paper" className="px-3 py-1.5 text-xs">Xem đầy đủ</Button></Link>
       </div>
-      {report.isPending ? <p className="mt-3 text-sm text-ink/55">Đang tải…</p> : null}
+      {report.isPending ? <p className="mt-3 text-sm text-ink-soft">Đang tải…</p> : null}
       {report.isError ? <p className="mt-3 text-sm text-coral">Không tải được dữ liệu hoạt động.</p> : null}
       {report.data ? <InactiveList items={report.data.inactive.slice(0, 5)} total={report.data.inactiveCount} /> : null}
     </Card>

@@ -19,7 +19,7 @@ function clamp(n: number) {
 export function TextZoomBar({ scale, onChange }: { scale: number; onChange: (next: number) => void }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-[11px] font-semibold tracking-wide text-ink/45 uppercase">Cỡ chữ</span>
+      <span className="text-[13px] font-semibold tracking-wide text-ink-soft uppercase">Cỡ chữ</span>
       <ToolBtn label="Chữ nhỏ hơn" onClick={() => onChange(stepFrom(scale, -1))} disabled={scale <= MIN}>
         <Minus className="size-3.5" />
       </ToolBtn>
@@ -56,14 +56,14 @@ export function ZoomableImage({ src, alt, fit = 'frame' }: { src: string; alt: s
         onReset={() => setScale(1)}
         onExpand={() => setOpen(true)}
       />
-      <div className={cn('w-full min-w-0 rounded-2xl border border-ink/10 bg-white', fitted ? 'overflow-hidden' : 'overflow-auto')}>
+      <div className={cn('w-full min-w-0 rounded-2xl border border-ink/12 bg-cream', fitted ? 'overflow-hidden' : 'overflow-auto')}>
         <button type="button" className="block w-full max-w-full cursor-zoom-in p-0" onClick={() => setOpen(true)} aria-label={`${alt} — mở phóng to`}>
           <img
             src={src}
             alt={alt}
             draggable={false}
             loading="lazy"
-            className="mx-auto block h-auto bg-white"
+            className="mx-auto block h-auto bg-[#ffffff]"
             style={listening && fitted ? undefined : { width: `${scale * 100}%`, maxWidth: fitted ? '100%' : 'none' }}
           />
         </button>
@@ -88,7 +88,7 @@ function ZoomToolbar({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="mr-1 text-[11px] font-semibold tracking-wide text-ink/45 uppercase">Zoom đề</span>
+      <span className="mr-1 text-[13px] font-semibold tracking-wide text-ink-soft uppercase">Zoom đề</span>
       <ToolBtn label="Thu nhỏ" onClick={onZoomOut} disabled={scale <= MIN}>
         <Minus className="size-3.5" />
       </ToolBtn>
@@ -115,7 +115,7 @@ function ToolBtn({ label, onClick, disabled, children }: { label: string; onClic
       title={label}
       disabled={disabled}
       onClick={onClick}
-      className="grid size-8 place-items-center rounded-full border border-ink/12 bg-white text-ink hover:bg-paper-2 disabled:opacity-40"
+      className="grid size-8 place-items-center rounded-full border border-ink/15 bg-cream text-ink hover:bg-paper-2 disabled:opacity-40"
     >
       {children}
     </button>
@@ -185,7 +185,7 @@ function ZoomLightbox({ src, alt, onClose }: { src: string; alt: string; onClose
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex flex-col bg-ink/90" role="dialog" aria-modal="true" aria-label={`Phóng to: ${alt}`}>
+    <div className="fixed inset-0 z-[80] flex flex-col bg-slate-950/92" role="dialog" aria-modal="true" aria-label={`Phóng to: ${alt}`}>
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-white">
         <ZoomToolbar
           scale={scale}
@@ -222,7 +222,7 @@ function ZoomLightbox({ src, alt, onClose }: { src: string; alt: string; onClose
           style={{ transform: `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px)) scale(${scale})` }}
         />
       </div>
-      <p className="px-4 pb-3 text-center text-[11px] text-white/55">Lăn chuột hoặc chụm ngón để zoom • Kéo để xem • Esc để đóng</p>
+      <p className="px-4 pb-3 text-center text-[13px] text-white/55">Lăn chuột hoặc chụm ngón để zoom • Kéo để xem • Esc để đóng</p>
     </div>
     ,
     document.body,

@@ -71,19 +71,23 @@ function contrast(a: number, b: number) {
 export function buttonColors(hex: string) {
   const fill = /^#[0-9A-Fa-f]{6}$/.test(hex) ? hex : DEFAULT_SITE_THEME.button!
   const light = luminance(fill)
-  const ink = '#1e333c'
+  const ink = '#0f172a'
   const text = contrast(1, light) >= contrast(luminance(ink), light) ? '#ffffff' : ink
-  return { background: fill, ink: text, hover: mixHex(fill, '#102830', 0.18), soft: mixHex(fill, '#ffffff', 0.86) }
+  return { background: fill, ink: text, hover: mixHex(fill, '#0b1a3d', 0.18), soft: mixHex(fill, '#ffffff', 0.86) }
 }
 
-export function applySiteTheme(s: SiteSettingsDto, colorMode: ColorMode = getStoredColorMode()) {
+export function applySiteTheme(s: SiteSettingsDto, colorMode: ColorMode = getStoredColorMode(), gate = false) {
   const root = document.documentElement
-  root.dataset.theme = colorMode
+  // Sky is always light. A seasonal scene paints only the login and opening screens; light/dark still applies.
+  const seasonal = s.backgroundMode === 'gradient' && gate
+  const mode: ColorMode = s.backgroundMode === 'sky' ? 'light' : colorMode
+  root.dataset.theme = mode
   root.classList.toggle('sky-mode', s.backgroundMode === 'sky')
-  root.classList.toggle('gradient-mode', s.backgroundMode === 'gradient')
+  root.classList.toggle('gradient-mode', seasonal)
+  root.classList.toggle('surface-solid', s.backgroundMode !== 'sky' && !seasonal)
 
-  const isDark = colorMode === 'dark'
-  const preset = s.backgroundMode === 'gradient' ? resolveThemePreset(s.themePreset) : null
+  const isDark = mode === 'dark'
+  const preset = seasonal ? resolveThemePreset(s.themePreset) : null
   const primaryHex = preset ? (isDark ? preset.darkAccent : preset.lightAccent) : s.theme.primary
   const buttonHex = preset ? (isDark ? preset.darkAccent : preset.lightAccent) : (s.theme.button ?? DEFAULT_SITE_THEME.button!)
   const paperHex = preset ? (isDark ? preset.darkPaper : preset.lightPaper) : (isDark ? '#0b1218' : s.theme.paper)
@@ -96,16 +100,20 @@ export function applySiteTheme(s: SiteSettingsDto, colorMode: ColorMode = getSto
   root.style.setProperty('--color-amber', button.background)
   root.style.setProperty('--color-amber-deep', button.hover)
   root.style.setProperty('--color-amber-soft', isDark ? mixHex(button.background, '#0b1218', 0.78) : button.soft)
-  root.style.setProperty('--color-gold-deep', primaryHex)
-  root.style.setProperty('--color-teal', primaryHex)
-  root.style.setProperty('--color-navy', isDark ? '#c6e8f0' : mixHex(primaryHex, '#1e333c', 0.35))
+  const accentTextHex = isDark && luminance(primaryHex) < 0.25 ? mixHex(primaryHex, '#dbeafe', 0.7) : primaryHex
+  root.style.setProperty('--color-gold-deep', accentTextHex)
+  root.style.setProperty('--color-teal', accentTextHex)
+  const banner = buttonColors(primaryHex)
+  root.style.setProperty('--color-banner', banner.background)
+  root.style.setProperty('--color-banner-ink', banner.ink)
+  root.style.setProperty('--color-navy', isDark ? '#bfdbfe' : mixHex(primaryHex, '#0f172a', 0.35))
   root.style.setProperty('--color-gold', isDark ? mixHex(primaryHex, '#1b2833', 0.65) : s.theme.primarySoft)
   root.style.setProperty('--color-paper', paperHex)
   root.style.setProperty('--color-paper-2', isDark ? mixHex(primaryHex, '#141d26', 0.85) : mixHex(primaryHex, '#ffffff', 0.9))
   root.style.setProperty('--color-teal-soft', isDark ? mixHex(primaryHex, '#111b24', 0.82) : mixHex(primaryHex, '#ffffff', 0.88))
   root.style.setProperty('--color-cream', isDark ? '#141b24' : '#ffffff')
-  root.style.setProperty('--color-ink', isDark ? '#f1f5f9' : '#1e333c')
-  root.style.setProperty('--color-ink-soft', isDark ? '#cbd5e1' : '#2c4a55')
+  root.style.setProperty('--color-ink', isDark ? '#f1f5f9' : '#0f172a')
+  root.style.setProperty('--color-ink-soft', isDark ? '#cbd5e1' : '#334155')
   root.style.setProperty('--ux-accent', button.background)
 
   document.title = `${s.brandName} — ${s.slogan}`

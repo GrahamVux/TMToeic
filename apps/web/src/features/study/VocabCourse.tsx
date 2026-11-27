@@ -24,7 +24,7 @@ export function VocabNav({ current }: { current: 'learn' | 'progress' | 'mine' |
   return (
     <div className="flex flex-wrap gap-2">
       {items.map((item) => (
-        <Link key={item.id} to={item.to} className={item.id === current ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink shadow-[0_1px_0_rgba(30,51,60,0.04)]'}>
+        <Link key={item.id} to={item.to} className={item.id === current ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full border border-ink/10 bg-cream px-4 py-2 text-sm font-semibold text-ink hover:border-gold-deep'}>
           {item.label}
         </Link>
       ))}
@@ -65,7 +65,7 @@ function LearnBoard({ sets, selected, onSelect }: { sets: VocabSetCardDto[]; sel
     <div className="grid items-start gap-4 lg:grid-cols-[17.5rem_1fr]">
       <Card className="p-4">
         <h2 className="font-semibold">Bộ từ vựng</h2>
-        <p className="mt-1 text-sm text-ink/55">Chọn bộ bạn muốn học</p>
+        <p className="mt-1 text-sm text-ink-soft">Chọn bộ bạn muốn học</p>
         {sets.length > 6 ? (
           <input
             className="mt-3 h-10 w-full rounded-xl border border-ink/12 px-3 text-sm"
@@ -78,7 +78,7 @@ function LearnBoard({ sets, selected, onSelect }: { sets: VocabSetCardDto[]; sel
           {visibleSets.map((set, index) => (
             <SetCard key={set.id} set={set} index={index} active={set.id === selected.id} onSelect={() => { onSelect(set.id); setPage(1) }} />
           ))}
-          {visibleSets.length === 0 ? <p className="text-sm text-ink/55">Không có bộ khớp.</p> : null}
+          {visibleSets.length === 0 ? <p className="text-sm text-ink-soft">Không có bộ khớp.</p> : null}
         </div>
       </Card>
 
@@ -101,7 +101,7 @@ function SetCard({ set, index, active, onSelect }: { set: VocabSetCardDto; index
       type="button"
       onClick={onSelect}
       aria-pressed={active}
-      className={`w-44 shrink-0 overflow-hidden rounded-2xl border bg-white text-left lg:w-full ${active ? 'border-olive shadow-[0_8px_24px_rgba(63,154,134,0.16)]' : 'border-ink/10'}`}
+      className={`w-44 shrink-0 overflow-hidden rounded-2xl border bg-cream text-left lg:w-full ${active ? 'border-olive shadow-[0_8px_24px_rgba(63,154,134,0.16)]' : 'border-ink/10'}`}
     >
       <div className={`relative h-24 bg-linear-to-br px-3 py-3 ${coverClass(index)}`}>
         <p className="serif text-lg leading-tight text-ink">{set.title}</p>
@@ -115,8 +115,8 @@ function SetCard({ set, index, active, onSelect }: { set: VocabSetCardDto; index
       </div>
       <div className="px-3 py-2.5">
         <p className="truncate text-sm font-semibold">{set.title}</p>
-        <p className="truncate text-xs text-ink/50">{set.topic}</p>
-        <p className="mt-1 text-xs text-ink/55">
+        <p className="truncate text-xs text-ink-soft">{set.topic}</p>
+        <p className="mt-1 text-xs text-ink-soft">
           {set.units.length} tập · {set.wordCount} từ
         </p>
       </div>
@@ -134,7 +134,7 @@ function UnitCard({ set, unit }: { set: VocabSetCardDto; unit: VocabUnitDto }) {
       <Card className="overflow-hidden p-0">
         <div className="relative h-28 bg-linear-to-br from-teal-soft to-paper px-4 py-4">
           <p className="text-center text-xs font-semibold tracking-[0.14em] text-gold-deep uppercase">{set.title}</p>
-          <span className="absolute bottom-3 left-1/2 flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full bg-ink text-sm font-semibold text-white">
+          <span className="absolute bottom-3 left-1/2 flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full bg-button text-sm font-semibold text-button-ink shadow-xs">
             {String(unit.index).padStart(2, '0')}
           </span>
         </div>
@@ -142,9 +142,9 @@ function UnitCard({ set, unit }: { set: VocabSetCardDto; unit: VocabUnitDto }) {
           <div className="flex items-start justify-between gap-3">
             <div>
               <h3 className="font-semibold">Unit {unit.index}</h3>
-              <p className="text-sm text-ink/55">{unit.wordCount} từ</p>
+              <p className="text-sm text-ink-soft">{unit.wordCount} từ</p>
             </div>
-            <p className="text-right text-xs text-ink/45">
+            <p className="text-right text-xs text-ink-soft">
               {status}
               <span className="mt-0.5 block text-sm font-semibold text-ink/70">{percent}%</span>
             </p>
@@ -152,7 +152,7 @@ function UnitCard({ set, unit }: { set: VocabSetCardDto; unit: VocabUnitDto }) {
           <ProgressBar className="mt-3" value={percent} />
           <Link
             to={`/study/flashcards?deck=catalog&set=${encodeURIComponent(set.id)}&unit=${unit.index}`}
-            className="mt-4 flex h-10 items-center justify-center rounded-full bg-olive text-sm font-semibold text-white"
+            className="mt-4 flex h-10 items-center justify-center rounded-full bg-button text-sm font-semibold text-button-ink hover:bg-button-hover"
           >
             {action}
             <span aria-hidden> ›</span>
@@ -220,7 +220,7 @@ function UnitWordListModal({ set, unit, onClose }: { set: VocabSetCardDto; unit:
 
       <div className="mt-3 max-h-[60vh] space-y-2.5 overflow-y-auto pr-1">
         {detail.isPending ? (
-          <p className="py-6 text-center text-sm text-ink/55">Đang tải danh sách từ…</p>
+          <p className="py-6 text-center text-sm text-ink-soft">Đang tải danh sách từ…</p>
         ) : (
           items.map((item) => (
             <div key={item.id} className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-gold/25 bg-paper p-3">
@@ -229,7 +229,7 @@ function UnitWordListModal({ set, unit, onClose }: { set: VocabSetCardDto; unit:
                   {item.word} <span className="font-medium text-gold-deep">({item.partOfSpeech})</span>
                 </p>
                 <p className="mt-0.5 text-sm text-ink/80">{item.meaning}</p>
-                {item.example ? <p className="mt-1 text-xs italic text-ink/55">“{item.example}”</p> : null}
+                {item.example ? <p className="mt-1 text-xs italic text-ink-soft">“{item.example}”</p> : null}
               </div>
               <button
                 type="button"
@@ -241,7 +241,7 @@ function UnitWordListModal({ set, unit, onClose }: { set: VocabSetCardDto; unit:
                   )
                 }}
                 className={`inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                  item.savedInNotebook ? 'bg-emerald-100 text-emerald-800' : 'bg-button text-button-ink hover:opacity-90'
+                  item.savedInNotebook ? 'bg-success-soft text-success' : 'bg-button text-button-ink hover:opacity-90'
                 }`}
               >
                 {item.savedInNotebook ? <BookmarkCheck className="size-3.5" /> : <Bookmark className="size-3.5" />}
@@ -258,15 +258,15 @@ function UnitWordListModal({ set, unit, onClose }: { set: VocabSetCardDto; unit:
 function Pager({ page, pages, onPage }: { page: number; pages: number; onPage: (page: number) => void }) {
   return (
     <div className="mt-5 flex items-center justify-center gap-2">
-      <button type="button" className="h-9 w-9 rounded-full bg-white text-ink disabled:opacity-40" disabled={page === 1} onClick={() => onPage(page - 1)} aria-label="Trang trước">
+      <button type="button" className="h-9 w-9 rounded-full border border-ink/10 bg-cream text-ink disabled:opacity-40" disabled={page === 1} onClick={() => onPage(page - 1)} aria-label="Trang trước">
         ‹
       </button>
       {pageWindow(page, pages).map((number) => (
-        <button key={number} type="button" className={number === page ? 'h-9 w-9 rounded-full bg-olive text-sm font-semibold text-white' : 'h-9 w-9 rounded-full bg-white text-sm font-semibold text-ink'} onClick={() => onPage(number)}>
+        <button key={number} type="button" className={number === page ? 'h-9 w-9 rounded-full bg-button text-sm font-semibold text-button-ink' : 'h-9 w-9 rounded-full border border-ink/10 bg-cream text-sm font-semibold text-ink'} onClick={() => onPage(number)}>
           {number}
         </button>
       ))}
-      <button type="button" className="h-9 w-9 rounded-full bg-white text-ink disabled:opacity-40" disabled={page === pages} onClick={() => onPage(page + 1)} aria-label="Trang sau">
+      <button type="button" className="h-9 w-9 rounded-full border border-ink/10 bg-cream text-ink disabled:opacity-40" disabled={page === pages} onClick={() => onPage(page + 1)} aria-label="Trang sau">
         ›
       </button>
     </div>
@@ -280,7 +280,7 @@ function ProgressBoard({ sets }: { sets: VocabSetCardDto[] }) {
   return (
     <div className="space-y-4">
       <Card className="p-5">
-        <p className="text-sm text-ink/55">Đã học {learned}/{total} từ · {percent}%</p>
+        <p className="text-sm text-ink-soft">Đã học {learned}/{total} từ · {percent}%</p>
         <ProgressBar className="mt-3" value={percent} />
       </Card>
       <div className="grid gap-3">
@@ -292,7 +292,7 @@ function ProgressBoard({ sets }: { sets: VocabSetCardDto[] }) {
               <div className="flex flex-wrap items-end justify-between gap-2">
                 <div>
                   <h3 className="font-semibold">{set.title}</h3>
-                  <p className="text-sm text-ink/55">
+                  <p className="text-sm text-ink-soft">
                     {set.topic} · {finishedUnits}/{set.units.length} tập · {set.learnedCount}/{set.wordCount} từ
                   </p>
                 </div>
@@ -323,7 +323,7 @@ function WordSearch() {
           setQ(draft.trim())
         }}
       >
-        <input className="h-10 min-w-0 flex-1 rounded-xl border border-ink/12 bg-white px-3 text-sm" value={draft} placeholder="Nhập từ hoặc nghĩa" onChange={(event) => setDraft(event.target.value)} />
+        <input className="h-10 min-w-0 flex-1 rounded-xl border border-ink/12 bg-cream px-3 text-sm" value={draft} placeholder="Nhập từ hoặc nghĩa" onChange={(event) => setDraft(event.target.value)} />
         <Button type="submit" variant="navy">Tìm</Button>
       </form>
       {note ? <p className="mt-3 text-sm text-olive">{note}</p> : null}
@@ -332,8 +332,8 @@ function WordSearch() {
           <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
             <div>
               <p className="font-semibold">{item.word}</p>
-              <p className="text-sm text-ink/55">{item.partOfSpeech} • {item.meaning}</p>
-              {item.set ? <p className="text-xs text-ink/45">{item.set.topic} · {item.set.title} · Unit {item.set.unit}</p> : null}
+              <p className="text-sm text-ink-soft">{item.partOfSpeech} • {item.meaning}</p>
+              {item.set ? <p className="text-xs text-ink-soft">{item.set.topic} · {item.set.title} · Unit {item.set.unit}</p> : null}
             </div>
             <button
               type="button"
@@ -361,7 +361,12 @@ function pageWindow(page: number, pages: number) {
 }
 
 function coverClass(index: number) {
-  return ['from-[#d9f3ea] to-[#f4fbf8]', 'from-[#d7eef6] to-[#f4fbfd]', 'from-[#e5f4d4] to-[#f7fbf2]', 'from-[#e7f1ea] to-[#f6fbf8]'][index % 4]
+  return [
+    'from-[#d9f3ea] to-[#f4fbf8] dark:from-teal-950/60 dark:to-slate-900',
+    'from-[#d7eef6] to-[#f4fbfd] dark:from-sky-950/60 dark:to-slate-900',
+    'from-[#e5f4d4] to-[#f7fbf2] dark:from-emerald-950/60 dark:to-slate-900',
+    'from-[#e7f1ea] to-[#f6fbf8] dark:from-slate-800 dark:to-slate-900',
+  ][index % 4]
 }
 
 export function studyView(params: URLSearchParams): 'learn' | 'progress' | 'grammar' {

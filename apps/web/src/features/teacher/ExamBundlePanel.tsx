@@ -34,20 +34,20 @@ function ExamColumn({
       <h3 className="font-semibold">{title}</h3>
       <Input className="mt-2" value={query} placeholder="Tìm mã hoặc tên đề" onChange={(e) => onQuery(e.target.value)} />
       <div className="mt-2 max-h-[calc(4.875rem*3+0.5rem*2)] space-y-2 overflow-y-auto pr-1">
-        {visible.length === 0 ? <p className="rounded-xl bg-paper px-3 py-4 text-sm text-ink/55">Không có đề phù hợp.</p> : null}
+        {visible.length === 0 ? <p className="rounded-xl bg-paper px-3 py-4 text-sm text-ink-soft">Không có đề phù hợp.</p> : null}
         {visible.map((exam) => (
           <button
             key={exam.id}
             type="button"
             className={cn(
               'h-[4.875rem] w-full overflow-hidden rounded-xl border px-3 py-2 text-left',
-              selectedId === exam.id ? 'border-gold-deep bg-gold/20' : 'border-ink/10 bg-white hover:border-gold/60',
+              selectedId === exam.id ? 'border-gold-deep bg-gold/20' : 'border-ink/10 bg-cream hover:border-gold/60',
             )}
             onClick={() => onSelect(exam.id)}
           >
             <p className="truncate text-sm font-semibold">{exam.code}</p>
             <p className="truncate text-sm text-ink/70">{exam.title}</p>
-            <p className="mt-1 truncate text-xs text-ink/45">{exam.parts.map((part) => partName(part.code).split(' — ')[0]).join(' · ')} · {exam.totalQuestions} câu</p>
+            <p className="mt-1 truncate text-xs text-ink-soft">{exam.parts.map((part) => partName(part.code).split(' — ')[0]).join(' · ')} · {exam.totalQuestions} câu</p>
           </button>
         ))}
       </div>

@@ -144,10 +144,10 @@ export function TeacherAssignmentsPage() {
 
       {canManage ? (
         <div className="flex flex-wrap gap-2">
-          <button type="button" className={composer === 'bank' ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink/70 ring-1 ring-ink/10'} onClick={() => setComposer('bank')}>
+          <button type="button" className={composer === 'bank' ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-cream px-4 py-2 text-sm font-semibold text-ink/70 ring-1 ring-ink/10'} onClick={() => setComposer('bank')}>
             Từ bộ đề
           </button>
-          <button type="button" className={composer === 'fill' ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink/70 ring-1 ring-ink/10'} onClick={() => setComposer('fill')}>
+          <button type="button" className={composer === 'fill' ? 'rounded-full bg-button px-4 py-2 text-sm font-semibold text-button-ink' : 'rounded-full bg-cream px-4 py-2 text-sm font-semibold text-ink/70 ring-1 ring-ink/10'} onClick={() => setComposer('fill')}>
             Điền từ
           </button>
         </div>
@@ -158,7 +158,7 @@ export function TeacherAssignmentsPage() {
       {canManage && composer === 'bank' ? <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <Card className="p-5">
           <h2 className="serif text-2xl">1. Chọn đề & part</h2>
-          {exams.isPending ? <p className="mt-3 text-sm text-ink/55">Đang tải ngân hàng…</p> : null}
+          {exams.isPending ? <p className="mt-3 text-sm text-ink-soft">Đang tải ngân hàng…</p> : null}
           {published.length === 0 && !exams.isPending ? (
             <p className="mt-3 text-sm text-ink/60">
               Chưa có đề xuất bản.{' '}
@@ -207,12 +207,12 @@ export function TeacherAssignmentsPage() {
               <CalendarDateTimePicker id="asg-due" className="mt-1" value={dueAt} onChange={setDueAt} />
             </div>
           </div>
-          <p className="mt-3 text-sm text-ink/55">
+          <p className="mt-3 text-sm text-ink-soft">
             {exam ? `${exam.title} • ${selectedParts.length} part • ${questionCount} câu` : 'Chưa chọn đề'}
             {wholeExam ? ' • cả bộ đề' : ''}
           </p>
           {wholeExam ? (
-            <p className="mt-1 text-sm text-ink/55">Khi mọi học viên nộp xong hoặc hết giờ, mở Kiểm tra bài làm để tải báo cáo Excel.</p>
+            <p className="mt-1 text-sm text-ink-soft">Khi mọi học viên nộp xong hoặc hết giờ, mở Kiểm tra bài làm để tải báo cáo Excel.</p>
           ) : null}
           {listening ? (
             <div className="mt-4">
@@ -252,13 +252,13 @@ export function TeacherAssignmentsPage() {
                     checked={picked.includes(u.id)}
                     onChange={(e) => setPicked((prev) => (e.target.checked ? [...prev, u.id] : prev.filter((id) => id !== u.id)))}
                   />
-                  {u.fullName} <span className="text-ink/45">{u.studentCode}</span>
+                  {u.fullName} <span className="text-ink-soft">{u.studentCode}</span>
                 </label>
               ))}
             </div>
           ) : null}
           {formError ? (
-            <p className="mt-3 rounded-xl bg-[#f8dcd8] px-3 py-2 text-sm text-coral" role="alert">
+            <p className="mt-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
               {formError}
             </p>
           ) : null}
@@ -270,7 +270,7 @@ export function TeacherAssignmentsPage() {
 
       <section>
         <h2 className="serif text-2xl">Bài đã giao ({assignments.data?.length ?? 0})</h2>
-        {assignments.isPending ? <p className="mt-3 text-sm text-ink/55">Đang tải…</p> : null}
+        {assignments.isPending ? <p className="mt-3 text-sm text-ink-soft">Đang tải…</p> : null}
         <div className="mt-3 grid gap-3">
           {(assignments.data ?? []).map((a) => (
             <Card key={a.id} className="p-5">
@@ -281,7 +281,7 @@ export function TeacherAssignmentsPage() {
                   {a.fillBlank ? <Badge tone="gold">Điền từ</Badge> : null}
                   {a.fillBlank && a.inBank ? <Badge tone="olive">Đã vào bộ đề</Badge> : null}
                   <h3 className="mt-2 font-semibold">{a.title}</h3>
-                  <p className="text-sm text-ink/55">
+                  <p className="text-sm text-ink-soft">
                     {a.examTitle} • {a.parts.map((p) => partName(p.code).split(' — ')[0]).join(', ')} • {a.submittedCount}/{a.studentCount} đã nộp
                     {a.dueAt ? ` • hạn ${new Date(a.dueAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}` : ''}
                   </p>
@@ -344,7 +344,7 @@ function AssignmentCheckModal({ assignmentId, onClose }: { assignmentId: string;
 
   return (
     <Modal wide title={q.data?.title ?? 'Bài làm học viên'} onClose={onClose}>
-      {q.isPending ? <p className="text-sm text-ink/55">Đang tải danh sách…</p> : null}
+      {q.isPending ? <p className="text-sm text-ink-soft">Đang tải danh sách…</p> : null}
       {q.error ? <p className="text-sm text-coral">Không tải được danh sách bài làm.</p> : null}
       {q.data ? (
         <>
@@ -352,14 +352,14 @@ function AssignmentCheckModal({ assignmentId, onClose }: { assignmentId: string;
             {q.data.examTitle} · {done}/{students.length} học viên đã nộp
           </p>
           {students.length === 0 ? (
-            <p className="mt-3 text-sm text-ink/55">Chưa giao cho học viên nào.</p>
+            <p className="mt-3 text-sm text-ink-soft">Chưa giao cho học viên nào.</p>
           ) : (
             <ul className="mt-4 max-h-[60vh] space-y-2 overflow-y-auto">
               {students.map((s) => (
-                <li key={s.studentId} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold/25 bg-white px-3 py-2.5">
+                <li key={s.studentId} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold/25 bg-cream px-3 py-2.5">
                   <div>
                     <p className="font-medium">
-                      {s.fullName} <span className="text-xs font-normal text-ink/45">{s.studentCode}</span>
+                      {s.fullName} <span className="text-xs font-normal text-ink-soft">{s.studentCode}</span>
                     </p>
                     <p className="text-sm text-ink/60">{scoreLabel(s)}</p>
                   </div>
@@ -451,7 +451,7 @@ function AssignmentFiles({ assignment, canManage }: { assignment: AssignmentDto;
 
   return (
     <div className="mt-4 border-t border-ink/8 pt-3">
-      <p className="text-xs text-ink/55">
+      <p className="text-xs text-ink-soft">
         {listening ? (assignment.hasAudio ? 'Đã có file nghe. ' : 'Chưa có file nghe. ') : ''}
         {assignment.imageCount > 0 ? `${assignment.imageCount} ảnh đề.` : 'Chưa có ảnh đề.'} Học viên thấy các file này khi làm bài.
       </p>
@@ -503,10 +503,10 @@ function ExamPick({
   onWhole: () => void
 }) {
   return (
-    <div className={`rounded-2xl border p-4 ${selected ? 'border-gold-deep bg-teal-soft/40' : 'border-gold/30 bg-white'}`}>
+    <div className={`rounded-2xl border p-4 ${selected ? 'border-gold-deep bg-teal-soft/40' : 'border-gold/30 bg-cream'}`}>
       <button type="button" className="w-full text-left" onClick={() => onSelect(exam.id)}>
         <p className="font-semibold">{exam.title}</p>
-        <p className="text-xs text-ink/50">
+        <p className="text-xs text-ink-soft">
           {exam.code} • {exam.totalQuestions} câu
         </p>
       </button>

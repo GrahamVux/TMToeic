@@ -68,7 +68,7 @@ export function CornerNotice({ notice }: { notice: CornerNoticeState | null }) {
 
   return createPortal(
     <div
-      className="fixed top-4 right-4 z-[80] flex max-w-md items-stretch overflow-hidden rounded-lg bg-white shadow-[0_8px_24px_rgba(30,51,60,0.16)]"
+      className="fixed top-4 right-4 z-[80] flex max-w-md items-stretch overflow-hidden rounded-lg border border-gold/35 bg-cream shadow-[0_8px_24px_rgba(15,23,42,0.16)]"
       role={shown.tone === 'error' ? 'alert' : 'status'}
     >
       <span className={`w-1.5 shrink-0 ${tone.bar}`} aria-hidden />
@@ -76,7 +76,7 @@ export function CornerNotice({ notice }: { notice: CornerNoticeState | null }) {
         <span className={`grid size-7 shrink-0 place-items-center rounded-full text-white ${tone.bar}`} aria-hidden>
           {shown.tone === 'error' ? <X className="size-4" strokeWidth={3} /> : <Check className="size-4" strokeWidth={3} />}
         </span>
-        <p className="min-w-0 flex-1 text-sm text-[#3a3a3a]">{shown.text}</p>
+        <p className="min-w-0 flex-1 text-sm text-ink">{shown.text}</p>
         <span className={`relative grid size-8 shrink-0 place-items-center ${tone.ink}`} aria-label={`Còn ${seconds} giây`}>
           <svg className="absolute inset-0 -rotate-90" viewBox="0 0 36 36" aria-hidden>
             <circle cx="18" cy="18" r={RING_R} fill="none" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2.5" />
@@ -92,9 +92,9 @@ export function CornerNotice({ notice }: { notice: CornerNoticeState | null }) {
               strokeDashoffset={RING_C * (1 - ratio)}
             />
           </svg>
-          <span className="text-[11px] font-bold tabular-nums">{seconds}</span>
+          <span className="text-[13px] font-bold tabular-nums">{seconds}</span>
         </span>
-        <button type="button" className="shrink-0 text-[#8a8a8a] transition hover:text-[#3a3a3a]" aria-label="Đóng" onClick={close}>
+        <button type="button" className="shrink-0 text-ink-soft transition hover:text-ink" aria-label="Đóng" onClick={close}>
           <X className="size-4" />
         </button>
       </div>

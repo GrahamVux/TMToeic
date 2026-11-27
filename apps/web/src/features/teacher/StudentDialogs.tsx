@@ -31,15 +31,15 @@ export function CredentialsDialog({ issued, title, onClose }: { issued: Credenti
       </p>
       <dl className="mt-4 space-y-3 rounded-xl bg-paper p-4 text-sm">
         <div className="flex justify-between gap-3">
-          <dt className="text-ink/55">Mã đăng nhập</dt>
+          <dt className="text-ink-soft">Mã đăng nhập</dt>
           <dd className="font-mono font-semibold">{loginId}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-ink/55">Mật khẩu tạm</dt>
+          <dt className="text-ink-soft">Mật khẩu tạm</dt>
           <dd className="font-mono font-semibold select-all" data-testid="temp-password">{issued.temporaryPassword}</dd>
         </div>
       </dl>
-      <p className="mt-3 rounded-xl bg-[#f8e7c9] px-3 py-2 text-xs text-warn">
+      <p className="mt-3 rounded-xl border border-warn/25 bg-warn-soft px-3 py-2 text-xs text-warn">
         Mật khẩu này chỉ hiển thị một lần. Nếu đóng hộp thoại mà chưa ghi lại, bạn cần cấp lại mật khẩu mới.
       </p>
       <div className="mt-5 flex justify-end gap-3">
@@ -100,7 +100,7 @@ export function ImportStudentsDialog({
           }}
         />
       </div>
-      {error ? <p role="alert" className="mt-3 rounded-xl bg-[#f8dcd8] px-3 py-2 text-sm text-coral">{error}</p> : null}
+      {error ? <p role="alert" className="mt-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p> : null}
       <div className="mt-5 flex justify-end">
         <Button type="button" variant="ghost" onClick={onClose}>Đóng</Button>
       </div>
@@ -148,7 +148,7 @@ export function AddOneStudentDialog({
           <label className="text-sm font-medium" htmlFor="student-phone">Số điện thoại</label>
           <Input id="student-phone" className="mt-1" value={phone} onChange={(e) => setPhone(e.target.value)} required minLength={6} />
         </div>
-        {error ? <p role="alert" className="rounded-xl bg-[#f8dcd8] px-3 py-2 text-sm text-coral">{error}</p> : null}
+        {error ? <p role="alert" className="rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p> : null}
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="ghost" onClick={onClose}>Hủy</Button>
           <Button type="submit" disabled={create.isPending}>{create.isPending ? 'Đang tạo…' : 'Tạo tài khoản'}</Button>
@@ -249,7 +249,7 @@ export function TeacherAccessPanel() {
         </div>
         <Button onClick={() => setOpen(true)}>+ Thêm giáo viên</Button>
       </div>
-      {teachers.isPending ? <p className="mt-4 text-sm text-ink/55">Đang tải…</p> : null}
+      {teachers.isPending ? <p className="mt-4 text-sm text-ink-soft">Đang tải…</p> : null}
       <ul className="mt-4 divide-y divide-gold/25">
         {(teachers.data?.items ?? []).map((teacher) => (
           <li key={teacher.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
@@ -257,7 +257,7 @@ export function TeacherAccessPanel() {
               <p className="flex items-center gap-2 font-semibold">
                 <AccountAvatar name={teacher.fullName} url={teacher.avatarUrl} frameId={teacher.avatarFrame} />{teacher.fullName}
               </p>
-              <p className="text-xs text-ink/50">{teacher.username}</p>
+              <p className="text-xs text-ink-soft">{teacher.username}</p>
             </div>
             <div className="flex flex-wrap gap-3">
               {GRANT_FIELDS.map((field) => (
@@ -299,7 +299,7 @@ export function TeacherAccessPanel() {
                 </label>
               ))}
             </div>
-            {formError ? <p role="alert" className="rounded-xl bg-[#f8dcd8] px-3 py-2 text-sm text-coral">{formError}</p> : null}
+            {formError ? <p role="alert" className="rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger">{formError}</p> : null}
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Hủy</Button>
               <Button type="submit" disabled={create.isPending}>{create.isPending ? 'Đang tạo…' : 'Tạo tài khoản'}</Button>
@@ -353,7 +353,7 @@ export function AccountActions({ user, compact = false }: { user: UserDto; compa
                 ? `${user.fullName} sẽ có thể đăng nhập lại.`
                 : `${user.fullName} sẽ bị đăng xuất khỏi mọi thiết bị và không thể đăng nhập cho đến khi được mở khóa. Dữ liệu học tập được giữ nguyên.`}
           </p>
-          {error && <p role="alert" className="mt-3 rounded-xl bg-[#f8dcd8] px-3 py-2 text-sm text-coral">{error}</p>}
+          {error && <p role="alert" className="mt-3 rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
           <div className="mt-5 flex justify-end gap-3">
             <Button variant="ghost" disabled={busy} onClick={() => setConfirm(null)}>Hủy</Button>
             <Button variant={confirm === 'status' && !disabled ? 'danger' : 'gold'} disabled={busy} onClick={() => void run()}>

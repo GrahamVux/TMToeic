@@ -18,7 +18,7 @@ export function ScoreTrend({ history, target, subtitle }: { history: ScorePointD
   return (
     <Card className="p-6">
       <h2 className="serif text-2xl">Xu hướng điểm mock test</h2>
-      {subtitle ? <p className="text-sm text-ink/55">{subtitle}</p> : null}
+      {subtitle ? <p className="text-sm text-ink-soft">{subtitle}</p> : null}
       {data.length === 0 ? (
         <p className="mt-4 grid h-56 place-items-center rounded-2xl bg-paper p-6 text-center text-sm text-ink/60">
           Chưa có bài thi thử đủ 100 câu Listening và/hoặc 100 câu Reading, nên chưa có điểm quy đổi.
@@ -27,14 +27,37 @@ export function ScoreTrend({ history, target, subtitle }: { history: ScorePointD
         <div className="mt-4 h-72">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data}>
-              <CartesianGrid stroke="#eaf5f8" />
-              <XAxis dataKey="label" />
-              <YAxis domain={[0, 990]} />
-              <Tooltip />
+              <CartesianGrid stroke="var(--color-gold)" strokeOpacity={0.55} vertical={false} />
+              <XAxis dataKey="label" stroke="var(--color-ink-soft)" tick={{ fill: 'var(--color-ink-soft)', fontSize: 14 }} tickLine={false} axisLine={{ stroke: 'var(--color-gold)' }} />
+              <YAxis domain={[0, 990]} stroke="var(--color-ink-soft)" tick={{ fill: 'var(--color-ink-soft)', fontSize: 14 }} tickLine={false} axisLine={{ stroke: 'var(--color-gold)' }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'var(--color-cream)',
+                  borderColor: 'var(--color-gold)',
+                  borderRadius: '12px',
+                  color: 'var(--color-ink)',
+                  boxShadow: '0 8px 24px rgba(15, 23, 42, 0.14)',
+                }}
+                labelStyle={{ color: 'var(--color-ink-soft)', fontWeight: 600, marginBottom: 2 }}
+                itemStyle={{ color: 'var(--color-chart-line)', fontWeight: 700 }}
+              />
               {target?.track === 'TWO_SKILL' ? (
-                <ReferenceLine y={target.score} stroke="#b9860b" strokeDasharray="6 4" label={{ value: `Mục tiêu ${target.score}`, fontSize: 11, position: 'insideTopLeft' }} />
+                <ReferenceLine
+                  y={target.score}
+                  stroke="var(--color-crimson)"
+                  strokeDasharray="6 4"
+                  label={{ value: `Mục tiêu ${target.score}`, fill: 'var(--color-crimson)', fontSize: 13, fontWeight: 600, position: 'insideTopLeft' }}
+                />
               ) : null}
-              <Line type="monotone" dataKey="score" name="Điểm" stroke="#2b8a9c" strokeWidth={3} dot={{ r: 5, fill: '#b9e4ec' }} />
+              <Line
+                type="monotone"
+                dataKey="score"
+                name="Điểm"
+                stroke="var(--color-chart-line)"
+                strokeWidth={3}
+                dot={{ r: 5, fill: 'var(--color-chart-dot)', stroke: 'var(--color-chart-line)', strokeWidth: 2 }}
+                activeDot={{ r: 6, fill: 'var(--color-crimson)', stroke: 'var(--color-cream)', strokeWidth: 2 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -53,7 +76,7 @@ export function PartBreakdown({ parts }: { parts: PartStatDto[] }) {
             <div className="serif text-2xl text-gold-deep">{p.partCode.replace('PART_', 'Part ')}</div>
             <div>
               <p className="font-semibold">{partName(p.partCode).split(' — ')[1] ?? partName(p.partCode)}</p>
-              <p className="text-sm text-ink/55">
+              <p className="text-sm text-ink-soft">
                 {p.answered === 0 ? 'Chưa có dữ liệu' : `${p.correct}/${p.answered} câu đúng • ${p.attempts} bài`}
                 {p.avgSeconds !== null ? ` • ${p.avgSeconds}s/câu` : ''}
               </p>
@@ -61,7 +84,7 @@ export function PartBreakdown({ parts }: { parts: PartStatDto[] }) {
             </div>
             <div className="text-right">
               <p className="text-xl font-semibold">{p.accuracy === null ? '—' : `${p.accuracy}%`}</p>
-              {p.answered > 0 && !enough ? <p className="text-xs text-ink/50">Cần ≥{MIN_ANSWERS_FOR_INSIGHT} câu để đánh giá</p> : null}
+              {p.answered > 0 && !enough ? <p className="text-xs text-ink-soft">Cần ≥{MIN_ANSWERS_FOR_INSIGHT} câu để đánh giá</p> : null}
             </div>
           </Card>
         )
@@ -85,7 +108,7 @@ export function AttemptsTable({
   return (
     <div className="overflow-x-auto rounded-2xl border border-gold/35 bg-cream">
       <table className="min-w-full text-left text-sm">
-        <thead className="bg-paper text-xs tracking-wide text-ink/45 uppercase">
+        <thead className="bg-paper text-xs tracking-wide text-ink-soft uppercase">
           <tr>
             <th className="px-4 py-3">Đề</th>
             <th className="px-4 py-3">Hình thức</th>
@@ -102,8 +125,8 @@ export function AttemptsTable({
               <tr key={a.attemptId} className="border-t border-gold/25">
                 <td className="px-4 py-3">
                   <p className="font-medium">{a.assignmentTitle ?? a.examTitle}</p>
-                  {a.assignmentTitle ? <p className="text-xs text-ink/50">{a.examTitle}</p> : null}
-                  {parts ? <p className="mt-0.5 text-xs text-ink/50">{parts}</p> : null}
+                  {a.assignmentTitle ? <p className="text-xs text-ink-soft">{a.examTitle}</p> : null}
+                  {parts ? <p className="mt-0.5 text-xs text-ink-soft">{parts}</p> : null}
                 </td>
                 <td className="px-4 py-3">
                   {kind}

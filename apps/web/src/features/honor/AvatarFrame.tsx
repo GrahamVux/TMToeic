@@ -20,7 +20,7 @@ export function FramedAvatar({ name, url, frameId = 'none', size = 40, className
   const initials = words.length > 1 ? words[0]![0]! + words[words.length - 1]![0]! : words[0]!.slice(0, 2)
   const hasFrame = Boolean(frameId && frameId !== 'none')
   const innerSize = hasFrame ? Math.round(size * 0.78) : size
-  const fontSize = Math.max(10, Math.round(innerSize * 0.34))
+  const fontSize = Math.max(12, Math.round(innerSize * 0.34) + 2)
 
   return (
     <span

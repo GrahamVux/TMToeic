@@ -47,7 +47,7 @@ export function ReviewPage() {
 
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs text-ink/50">{staffView ? 'Bài làm chi tiết của học viên' : 'Bài làm chi tiết'}</p>
+          <p className="text-xs text-ink-soft">{staffView ? 'Bài làm chi tiết của học viên' : 'Bài làm chi tiết'}</p>
           <h1 className="serif mt-1 text-3xl">{data.result.attempt.examTitle}</h1>
           <p className="mt-1 text-sm text-ink/60">
             Đúng {data.result.correctCount} • Sai {data.result.incorrectCount} • Chưa làm {data.result.unansweredCount}
@@ -90,7 +90,7 @@ export function ReviewPage() {
         ))}
       </div>
 
-      {visible.length === 0 ? <p className="text-sm text-ink/55">Không có câu nào trong mục này.</p> : (
+      {visible.length === 0 ? <p className="text-sm text-ink-soft">Không có câu nào trong mục này.</p> : (
         <ReviewQuestionCards questions={visible} groups={groups} staffView={staffView} textZoom={textZoom} />
       )}
     </div>

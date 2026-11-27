@@ -22,7 +22,14 @@ const dayMonth = (iso: string) => {
 
 function chartGoalLines(goal: GoalDto) {
   if (goal?.track !== 'TWO_SKILL') return null
-  return <ReferenceLine y={goal.score} stroke="#b9860b" strokeDasharray="6 4" label={{ value: `Mục tiêu ${goal.score}`, fontSize: 11, position: 'insideTopLeft' }} />
+  return (
+    <ReferenceLine
+      y={goal.score}
+      stroke="var(--color-crimson)"
+      strokeDasharray="6 4"
+      label={{ value: `Mục tiêu ${goal.score}`, fill: 'var(--color-crimson)', fontSize: 13, fontWeight: 600, position: 'insideTopLeft' }}
+    />
+  )
 }
 
 export function DashboardPage() {
@@ -35,42 +42,71 @@ export function DashboardPage() {
   if (isPending) return <PageLoading message="Đang tải tổng quan…" />
   if (error || !data) return <QueryErrorRedirect error={error} />
 
-  const due = (homework.data ?? []).filter((a) => a.myProgress?.status !== 'COMPLETED').slice(0, 3)
+  const allPending = (homework.data ?? []).filter((a) => a.myProgress?.status !== 'COMPLETED')
+  const due = allPending.slice(0, 3)
 
   return (
     <div className="space-y-8">
       <Hero d={data} name={user?.fullName ?? ''} />
-      <DailyGoalsCard />
 
-      <section>
-        <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">Nhiệm vụ học vụ & bài về nhà</p>
-        <h2 className="serif mt-1 text-2xl">Bài tập Thầy giao</h2>
-        <Card className="mt-4 p-6">
-          {homework.isPending ? <p className="text-sm text-ink/55">Đang tải bài tập…</p> : null}
+      <Card className={due.length > 0 ? 'border-l-4 border-l-crimson p-6' : 'p-6'}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">Nhiệm vụ học vụ &amp; bài về nhà</p>
+            <div className="mt-1 flex flex-wrap items-center gap-2.5">
+              <h2 className="serif text-2xl font-bold">Bài tập Thầy giao</h2>
+              <Badge tone={allPending.length > 0 ? 'warn' : 'olive'} className="tabular-nums">
+                {allPending.length > 0 ? `${allPending.length} bài cần làm` : 'Đã hoàn thành'}
+              </Badge>
+            </div>
+          </div>
+          <Link to="/assignments" className="text-sm font-semibold text-navy underline-offset-4 hover:underline">
+            Xem tất cả bài tập →
+          </Link>
+        </div>
+
+        <div className="mt-4 border-t border-gold/25 pt-4">
+          {homework.isPending ? <p className="text-sm text-ink-soft">Đang tải bài tập…</p> : null}
           {!homework.isPending && due.length === 0 ? (
-            <>
-              <p className="text-sm text-ink/65">Hiện chưa có bài tập nào được giao cho bạn. Khi giáo viên giao bài, bài sẽ xuất hiện tại đây kèm hạn nộp.</p>
-              <Link to="/practice" className="mt-4 inline-block">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <p className="max-w-[68ch] text-sm text-ink-soft">
+                Hiện chưa có bài tập nào chưa hoàn thành. Khi giáo viên giao bài, bài sẽ xuất hiện tại đây kèm hạn nộp.
+              </p>
+              <Link to="/practice" className="shrink-0">
                 <Button variant="navy">Tự luyện đề trong lúc chờ</Button>
               </Link>
-            </>
-          ) : null}
-          {due.map((a) => (
-            <div key={a.id} className="border-t border-gold/20 py-3 first:border-t-0 first:pt-0">
-              <p className="font-semibold">{a.title}</p>
-              <p className="text-sm text-ink/55">
-                {a.parts.map((p) => p.code.replace('PART_', 'Part ')).join(', ')}
-                {a.dueAt ? ` • hạn ${new Date(a.dueAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}` : ''}
-              </p>
             </div>
-          ))}
-          {due.length > 0 ? (
-            <Link to="/assignments" className="mt-2 inline-block">
-              <Button variant="navy">Vào danh sách bài tập</Button>
-            </Link>
           ) : null}
-        </Card>
-      </section>
+          {due.length > 0 ? (
+            <div className="divide-y divide-gold/25">
+              {due.map((a) => {
+                const inProgress = a.myProgress?.status === 'IN_PROGRESS'
+                return (
+                  <div key={a.id} className="flex flex-col gap-3 py-3.5 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold text-ink">{a.title}</p>
+                        <Badge tone={inProgress ? 'warn' : 'gold'}>{inProgress ? 'Đang làm' : 'Chưa nộp'}</Badge>
+                      </div>
+                      <p className="mt-1 text-sm text-ink-soft tabular-nums">
+                        {a.parts.map((p) => p.code.replace('PART_', 'Part ')).join(', ')}
+                        {a.dueAt ? ` • Hạn ${new Date(a.dueAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}` : ''}
+                      </p>
+                    </div>
+                    <Link to="/assignments" className="shrink-0">
+                      <Button variant={inProgress ? 'gold' : 'navy'} className="w-full sm:w-auto">
+                        {inProgress ? 'Làm tiếp' : 'Làm bài ngay'}
+                      </Button>
+                    </Link>
+                  </div>
+                )
+              })}
+            </div>
+          ) : null}
+        </div>
+      </Card>
+
+      <DailyGoalsCard />
 
       <ScoreChart d={data} />
       <DashboardHonorSummaryCard honor={data.honor} onOpenWardrobe={(tab = 'frames') => setWardrobeTab(tab)} />
@@ -84,8 +120,8 @@ export function DashboardPage() {
       <section className="grid gap-6 lg:grid-cols-2">
         <Card className="p-6">
           <Badge>Ngữ pháp</Badge>
-          <h2 className="serif mt-3 text-2xl">Chuyên đề Part 5 & 6</h2>
-          <p className="mt-2 text-sm text-ink/60">
+          <h2 className="serif mt-3 text-2xl font-bold">Chuyên đề Part 5 & 6</h2>
+          <p className="mt-2 text-sm text-ink-soft tabular-nums">
             {study.data ? `Đã học ${study.data.grammarCompleted}/${study.data.grammarTotal} chuyên đề.` : 'Các chuyên đề ngữ pháp cốt lõi cho Part 5 và Part 6.'}
           </p>
           <Link to="/study" className="mt-4 inline-block">
@@ -94,8 +130,8 @@ export function DashboardPage() {
         </Card>
         <Card className="p-6">
           <Badge tone="teal">Từ vựng</Badge>
-          <h2 className="serif mt-3 text-2xl">Flashcard và sổ tay</h2>
-          <p className="mt-2 text-sm text-ink/60">
+          <h2 className="serif mt-3 text-2xl font-bold">Flashcard và sổ tay</h2>
+          <p className="mt-2 text-sm text-ink-soft tabular-nums">
             {study.data ? `${study.data.notebookTotal} từ trong sổ tay • ${study.data.catalogNew} từ kho chưa học.` : 'Flashcard và sổ tay từ vựng của bạn.'}
           </p>
           <Link to="/study/notebook" className="mt-4 inline-block">
@@ -128,18 +164,19 @@ function Hero({ d, name }: { d: StudentDashboardDto; name: string }) {
   }
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-gold/40 bg-cream p-8">
-      <div className="flex flex-wrap items-start justify-between gap-6">
-        <div>
-          <p className="text-xs tracking-[0.2em] text-gold-deep uppercase">Tổng quan của bạn</p>
-          <h1 className="serif mt-2 text-4xl">Xin chào, {name}! 👋</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-ink/65">{message}</p>
+    <section className="relative overflow-hidden rounded-3xl border border-gold/40 bg-cream p-6 shadow-[0_6px_24px_rgba(15,23,42,0.06)] sm:p-8">
+      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px] bg-linear-to-r from-button via-navy to-crimson" />
+      <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:gap-8">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold tracking-[0.16em] text-navy uppercase">Tổng quan của bạn</p>
+          <h1 className="serif mt-2 text-3xl font-bold sm:text-4xl">Xin chào, {name}! 👋</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft tabular-nums">{message}</p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link to="/practice"><Button>Làm đề luyện tập</Button></Link>
-            <Link to="/study"><Button variant="paper">Ôn từ vựng</Button></Link>
+            <Link to="/study"><Button variant="navy">Ôn từ vựng</Button></Link>
           </div>
         </div>
-        <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-2">
           <Stat
             label="Chuỗi rèn luyện"
             value={`${streak.days} ngày`}
@@ -147,7 +184,13 @@ function Hero({ d, name }: { d: StudentDashboardDto; name: string }) {
             flame={streak.activeToday}
           />
           <Stat label="Mock test gần nhất" value={latestScore ? String(latestScore.totalScore) : '—'} hint={latestScore ? '/ 990' : 'Chưa có bài đủ 200 câu'} />
-          <Stat label="Mục tiêu cá nhân" value={goalLabel ?? 'Chưa đặt'} hint={goal ? (goal.track === 'FOUR_SKILL' ? '4 kỹ năng' : '2 kỹ năng') : undefined} to="/settings#goal" />
+          <Stat
+            className="lg:col-span-2"
+            label="Mục tiêu cá nhân"
+            value={goalLabel ?? 'Chưa đặt'}
+            hint={goal ? (goal.track === 'FOUR_SKILL' ? '4 kỹ năng' : '2 kỹ năng') : 'Nhấn để đặt mục tiêu điểm số'}
+            to="/settings#goal"
+          />
         </div>
       </div>
     </section>
@@ -159,8 +202,8 @@ function ScoreChart({ d }: { d: StudentDashboardDto }) {
   return (
     <Card className="p-6">
       <p className="text-xs font-semibold tracking-[0.16em] text-gold-deep uppercase">Tiến độ cá nhân</p>
-      <h2 className="serif mt-1 text-2xl">Đường tăng trưởng điểm thi mock test</h2>
-      <p className="mt-1 text-sm text-ink/60">
+      <h2 className="serif mt-1 text-2xl font-bold">Đường tăng trưởng điểm thi mock test</h2>
+      <p className="mt-1 text-sm text-ink-soft tabular-nums">
         {data.length === 0
           ? 'Chưa có điểm mock test nào.'
           : d.improvement === null
@@ -169,7 +212,7 @@ function ScoreChart({ d }: { d: StudentDashboardDto }) {
         {formatGoal(d.goal) ? ` • Mục tiêu ${formatGoal(d.goal)}` : ''}
       </p>
       {data.length === 0 ? (
-        <div className="mt-6 grid h-72 place-items-center rounded-2xl bg-paper p-6 text-center text-sm text-ink/60">
+        <div className="mt-6 grid h-72 place-items-center rounded-2xl bg-paper p-6 text-center text-sm text-ink-soft">
           <div>
             <p>Điểm quy đổi 990 chỉ có sau khi bạn làm đủ 100 câu Listening và/hoặc 100 câu Reading của một đề đầy đủ.</p>
             <Link to="/practice" className="mt-4 inline-block">
@@ -181,12 +224,30 @@ function ScoreChart({ d }: { d: StudentDashboardDto }) {
         <div className="mt-6 h-72">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data}>
-              <CartesianGrid stroke="#eaf5f8" />
-              <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-              <YAxis domain={[0, 990]} tick={{ fontSize: 12 }} />
-              <Tooltip />
+              <CartesianGrid stroke="var(--color-gold)" strokeOpacity={0.55} vertical={false} />
+              <XAxis dataKey="label" stroke="var(--color-ink-soft)" tick={{ fill: 'var(--color-ink-soft)', fontSize: 14 }} tickLine={false} axisLine={{ stroke: 'var(--color-gold)' }} />
+              <YAxis domain={[0, 990]} stroke="var(--color-ink-soft)" tick={{ fill: 'var(--color-ink-soft)', fontSize: 14 }} tickLine={false} axisLine={{ stroke: 'var(--color-gold)' }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'var(--color-cream)',
+                  borderColor: 'var(--color-gold)',
+                  borderRadius: '12px',
+                  color: 'var(--color-ink)',
+                  boxShadow: '0 8px 24px rgba(15, 23, 42, 0.14)',
+                }}
+                labelStyle={{ color: 'var(--color-ink-soft)', fontWeight: 600, marginBottom: 2 }}
+                itemStyle={{ color: 'var(--color-chart-line)', fontWeight: 700 }}
+              />
               {chartGoalLines(d.goal)}
-              <Line type="monotone" dataKey="score" name="Điểm" stroke="#2b8a9c" strokeWidth={3} dot={{ r: 5, fill: '#b9e4ec' }} />
+              <Line
+                type="monotone"
+                dataKey="score"
+                name="Điểm"
+                stroke="var(--color-chart-line)"
+                strokeWidth={3}
+                dot={{ r: 5, fill: 'var(--color-chart-dot)', stroke: 'var(--color-chart-line)', strokeWidth: 2 }}
+                activeDot={{ r: 6, fill: 'var(--color-crimson)', stroke: 'var(--color-cream)', strokeWidth: 2 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -201,8 +262,8 @@ function SkillCard({ stat, kind }: { stat: SkillStatDto | undefined; kind: 'LIST
   return (
     <Card className="p-6">
       {listening ? <Badge tone="teal">Listening module • Part 1–4</Badge> : <Badge>Reading module • Part 5–7</Badge>}
-      <h2 className="serif mt-3 text-2xl">{listening ? 'Luyện tập kỹ năng nghe' : 'Luyện tập kỹ năng đọc'}</h2>
-      <p className="mt-2 text-sm text-ink/65">
+      <h2 className="serif mt-3 text-2xl font-bold">{listening ? 'Luyện tập kỹ năng nghe' : 'Luyện tập kỹ năng đọc'}</h2>
+      <p className="mt-2 text-sm text-ink-soft tabular-nums">
         {done && stat
           ? `Đã làm ${stat.attempts} bài • ${stat.answered} câu${stat.accuracy !== null ? ` • Tỷ lệ đúng ${stat.accuracy}%` : ''}`
           : 'Bạn chưa làm bài nào ở kỹ năng này.'}
@@ -227,16 +288,16 @@ function StreakFlame() {
   )
 }
 
-function Stat({ label, value, hint, to, flame }: { label: string; value: string; hint?: string; to?: string; flame?: boolean }) {
+function Stat({ label, value, hint, to, flame, className }: { label: string; value: string; hint?: string; to?: string; flame?: boolean; className?: string }) {
   const body = (
-    <div className="min-w-0 rounded-2xl border border-gold/40 bg-teal-soft p-4">
-      <p className="text-[10px] leading-snug tracking-wide text-gold-deep uppercase">{label}</p>
+    <div className={`min-w-0 rounded-2xl border border-gold/40 bg-teal-soft p-4 ${className ?? ''}`}>
+      <p className="text-xs font-semibold leading-snug text-navy">{label}</p>
       <div className="mt-1 flex items-center gap-1.5">
-        <p className="serif text-2xl">{value}</p>
+        <p className="serif text-2xl font-bold tabular-nums">{value}</p>
         {flame ? <StreakFlame /> : null}
       </div>
-      {hint ? <p className="text-xs text-ink/55">{hint}</p> : null}
+      {hint ? <p className="mt-0.5 text-xs text-ink-soft tabular-nums">{hint}</p> : null}
     </div>
   )
-  return to ? <Link to={to}>{body}</Link> : body
+  return to ? <Link to={to} className={className}>{body}</Link> : body
 }

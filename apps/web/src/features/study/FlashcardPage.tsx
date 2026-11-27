@@ -125,7 +125,7 @@ export function FlashcardPage() {
         </div>
       )}
 
-      <p className="text-sm text-ink/55">
+      <p className="text-sm text-ink-soft">
         {query.data?.dueCount ?? 0} thẻ đến hạn • {query.data?.newCount ?? 0} từ mới • còn {cards.length} thẻ trong lượt này
       </p>
       {error ? <p className="text-sm text-coral">{error}</p> : null}
@@ -137,7 +137,7 @@ export function FlashcardPage() {
               <Card className="flex min-h-68 flex-col items-center justify-center p-8 text-center">
                 {flipped ? (
                   <>
-                    <p className="text-xs font-semibold tracking-[0.16em] text-ink/45 uppercase">
+                    <p className="text-xs font-semibold tracking-[0.16em] text-ink-soft uppercase">
                       Nghĩa • {card.partOfSpeech}
                     </p>
                     <p className="serif mt-3 text-3xl leading-snug text-ink">{card.meaning}</p>
@@ -152,11 +152,11 @@ export function FlashcardPage() {
                     <p className="text-sm font-semibold tracking-wide text-gold-deep">{card.partOfSpeech}</p>
                     <p className="serif mt-3 text-5xl">{card.word}</p>
                     {card.topic || card.unit ? (
-                      <p className="mt-3 text-xs text-ink/45">
+                      <p className="mt-3 text-xs text-ink-soft">
                         {card.topic ?? ''}{card.unit ? ` · Unit ${card.unit}` : ''}
                       </p>
                     ) : null}
-                    <p className="mt-6 text-sm text-ink/45">Nhấn để lật nghĩa & câu mẫu</p>
+                    <p className="mt-6 text-sm text-ink-soft">Nhấn để lật nghĩa & câu mẫu</p>
                   </>
                 )}
               </Card>

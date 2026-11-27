@@ -69,17 +69,17 @@ export function PracticePage() {
     <div className="space-y-5">
       <PracticeTabs />
 
-      <section className="flex flex-col gap-4 rounded-2xl bg-gold-deep px-5 py-4 text-white lg:flex-row lg:items-center lg:justify-between">
+      <section className="flex flex-col gap-4 rounded-2xl bg-banner px-5 py-4 text-banner-ink lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Kho đề thi thử</h1>
-          <p className="mt-1 text-sm text-white/80">Luyện tập làm tiếp được. Thi thử rời bài là kết thúc lượt đó.</p>
+          <h1 className="serif text-xl font-bold tracking-tight sm:text-2xl">Kho đề thi thử</h1>
+          <p className="mt-1 text-sm text-banner-ink/85">Luyện tập làm tiếp được. Thi thử rời bài là kết thúc lượt đó.</p>
         </div>
         <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row lg:max-w-xl">
           <label className="relative min-w-0 flex-1">
             <span className="sr-only">Tìm đề theo tên</span>
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink/40" />
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-soft" />
             <input
-              className="h-11 w-full rounded-full border-0 bg-white pr-4 pl-9 text-sm text-ink outline-none placeholder:text-ink/40"
+              className="h-11 w-full rounded-full border border-ink/10 bg-cream pr-4 pl-9 text-sm text-ink outline-none placeholder:text-ink/45 focus:ring-2 focus:ring-button/40"
               value={query}
               placeholder="Tìm đề theo tên..."
               onChange={(event) => setQuery(event.target.value)}
@@ -87,18 +87,18 @@ export function PracticePage() {
           </label>
           <button
             type="button"
-            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-button px-4 text-sm font-semibold text-button-ink hover:bg-button-hover disabled:opacity-50"
+            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-cream px-4 text-sm font-semibold text-navy shadow-sm ring-1 ring-white/25 transition hover:bg-paper disabled:opacity-50 dark:bg-sky-400 dark:text-slate-950 dark:hover:bg-sky-300"
             disabled={start.isPending || visible.length === 0}
             onClick={startNewest}
           >
-            <Play className="size-4" /> Làm đề mới nhất
+            <Play className="size-4 fill-current" /> Làm đề mới nhất
           </button>
         </div>
       </section>
 
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-semibold tracking-[0.14em] text-ink/45 uppercase">Bộ lọc nhanh</span>
+          <span className="text-[13px] font-semibold tracking-[0.14em] text-ink-soft uppercase">Bộ lọc nhanh</span>
           <FilterChip active={activeKind === 'all'} onClick={() => setKind('all')}>
             Tất cả
           </FilterChip>
@@ -110,7 +110,7 @@ export function PracticePage() {
         </div>
         {showSeries ? (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-semibold tracking-[0.14em] text-ink/45 uppercase">Bộ đề</span>
+            <span className="text-[13px] font-semibold tracking-[0.14em] text-ink-soft uppercase">Bộ đề</span>
             <FilterChip active={series === 'all'} onClick={() => setSeries('all')}>
               Tất cả
             </FilterChip>
@@ -124,14 +124,14 @@ export function PracticePage() {
       </div>
 
       {start.error ? (
-        <p className="rounded-xl bg-[#f8dcd8] p-3 text-sm text-coral" role="alert">
+        <p className="rounded-xl border border-danger/25 bg-danger-soft p-3 text-sm text-danger" role="alert">
           Không bắt đầu được bài làm.
         </p>
       ) : null}
 
-      {exams.isPending ? <p className="text-sm text-ink/55">Đang tải…</p> : null}
-      {!exams.isPending && bank.length === 0 ? <Card className="p-6 text-sm text-ink/60">Chưa có đề nào được mở. Giáo viên sẽ xuất bản đề sớm.</Card> : null}
-      {!exams.isPending && bank.length > 0 && visible.length === 0 ? <Card className="p-6 text-sm text-ink/60">Không có đề khớp tên hoặc bộ lọc này.</Card> : null}
+      {exams.isPending ? <p className="text-sm text-ink-soft">Đang tải…</p> : null}
+      {!exams.isPending && bank.length === 0 ? <Card className="p-6 text-sm text-ink-soft">Chưa có đề nào được mở. Giáo viên sẽ xuất bản đề sớm.</Card> : null}
+      {!exams.isPending && bank.length > 0 && visible.length === 0 ? <Card className="p-6 text-sm text-ink-soft">Không có đề khớp tên hoặc bộ lọc này.</Card> : null}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {visible.map((exam) => (
@@ -168,17 +168,19 @@ function ExamCard({
         <Badge tone={tone}>{status}</Badge>
       </div>
       <h2 className="mt-3 text-lg font-semibold tracking-tight">{exam.title}</h2>
-      <p className="mt-2 text-sm font-medium text-ink/80">{best !== null ? `Điểm cao nhất: ${best}` : `${exam.totalQuestions} câu`}</p>
-      <p className="mt-1 text-sm text-ink/55">
+      <p className="mt-2 text-sm font-semibold text-ink tabular-nums">
+        {best !== null ? `Điểm cao nhất: ${best}/990` : `${exam.totalQuestions} câu`}
+      </p>
+      <p className="mt-1 text-sm text-ink-soft tabular-nums">
         {practice
           ? `Luyện tập: ${practice.attempt.answeredCount}/${practice.attempt.totalQuestions} câu`
           : finished.length > 0
             ? 'Bạn đã hoàn thành một lượt làm bài.'
             : `${minutes} phút khi thi thử`}
       </p>
-      <div className="mt-4 grid gap-2">
-        <Button className="w-full" disabled={busy} onClick={() => onStart('FULL_TEST')}>
-          <Play className="size-4" /> Thi thử
+      <div className="mt-auto grid gap-2 pt-4">
+        <Button variant="gold" className="w-full shadow-sm" disabled={busy} onClick={() => onStart('FULL_TEST')}>
+          <Play className="size-4 fill-current" /> Thi thử
         </Button>
         {practice ? (
           <Link to={`/attempts/${practice.attempt.id}/play`} className="block">
@@ -192,7 +194,10 @@ function ExamCard({
           </Button>
         )}
         {review ? (
-          <Link to={`/attempts/${review.attempt.id}/review`} className="block text-center text-sm font-semibold text-gold-deep">
+          <Link
+            to={`/attempts/${review.attempt.id}/review`}
+            className="inline-flex min-h-9 w-full items-center justify-center rounded-full border border-gold/45 bg-paper px-4 py-1.5 text-sm font-semibold text-navy transition hover:border-button/50 hover:bg-teal-soft"
+          >
             Chữa đề
           </Link>
         ) : null}

@@ -37,10 +37,10 @@ export function ReportsPage() {
 
       <Card className="scroll-mt-24 p-6" id="luu-tam">
         <h2 className="serif text-2xl">Học viên cần lưu tâm</h2>
-        <p className="mt-1 text-xs text-ink/55">
+        <p className="mt-1 text-xs text-ink-soft">
           Tỉ lệ đúng dưới {SUPPORT_ACCURACY_BELOW}%, từ {INACTIVE_AFTER_DAYS} ngày không làm bài, hoặc bài giao đã quá hạn mà chưa nộp.
         </p>
-        {support.isPending ? <p className="mt-3 text-sm text-ink/55">Đang tải danh sách…</p> : null}
+        {support.isPending ? <p className="mt-3 text-sm text-ink-soft">Đang tải danh sách…</p> : null}
         {support.isError ? <p className="mt-3 text-sm text-coral">Không tải được danh sách học viên cần lưu tâm.</p> : null}
         {support.data ? <InactiveList items={support.data.inactive} total={support.data.inactiveCount} /> : null}
       </Card>
@@ -63,7 +63,7 @@ function ExamCard({ exam }: { exam: ExamReportItemDto }) {
         <div>
           <p className="text-xs tracking-wide text-gold-deep uppercase">{exam.code}{exam.status === 'ARCHIVED' ? ' • Đã lưu trữ' : ''}</p>
           <h2 className="serif mt-1 text-2xl">{exam.title}</h2>
-          <p className="mt-1 text-xs text-ink/50">
+          <p className="mt-1 text-xs text-ink-soft">
             {exam.totalQuestions} câu
             {exam.lastSubmittedAt ? ` • nộp gần nhất ${when.format(new Date(exam.lastSubmittedAt))}` : ' • chưa có bài nộp'}
           </p>
@@ -86,7 +86,7 @@ function ExamCard({ exam }: { exam: ExamReportItemDto }) {
             <div key={part.partCode}>
               <div className="flex items-baseline justify-between text-sm">
                 <span className="font-semibold">{partName(part.partCode)}</span>
-                <span className="text-ink/55">
+                <span className="text-ink-soft">
                   {part.correct}/{part.answered} • {part.accuracy ?? 0}%
                 </span>
               </div>
@@ -102,7 +102,7 @@ function ExamCard({ exam }: { exam: ExamReportItemDto }) {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl bg-paper px-4 py-3">
-      <p className="text-xs text-ink/50">{label}</p>
+      <p className="text-xs text-ink-soft">{label}</p>
       <p className="serif mt-1 text-2xl">{value}</p>
     </div>
   )
@@ -124,7 +124,7 @@ export function InactiveList({ items, total }: { items: InactiveStudentDto[]; to
           <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-paper px-4 py-3">
             <div>
               <p className="font-semibold">{s.fullName}</p>
-              <p className="text-xs text-ink/55">
+              <p className="text-xs text-ink-soft">
                 {s.studentCode ? `${s.studentCode} • ` : ''}
                 {s.reasons.map((reason) => reasonText(s, reason)).join(' • ')}
               </p>
@@ -133,7 +133,7 @@ export function InactiveList({ items, total }: { items: InactiveStudentDto[]; to
           </li>
         ))}
       </ul>
-      {total > items.length ? <p className="mt-3 text-xs text-ink/50">Hiển thị {items.length}/{total} học viên.</p> : null}
+      {total > items.length ? <p className="mt-3 text-xs text-ink-soft">Hiển thị {items.length}/{total} học viên.</p> : null}
     </>
   )
 }
@@ -141,9 +141,9 @@ export function InactiveList({ items, total }: { items: InactiveStudentDto[]; to
 function Kpi({ label, value, meta }: { label: string; value: string; meta: string }) {
   return (
     <Card className="p-5">
-      <p className="text-xs text-ink/50">{label}</p>
+      <p className="text-xs text-ink-soft">{label}</p>
       <p className="serif mt-2 text-4xl">{value}</p>
-      <p className="mt-1 text-xs text-ink/50">{meta}</p>
+      <p className="mt-1 text-xs text-ink-soft">{meta}</p>
     </Card>
   )
 }

@@ -59,7 +59,7 @@ export function AdminRecoveryDialog({ onClose, onDone }: { onClose: () => void; 
         <div>
           <label className="text-sm font-medium" htmlFor="recover-new">Mật khẩu mới</label>
           <Input id="recover-new" className="mt-1.5" type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-          <p className="mt-1 text-xs text-ink/50">Tối thiểu {PASSWORD_MIN_LENGTH} ký tự, gồm cả chữ và số.</p>
+          <p className="mt-1 text-xs text-ink-soft">Tối thiểu {PASSWORD_MIN_LENGTH} ký tự, gồm cả chữ và số.</p>
           <FieldError message={errors.newPassword} />
         </div>
         <div>
@@ -68,7 +68,7 @@ export function AdminRecoveryDialog({ onClose, onDone }: { onClose: () => void; 
           <FieldError message={errors.confirm} />
         </div>
         {formError ? (
-          <p role="alert" className="rounded-xl bg-[#f8dcd8] px-3 py-2 text-sm text-coral">{formError}</p>
+          <p role="alert" className="rounded-xl border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger">{formError}</p>
         ) : null}
         <Button className="w-full" type="submit" disabled={busy}>
           {busy ? 'Đang lưu…' : 'Đặt mật khẩu mới'}

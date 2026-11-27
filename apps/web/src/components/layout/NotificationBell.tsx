@@ -123,7 +123,7 @@ export function NotificationBell() {
   return (
     <div ref={wrapRef} className="relative">
       <button
-        className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gold/35 bg-white text-ink/60 transition hover:border-gold-deep hover:text-gold-deep"
+        className="relative flex size-10 shrink-0 items-center justify-center rounded-full border border-gold/35 bg-cream text-ink-soft transition hover:border-gold-deep hover:text-gold-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50"
         type="button"
         aria-label={count > 0 ? `Thông báo, ${count} nhắc nhở` : 'Thông báo'}
         aria-expanded={open}
@@ -132,25 +132,25 @@ export function NotificationBell() {
       >
         <Bell className="size-4" />
         {count > 0 ? (
-          <span className="absolute -top-1 -right-1 grid min-w-4 place-items-center rounded-full bg-coral px-1 text-[10px] leading-4 font-bold text-white">
+          <span className="absolute -top-1 -right-1 grid min-w-[18px] place-items-center rounded-full bg-crimson px-1 text-[12px] leading-[18px] font-bold text-white dark:bg-red-600">
             {count > 9 ? '9+' : count}
           </span>
         ) : null}
       </button>
       {open ? (
-        <div className="absolute top-full right-0 z-40 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-gold/40 bg-white p-3 shadow-lg" role="dialog" aria-label="Nhắc nhở">
-          <p className="px-1 text-sm font-semibold">Nhắc nhở</p>
-          {count === 0 ? <p className="px-1 py-3 text-sm text-ink/55">Hiện chưa có nhắc nhở.</p> : null}
+        <div className="absolute top-full right-0 z-40 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-gold/40 bg-cream p-3 shadow-[0_12px_32px_rgba(15,23,42,0.16)]" role="dialog" aria-label="Nhắc nhở">
+          <p className="px-1 text-sm font-semibold text-ink">Nhắc nhở</p>
+          {count === 0 ? <p className="px-1 py-3 text-sm text-ink-soft">Hiện chưa có nhắc nhở.</p> : null}
           <ul className="mt-2 max-h-80 space-y-1 overflow-y-auto">
             {items.map((item) => (
               <li key={item.id}>
                 <Link
                   to={item.to}
                   onClick={() => setOpen(false)}
-                  className={cn('block rounded-xl px-3 py-2 hover:bg-paper', item.urgent ? 'bg-[#f8dcd8]/60' : 'bg-paper')}
+                  className={cn('block rounded-xl px-3 py-2 transition', item.urgent ? 'bg-danger-soft hover:bg-danger-soft/80' : 'bg-paper hover:bg-paper-2')}
                 >
-                  <p className="text-sm font-semibold">{item.title}</p>
-                  <p className="text-xs text-ink/60">{item.body}</p>
+                  <p className="text-sm font-semibold text-ink">{item.title}</p>
+                  <p className="text-xs text-ink-soft">{item.body}</p>
                 </Link>
               </li>
             ))}

@@ -39,29 +39,59 @@ export function ResultPage() {
           ← Quay lại hồ sơ học viên
         </Link>
       ) : null}
-      <Card className="bg-button-soft p-8">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-gold-deep">{r.attempt.examTitle}</p>
-          {r.attempt.status === 'EXPIRED' ? <Badge tone="warn">Tự nộp do hết giờ</Badge> : null}
-          {r.attempt.status === 'ABANDONED' ? <Badge tone="danger">Đã rời bài thi — không làm tiếp được</Badge> : null}
+      <Card className="overflow-hidden p-0">
+        <div aria-hidden="true" className="h-1.5 w-full bg-linear-to-r from-button via-navy to-crimson" />
+        <div className="border-b border-gold/35 bg-paper px-6 py-4 sm:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[13px] font-bold tracking-[0.18em] text-gold-deep uppercase">
+              Phiếu kết quả TOEIC Listening &amp; Reading
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {r.attempt.status === 'EXPIRED' ? <Badge tone="warn">Tự nộp do hết giờ</Badge> : null}
+              {r.attempt.status === 'ABANDONED' ? <Badge tone="danger">Đã rời bài thi — không làm tiếp được</Badge> : null}
+            </div>
+          </div>
+          <h1 className="serif mt-1 text-2xl text-ink sm:text-3xl">{r.attempt.examTitle}</h1>
         </div>
-        {scaled ? (
-          <>
-            <h1 className="serif mt-2 text-5xl">{r.totalScore} / 990</h1>
-            <p className="mt-3 text-ink/70">
-              Listening {r.listeningScore ?? '—'} • Reading {r.readingScore ?? '—'}
-            </p>
-          </>
-        ) : (
-          <>
-            <h1 className="serif mt-2 text-5xl">
-              {r.correctCount} / {answeredTotal} câu đúng
-            </h1>
-            <p className="mt-3 text-ink/70">
-              Điểm quy đổi 990 chỉ tính khi làm đủ 100 câu Listening và/hoặc 100 câu Reading của một đề đầy đủ.
-            </p>
-          </>
-        )}
+        <div className="p-6 sm:p-8">
+          {scaled ? (
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {(
+                  [
+                    { label: 'LISTENING', score: r.listeningScore },
+                    { label: 'READING', score: r.readingScore },
+                  ] as const
+                ).map((sec) => (
+                  <div key={sec.label} className="rounded-2xl border border-gold/40 bg-paper/70 p-5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold tracking-[0.16em] text-gold-deep uppercase">{sec.label}</span>
+                      <span className="text-xs text-ink-soft">Thang 5–495</span>
+                    </div>
+                    <p className="serif mt-2 text-4xl font-bold text-ink tabular-nums">
+                      {sec.score ?? '—'} <span className="text-base font-semibold text-ink-soft">/ 495</span>
+                    </p>
+                    <ProgressBar className="mt-3" value={sec.score !== null ? (sec.score / 495) * 100 : 0} />
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-button/35 bg-button-soft px-6 py-6 text-center">
+                <span className="text-xs font-bold tracking-[0.18em] text-gold-deep uppercase">Total Score</span>
+                <p className="serif mt-2 text-5xl font-extrabold tracking-tight text-ink tabular-nums">{r.totalScore}</p>
+                <p className="mt-1 text-xs font-semibold text-ink-soft tabular-nums">/ 990 điểm</p>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p className="serif text-4xl font-bold text-ink tabular-nums sm:text-5xl">
+                {r.correctCount} <span className="text-2xl font-semibold text-ink-soft">/ {answeredTotal} câu đúng</span>
+              </p>
+              <p className="mt-3 text-sm text-ink-soft">
+                Điểm quy đổi 990 chỉ tính khi làm đủ 100 câu Listening và/hoặc 100 câu Reading của một đề đầy đủ.
+              </p>
+            </div>
+          )}
+        </div>
       </Card>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -80,7 +110,7 @@ export function ResultPage() {
             <div key={p.partCode}>
               <div className="flex items-baseline justify-between text-sm">
                 <span className="font-semibold">{partName(p.partCode)}</span>
-                <span className="text-ink/60">
+                <span className="text-ink-soft tabular-nums">
                   {p.correct}/{p.total} • {p.accuracy}%
                 </span>
               </div>
@@ -116,7 +146,7 @@ function MissedAnswers({ attemptId, staffView, reviewTo }: { attemptId: string; 
   const { data, isPending } = useAttemptReview(attemptId)
   const [textZoom, setTextZoom] = useState(1)
   const groups = useMemo(() => new Map((data?.groups ?? []).map((g) => [g.id, g])), [data])
-  if (isPending) return <p className="text-sm text-ink/55">Đang tải câu sai và câu chưa làm…</p>
+  if (isPending) return <p className="text-sm text-ink-soft">Đang tải câu sai và câu chưa làm…</p>
   if (!data) {
     return (
       <Link to={reviewTo}>
@@ -162,8 +192,8 @@ function MissedAnswers({ attemptId, staffView, reviewTo }: { attemptId: string; 
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
     <Card className="p-5">
-      <p className="text-sm text-ink/55">{label}</p>
-      <p className="serif text-3xl">{value}</p>
+      <p className="text-sm text-ink-soft">{label}</p>
+      <p className="serif text-3xl tabular-nums">{value}</p>
     </Card>
   )
 }
