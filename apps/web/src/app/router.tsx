@@ -46,13 +46,19 @@ function FullPageSpinner() {
 
 const PLAIN_ROUTE = /^\/(study|grammar)(\/|$)|^\/attempts\/|^\/admin\/students\/[^/]+\/attempts\//
 
-/** Switches surface: `gate` (login/splash), `plain` (study & exam, solid no backdrop), or `shell` (backdrop in margins). */
+/** Switches surface: `splash` (loading), `login` (login gate with effects), `plain` (study & exam, solid no backdrop), or `shell` (backdrop in margins). */
 function ThemeSurfaceSync() {
   const setSurface = useThemeGate()
   const { status, user } = useAuth()
   const { pathname } = useLocation()
   const surface: ThemeSurface =
-    status === 'loading' || (pathname === '/login' && !user) ? 'gate' : PLAIN_ROUTE.test(pathname) ? 'plain' : 'shell'
+    status === 'loading'
+      ? 'splash'
+      : pathname === '/login' && !user
+        ? 'login'
+        : PLAIN_ROUTE.test(pathname)
+          ? 'plain'
+          : 'shell'
   useLayoutEffect(() => {
     setSurface(surface)
     document.documentElement.classList.toggle('exam-plain', surface === 'plain')

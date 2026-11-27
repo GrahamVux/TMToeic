@@ -17,7 +17,7 @@ const ColorModeContext = createContext<{
   toggleColorMode: () => {},
 })
 
-export type ThemeSurface = 'gate' | 'shell' | 'plain'
+export type ThemeSurface = 'splash' | 'login' | 'shell' | 'plain'
 
 const ThemeGateContext = createContext<Dispatch<SetStateAction<ThemeSurface>>>(() => {})
 
@@ -25,8 +25,8 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
   const q = useSiteSettings()
   const site = q.data ?? fallback
   const [colorMode, setColorModeState] = useState<ColorMode>(() => getStoredColorMode())
-  const [surface, setSurface] = useState<ThemeSurface>('gate')
-  const onGate = surface === 'gate'
+  const [surface, setSurface] = useState<ThemeSurface>('splash')
+  const onGate = surface === 'splash' || surface === 'login'
 
   function setColorMode(mode: ColorMode) {
     setStoredColorMode(mode)
@@ -54,7 +54,7 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
     <ColorModeContext.Provider value={{ colorMode, setColorMode, toggleColorMode }}>
       <SiteContext.Provider value={site}>
         {site.backgroundMode === 'sky' ? <SkyBackdrop /> : null}
-        {showTheme ? <ThemeBackdrop /> : null}
+        {showTheme ? <ThemeBackdrop animated={surface === 'login'} /> : null}
         {site.backgroundMode !== 'sky' && !showTheme ? (
           <div aria-hidden="true" className="site-wash pointer-events-none fixed inset-0 z-0 overflow-hidden" />
         ) : null}
@@ -73,7 +73,7 @@ export function useColorMode() {
   return useContext(ColorModeContext)
 }
 
-/** Controls surface mode: `gate` (login/splash), `shell` (logged-in margins), `plain` (study & exam). */
+/** Controls surface mode: `splash` (loading), `login` (login gate with effects), `shell` (logged-in margins), `plain` (study & exam). */
 export function useThemeGate() {
   return useContext(ThemeGateContext)
 }

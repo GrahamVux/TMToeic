@@ -227,8 +227,87 @@ html[data-theme="dark"].exam-plain :is(.ui-card, .bg-white, .bg-cream, .bg-cream
 .theme-drift-down { animation: theme-drift-down 7s ease-in-out infinite; }
 .theme-twinkle { animation: theme-twinkle 3.2s ease-in-out infinite; }
 .theme-sway { transform-box: fill-box; transform-origin: top center; animation: theme-sway 5s ease-in-out infinite; }
+
+@keyframes fx-snow-fall {
+  0% { transform: translate3d(0, -30px, 0) rotate(0deg); opacity: 0; }
+  8% { opacity: var(--fx-opacity, 0.92); }
+  50% { transform: translate3d(var(--fx-drift, 28px), 455px, 0) rotate(180deg); opacity: var(--fx-opacity, 0.92); }
+  92% { opacity: var(--fx-opacity, 0.92); }
+  100% { transform: translate3d(calc(var(--fx-drift, 28px) * -0.4), 940px, 0) rotate(360deg); opacity: 0; }
+}
+
+@keyframes fx-petal-fall {
+  0% { transform: translate3d(0, -30px, 0) rotate(0deg) scale(1); opacity: 0; }
+  8% { opacity: var(--fx-opacity, 0.88); }
+  50% { transform: translate3d(var(--fx-drift, 48px), 455px, 0) rotate(190deg) scale(0.92); opacity: var(--fx-opacity, 0.88); }
+  92% { opacity: var(--fx-opacity, 0.88); }
+  100% { transform: translate3d(calc(var(--fx-drift, 48px) * 1.4), 940px, 0) rotate(380deg) scale(0.85); opacity: 0; }
+}
+
+@keyframes fx-lantern-rise {
+  0% { transform: translate3d(0, 60px, 0) scale(0.88); opacity: 0; }
+  15% { opacity: var(--fx-opacity, 0.85); }
+  50% { transform: translate3d(var(--fx-drift, 18px), -220px, 0) scale(0.96); opacity: var(--fx-opacity, 0.85); }
+  85% { opacity: var(--fx-opacity, 0.75); }
+  100% { transform: translate3d(calc(var(--fx-drift, 18px) * -0.6), -520px, 0) scale(0.82); opacity: 0; }
+}
+
+@keyframes fx-star-pulse {
+  0%, 100% { transform: scale(0.9); opacity: 0.72; }
+  50% { transform: scale(1.18); opacity: 1; }
+}
+
+@keyframes fx-star-rays {
+  0%, 100% { transform: rotate(0deg) scale(0.92); opacity: 0.55; }
+  50% { transform: rotate(22deg) scale(1.12); opacity: 0.92; }
+}
+
+@keyframes fx-flicker {
+  0%, 100% { opacity: 0.28; transform: scale(0.86); }
+  35% { opacity: 1; transform: scale(1.15); }
+  65% { opacity: 0.52; transform: scale(0.96); }
+}
+
+@keyframes fx-firework-trail {
+  0% { transform: translate3d(0, 210px, 0) scaleY(1.2); opacity: 0; }
+  8% { opacity: 0.95; }
+  28% { transform: translate3d(0, 0, 0) scaleY(0.5); opacity: 0.95; }
+  34%, 100% { transform: translate3d(0, -10px, 0) scaleY(0.2); opacity: 0; }
+}
+
+@keyframes fx-firework-burst {
+  0%, 26% { transform: scale(0.08); opacity: 0; }
+  32% { transform: scale(0.45); opacity: 1; }
+  56% { transform: scale(1.06); opacity: 0.92; }
+  78% { transform: scale(1.26); opacity: 0.36; }
+  86%, 100% { transform: scale(1.32); opacity: 0; }
+}
+
+@keyframes fx-bat-glide {
+  0% { transform: translate3d(-120px, 24px, 0) scale(0.92); opacity: 0; }
+  10% { opacity: 0.88; }
+  50% { transform: translate3d(720px, -28px, 0) scale(1.04); opacity: 0.92; }
+  90% { opacity: 0.85; }
+  100% { transform: translate3d(1720px, 16px, 0) scale(0.9); opacity: 0; }
+}
+
+.fx-snow-fall { animation: fx-snow-fall var(--fx-dur, 12s) linear var(--fx-delay, 0s) infinite both; will-change: transform, opacity; }
+.fx-petal-fall { animation: fx-petal-fall var(--fx-dur, 11s) ease-in-out var(--fx-delay, 0s) infinite both; will-change: transform, opacity; }
+.fx-lantern-rise { animation: fx-lantern-rise var(--fx-dur, 16s) ease-in-out var(--fx-delay, 0s) infinite both; will-change: transform, opacity; }
+.fx-star-pulse { transform-box: fill-box; transform-origin: center; animation: fx-star-pulse 2.8s ease-in-out infinite; will-change: transform, opacity; }
+.fx-star-rays { transform-box: fill-box; transform-origin: center; animation: fx-star-rays 4.4s ease-in-out infinite; will-change: transform, opacity; }
+.fx-flicker { transform-box: fill-box; transform-origin: center; animation: fx-flicker var(--fx-dur, 2.6s) ease-in-out var(--fx-delay, 0s) infinite; will-change: transform, opacity; }
+.fx-firework-trail { transform-box: fill-box; transform-origin: center; animation: fx-firework-trail var(--fx-dur, 6.2s) cubic-bezier(0.22, 0.7, 0.35, 1) var(--fx-delay, 0s) infinite both; will-change: transform, opacity; }
+.fx-firework-burst { transform-box: fill-box; transform-origin: center; animation: fx-firework-burst var(--fx-dur, 6.2s) cubic-bezier(0.16, 1, 0.3, 1) var(--fx-delay, 0s) infinite both; will-change: transform, opacity; }
+.fx-bat-glide { animation: fx-bat-glide var(--fx-dur, 15s) linear var(--fx-delay, 0s) infinite both; will-change: transform, opacity; }
+
 @media (prefers-reduced-motion: reduce) {
-  .theme-float, .theme-drift-down, .theme-twinkle, .theme-sway { animation: none; }
+  .theme-float,
+  .theme-drift-down,
+  .theme-twinkle,
+  .theme-sway {
+    animation: none;
+  }
 }
 
 /* ─── Lucian UI Tokens & Widgets (#431 Calendar, #432 Upload Dropzone, #447 Dark Switch) ─── */

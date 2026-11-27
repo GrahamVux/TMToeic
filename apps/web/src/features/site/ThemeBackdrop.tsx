@@ -1,6 +1,7 @@
 import { resolveThemePreset, type ConcreteThemePresetId, type ThemePresetId } from '@toeic/shared'
 import { useColorMode, useSite } from './SiteSettingsProvider'
 import { ThemeScene } from './ThemeScenes'
+import { ThemeEffects } from './ThemeEffects'
 
 /** Illustrated art for each seasonal theme. Light and dark are separate pictures. */
 const THEME_PHOTOS: Partial<Record<ConcreteThemePresetId, { light: string; dark: string }>> = {
@@ -17,7 +18,15 @@ const THEME_PHOTOS: Partial<Record<ConcreteThemePresetId, { light: string; dark:
 }
 
 /** Full-screen (or embedded preview) illustrated background adapted to Light/Dark mode. */
-export function ThemeBackdrop({ embedded = false, presetOverride }: { embedded?: boolean; presetOverride?: ThemePresetId }) {
+export function ThemeBackdrop({
+  embedded = false,
+  presetOverride,
+  animated = false,
+}: {
+  embedded?: boolean
+  presetOverride?: ThemePresetId
+  animated?: boolean
+}) {
   const site = useSite()
   const { colorMode } = useColorMode()
   const preset = resolveThemePreset(presetOverride ?? site.themePreset)
@@ -46,6 +55,7 @@ export function ThemeBackdrop({ embedded = false, presetOverride }: { embedded?:
           }}
         />
       ) : null}
+      {animated && !embedded ? <ThemeEffects preset={concreteId} dark={isDark} /> : null}
     </div>
   )
 }
