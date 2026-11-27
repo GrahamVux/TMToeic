@@ -1,5 +1,6 @@
-import { api } from '@/lib/api'
-import { DEFAULT_SITE_THEME, resolveThemePreset, type SiteSettingsDto, type UpdateSiteSettingsInput } from '@toeic/shared'
+import { resolveSwitchPalette, switchPaletteVars } from '@/components/ui/dark-mode-switch.palette'
+import { ApiError, api } from '@/lib/api'
+import { DEFAULT_SITE_THEME, resolveThemePreset, THEME_PRESET_IDS, type SiteSettingsDto, type ThemePresetId, type UpdateSiteSettingsInput } from '@toeic/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 export const siteKey = ['site-settings'] as const
@@ -14,7 +15,12 @@ export function getStoredSiteSettings(): SiteSettingsDto | null {
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<SiteSettingsDto>
     if (!parsed || typeof parsed.brandName !== 'string' || !parsed.theme) return null
-    return parsed as SiteSettingsDto
+    return {
+      ...parsed,
+      studentAllowedThemes: Array.isArray(parsed.studentAllowedThemes)
+        ? parsed.studentAllowedThemes
+        : [...THEME_PRESET_IDS],
+    } as SiteSettingsDto
   } catch {
     return null
   }
@@ -62,7 +68,11 @@ export function setStoredColorMode(mode: ColorMode) {
 export function useSiteSettings() {
   return useQuery({
     queryKey: siteKey,
-    queryFn: () => api<SiteSettingsDto>('/site-settings'),
+    queryFn: async () => {
+      const data = await api<SiteSettingsDto>('/site-settings')
+      setStoredSiteSettings(data)
+      return data
+    },
     staleTime: 60_000,
     initialData: () => getStoredSiteSettings() ?? undefined,
     initialDataUpdatedAt: 0,
@@ -73,7 +83,10 @@ export function useUpdateSiteSettings() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (input: UpdateSiteSettingsInput) => api<SiteSettingsDto>('/site-settings', { method: 'PUT', body: input }),
-    onSuccess: (data) => qc.setQueryData(siteKey, data),
+    onSuccess: (data) => {
+      setStoredSiteSettings(data)
+      qc.setQueryData(siteKey, data)
+    },
   })
 }
 
@@ -81,6 +94,19 @@ export function useUpdateProfile() {
   return useMutation({
     mutationFn: (input: { fullName: string; email: string; phone: string }) =>
       api<{ user: import('@toeic/shared').UserDto }>('/me/profile', { method: 'PATCH', body: input }),
+  })
+}
+
+export function useSetStudentTheme() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (themePreset: ThemePresetId | null) =>
+      api<{ user: import('@toeic/shared').UserDto }>('/me/theme', { method: 'PATCH', body: { themePreset } }),
+    onError: (err) => {
+      if (err instanceof ApiError && err.status === 403) {
+        void qc.invalidateQueries({ queryKey: siteKey })
+      }
+    },
   })
 }
 
@@ -116,7 +142,6 @@ export function buttonColors(hex: string) {
 }
 
 export function applySiteTheme(s: SiteSettingsDto, colorMode: ColorMode = getStoredColorMode(), gate = false) {
-  setStoredSiteSettings(s)
   const root = document.documentElement
   // Sky is always light. A seasonal scene paints only the login and opening screens; light/dark still applies.
   const seasonal = s.backgroundMode === 'gradient' && gate
@@ -155,6 +180,17 @@ export function applySiteTheme(s: SiteSettingsDto, colorMode: ColorMode = getSto
   root.style.setProperty('--color-ink', isDark ? '#f8fafc' : '#0f172a')
   root.style.setProperty('--color-ink-soft', isDark ? '#dbeafe' : mixHex(primaryHex, '#1e293b', 0.52))
   root.style.setProperty('--ux-accent', button.background)
+
+  const switchResolved = resolveSwitchPalette({
+    backgroundMode: s.backgroundMode,
+    themePreset: s.themePreset,
+    primaryHex: s.theme.primary,
+    buttonHex: s.theme.button,
+  })
+  root.dataset.switchTheme = switchResolved.themeKey
+  for (const [prop, val] of Object.entries(switchPaletteVars(switchResolved.palette))) {
+    root.style.setProperty(prop, val)
+  }
 
   document.title = `${s.brandName} — ${s.slogan}`
   const href = s.faviconUrl || s.logoUrl || '/logo.png'

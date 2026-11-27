@@ -1,9 +1,16 @@
-import type { AccountAvatarDto, ChangePasswordInput, LoginInput, RecoverAdminPasswordInput, SessionDto, UserDto } from '@toeic/shared'
+import type { AccountAvatarDto, ChangePasswordInput, LoginInput, RecoverAdminPasswordInput, SessionDto, ThemePresetId, UserDto } from '@toeic/shared'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { api, onSessionLost } from '@/lib/api'
 import { avatarListKeys } from '@/lib/account-avatars'
 import { getViewAsId, setViewAsId } from '@/lib/view-as'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+
+type AccountSync = {
+  avatarUrl: string | null
+  avatarFrame: string
+  rewardPoints: number
+  themePreset: ThemePresetId | null
+}
 
 type Status = 'loading' | 'authenticated' | 'anonymous'
 
@@ -36,22 +43,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>('loading')
   const queryClient = useQueryClient()
   const channel = useRef<BroadcastChannel | null>(null)
+  const userRef = useRef<UserDto | null>(null)
+  useEffect(() => {
+    userRef.current = user
+  }, [user])
   const avatar = useQuery({
     queryKey: ['account-avatar', user?.id],
     enabled: !!user,
-    initialData: user ? { avatarUrl: user.avatarUrl, avatarFrame: user.avatarFrame, rewardPoints: user.rewardPoints } : undefined,
+    initialData: user
+      ? {
+          avatarUrl: user.avatarUrl,
+          avatarFrame: user.avatarFrame,
+          rewardPoints: user.rewardPoints,
+          themePreset: user.themePreset,
+        }
+      : undefined,
     refetchOnWindowFocus: 'always',
-    queryFn: async () => {
+    queryFn: async (): Promise<AccountSync | null> => {
       const session = await api<SessionDto>('/auth/me')
       return session.user.id === user?.id
-        ? { avatarUrl: session.user.avatarUrl, avatarFrame: session.user.avatarFrame, rewardPoints: session.user.rewardPoints }
+        ? {
+            avatarUrl: session.user.avatarUrl,
+            avatarFrame: session.user.avatarFrame,
+            rewardPoints: session.user.rewardPoints,
+            themePreset: session.user.themePreset,
+          }
         : null
     },
   })
   const currentUser = useMemo(
     () =>
       user && avatar.data
-        ? { ...user, avatarUrl: avatar.data.avatarUrl, avatarFrame: avatar.data.avatarFrame, rewardPoints: avatar.data.rewardPoints }
+        ? {
+            ...user,
+            avatarUrl: avatar.data.avatarUrl,
+            avatarFrame: avatar.data.avatarFrame,
+            rewardPoints: avatar.data.rewardPoints,
+            themePreset: avatar.data.themePreset,
+          }
         : user,
     [user, avatar.data],
   )
@@ -79,10 +108,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const avatarChanged = useCallback(({ id, avatarUrl }: AccountAvatarDto) => {
     const queryKey = ['account-avatar', id]
     void queryClient.cancelQueries({ queryKey })
-    queryClient.setQueryData(queryKey, (old: { avatarUrl: string | null; avatarFrame: string; rewardPoints: number } | undefined) => ({
+    queryClient.setQueryData(queryKey, (old: AccountSync | undefined) => ({
       avatarUrl,
-      avatarFrame: old?.avatarFrame ?? 'none',
-      rewardPoints: old?.rewardPoints ?? 0,
+      avatarFrame: old?.avatarFrame ?? userRef.current?.avatarFrame ?? 'none',
+      rewardPoints: old?.rewardPoints ?? userRef.current?.rewardPoints ?? 0,
+      themePreset: old?.themePreset ?? userRef.current?.themePreset ?? null,
     }))
     setUser((old) => old?.id === id ? { ...old, avatarUrl } : old)
     refreshAvatarLists()
@@ -94,10 +124,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!old) return old
       const queryKey = ['account-avatar', old.id]
       void queryClient.cancelQueries({ queryKey })
-      queryClient.setQueryData(queryKey, (prev: { avatarUrl: string | null; avatarFrame: string; rewardPoints: number } | undefined) => ({
+      queryClient.setQueryData(queryKey, (prev: AccountSync | undefined) => ({
         avatarUrl: prev?.avatarUrl ?? old.avatarUrl,
         avatarFrame,
         rewardPoints: prev?.rewardPoints ?? old.rewardPoints,
+        themePreset: prev?.themePreset ?? old.themePreset ?? null,
       }))
       channel.current?.postMessage(old.id)
       return { ...old, avatarFrame }
@@ -187,7 +218,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return s.user
   }, [])
 
-  const updateUser = useCallback((next: UserDto) => setUser(next), [])
+  const updateUser = useCallback(
+    (next: UserDto) => {
+      const queryKey = ['account-avatar', next.id]
+      void queryClient.cancelQueries({ queryKey })
+      queryClient.setQueryData(queryKey, {
+        avatarUrl: next.avatarUrl,
+        avatarFrame: next.avatarFrame,
+        rewardPoints: next.rewardPoints,
+        themePreset: next.themePreset,
+      })
+      setUser(next)
+    },
+    [queryClient],
+  )
 
   const startViewAs = useCallback(async (userId: string) => {
     // The start request is an admin request, so it must not carry the previous preview.

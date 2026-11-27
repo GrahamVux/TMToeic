@@ -9,8 +9,8 @@ import { QueryErrorRedirect } from '@/features/errors/ErrorPages'
 import { SkyBackdrop } from '@/features/site/SkyBackdrop'
 import { ThemeBackdrop } from '@/features/site/ThemeBackdrop'
 import { skyClockLabel } from '@/features/site/sky'
-import { applySiteTheme, buttonColors, useSiteSettings, useUpdateSiteSettings } from '@/features/site/site.queries'
-import { useColorMode, useSite } from '@/features/site/SiteSettingsProvider'
+import { buttonColors, useSiteSettings, useUpdateSiteSettings } from '@/features/site/site.queries'
+import { useColorMode, useRawSite, useThemePreview } from '@/features/site/SiteSettingsProvider'
 import { cn } from '@/lib/cn'
 import { DEFAULT_SITE_THEME, resolveThemePreset, THEME_PRESETS, type SiteThemeDto, type ThemePresetId, type UpdateSiteSettingsInput } from '@toeic/shared'
 import { useEffect, useRef, useState } from 'react'
@@ -25,7 +25,7 @@ const SECTION_KEYS: Record<Section, (keyof UpdateSiteSettingsInput)[]> = {
   brand: ['brandName', 'slogan', 'logoUrl', 'faviconUrl'],
   login: ['loginHeadline', 'loginIntro'],
   contact: ['phone', 'hours', 'address', 'footerAbout', 'supportHeading', 'supportDetail', 'channelHeading', 'channelDetail', 'legalNote', 'copyright'],
-  theme: ['theme', 'backgroundMode', 'themePreset'],
+  theme: ['theme', 'backgroundMode', 'themePreset', 'studentAllowedThemes'],
 }
 
 const SAVED: Record<Section, string> = {
@@ -48,14 +48,17 @@ function readImage(file: File) {
 export function SiteSettingsPage() {
   const { user } = useAuth()
   const remote = useSiteSettings()
-  const site = useSite()
+  const site = useRawSite()
   const { colorMode, toggleColorMode } = useColorMode()
+  const setThemePreview = useThemePreview()
   const save = useUpdateSiteSettings()
   const [form, setForm] = useState<UpdateSiteSettingsInput>({})
   const [notice, setNotice] = useState<CornerNoticeState | null>(null)
   const [saving, setSaving] = useState<Section | null>(null)
   const [err, setErr] = useState<{ section: Section; text: string } | null>(null)
   const loaded = useRef(false)
+
+  useEffect(() => () => setThemePreview(null), [setThemePreview])
 
   useEffect(() => {
     if (!remote.data || loaded.current) return
@@ -78,6 +81,7 @@ export function SiteSettingsPage() {
       theme: { ...remote.data.theme },
       backgroundMode: remote.data.backgroundMode,
       themePreset: remote.data.themePreset,
+      studentAllowedThemes: [...remote.data.studentAllowedThemes],
       honorBoardEnabled: remote.data.honorBoardEnabled,
     })
   }, [remote.data])
@@ -118,8 +122,8 @@ export function SiteSettingsPage() {
     setErr(null)
     setSaving(section)
     try {
-      const next = await save.mutateAsync(patch)
-      applySiteTheme(next, colorMode)
+      await save.mutateAsync(patch)
+      if (section === 'theme') setThemePreview(null)
       setNotice(flashNotice(SAVED[section]))
     } catch {
       setErr({ section, text: 'Không lưu được. Kiểm tra ảnh (định dạng/kích thước) và các ô bắt buộc.' })
@@ -132,6 +136,7 @@ export function SiteSettingsPage() {
   const theme = form.theme ?? site.theme
   const backgroundMode = form.backgroundMode ?? site.backgroundMode
   const themePreset = (form.themePreset ?? site.themePreset ?? 'classic') as ThemePresetId
+  const studentAllowedThemes = (form.studentAllowedThemes ?? site.studentAllowedThemes) as ThemePresetId[]
   const resolvedPreset = resolveThemePreset(themePreset)
   const buttonLook = buttonColors(
     backgroundMode === 'gradient'
@@ -141,9 +146,20 @@ export function SiteSettingsPage() {
       : (theme.button ?? DEFAULT_SITE_THEME.button!),
   )
 
+  function toggleAllowedTheme(id: ThemePresetId) {
+    setForm((f) => {
+      const current = (f.studentAllowedThemes ?? site.studentAllowedThemes) as ThemePresetId[]
+      const exists = current.includes(id)
+      return {
+        ...f,
+        studentAllowedThemes: exists ? current.filter((item) => item !== id) : [...current, id],
+      }
+    })
+  }
+
   function paintTheme(next: SiteThemeDto, nextBg = backgroundMode, nextPreset = themePreset) {
-    set('theme', next)
-    applySiteTheme({ ...site, theme: next, backgroundMode: nextBg, themePreset: nextPreset }, colorMode)
+    if (next !== theme) set('theme', next)
+    setThemePreview({ theme: next, backgroundMode: nextBg, themePreset: nextPreset })
   }
 
   return (
@@ -298,9 +314,14 @@ export function SiteSettingsPage() {
             </p>
           </div>
           {backgroundMode === 'sky' ? null : (
-            <div className="flex shrink-0 items-center gap-3 self-start sm:self-center">
-              <span className="whitespace-nowrap text-xs font-semibold text-ink-soft">{colorMode === 'dark' ? 'Đang xem chế độ Tối' : 'Đang xem chế độ Sáng'}</span>
-              <DarkModeSwitch checked={colorMode === 'dark'} onToggle={toggleColorMode} scale={0.72} />
+            <div className="flex shrink-0 items-center gap-2.5 self-start sm:self-center">
+              <span className="whitespace-nowrap text-xs font-semibold text-ink-soft">Chế độ xem</span>
+              <DarkModeSwitch
+                variant="labeled"
+                checked={colorMode === 'dark'}
+                onToggle={toggleColorMode}
+                themeOverride={{ backgroundMode, themePreset, primaryHex: theme.primary, buttonHex: theme.button }}
+              />
             </div>
           )}
         </div>
@@ -400,6 +421,65 @@ export function SiteSettingsPage() {
             ))}
           </div>
         ) : null}
+
+        <div className="mt-6 border-t border-gold/25 pt-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-semibold text-ink">Cho phép học viên tự chọn Theme</h3>
+              <p className="mt-0.5 text-xs text-ink-soft">
+                Tick các chủ đề bạn muốn mở trong mục Cài đặt cá nhân của học viên ({studentAllowedThemes.length}/{THEME_PRESETS.length} chủ đề đang mở). Học viên vẫn giữ lựa chọn nếu được phép, và tự về mặc định của lớp nếu bị bỏ tick.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="paper"
+                className="px-3 py-1.5 text-xs"
+                onClick={() => set('studentAllowedThemes', THEME_PRESETS.map((p) => p.id))}
+              >
+                Chọn tất cả
+              </Button>
+              <Button
+                type="button"
+                variant="paper"
+                className="px-3 py-1.5 text-xs"
+                onClick={() => set('studentAllowedThemes', [])}
+              >
+                Khóa tất cả
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {THEME_PRESETS.map((preset) => {
+              const checked = studentAllowedThemes.includes(preset.id)
+              return (
+                <label
+                  key={preset.id}
+                  className={cn(
+                    'flex cursor-pointer items-center gap-3 rounded-2xl border p-2.5 text-left transition',
+                    checked ? 'border-button bg-button-soft/75' : 'border-gold/25 bg-paper/75 opacity-75 hover:opacity-100',
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    className="size-4 shrink-0 accent-[var(--color-button)]"
+                    checked={checked}
+                    onChange={() => toggleAllowedTheme(preset.id)}
+                  />
+                  <span className="relative h-9 w-12 shrink-0 overflow-hidden rounded-lg border border-ink/15">
+                    <ThemeBackdrop embedded presetOverride={preset.id} />
+                    <span className="absolute right-0.5 bottom-0 text-xs drop-shadow">{preset.emoji}</span>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-semibold text-ink">{preset.label}</span>
+                    <span className="block truncate text-[10px] text-ink-soft">{checked ? 'Học viên được chọn' : 'Đã khóa với học viên'}</span>
+                  </span>
+                </label>
+              )
+            })}
+          </div>
+        </div>
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-gold/25 pt-5">
           <div>

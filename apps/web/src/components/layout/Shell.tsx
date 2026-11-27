@@ -9,8 +9,48 @@ import { useColorMode, useSite } from '@/features/site/SiteSettingsProvider'
 import { BugReportWidget } from '@/features/bugs/BugReportWidget'
 import { useBugReportSummary } from '@/features/bugs/bugs.queries'
 import { BarChart3, BookOpen, Bug, ChevronDown, ClipboardList, Coins, Eye, Library, LogOut, Menu, MoreHorizontal, Settings, Trophy, UserRound, Users, X } from 'lucide-react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+
+/** Hides sticky header on downward page scroll, reveals immediately on upward scroll, and stays pinned while menus are open. */
+function useScrollHeaderVisible(pinned: boolean, headerRef: RefObject<HTMLElement | null>) {
+  const [hidden, setHidden] = useState(false)
+  const lastY = useRef(0)
+  const ticking = useRef(false)
+
+  useEffect(() => {
+    lastY.current = window.scrollY
+    if (pinned) setHidden(false)
+
+    function onScroll() {
+      if (ticking.current) return
+      ticking.current = true
+      window.requestAnimationFrame(() => {
+        ticking.current = false
+        const y = window.scrollY
+        const hasExpanded = Boolean(headerRef.current?.querySelector('[aria-expanded="true"]'))
+        if (pinned || hasExpanded || y <= 32) {
+          setHidden(false)
+          lastY.current = y
+          return
+        }
+        const delta = y - lastY.current
+        if (delta > 10 && y > 72) {
+          setHidden(true)
+          lastY.current = y
+        } else if (delta < -6) {
+          setHidden(false)
+          lastY.current = y
+        }
+      })
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [pinned, headerRef])
+
+  return hidden
+}
 
 export function BrandMark({ compact = false }: { compact?: boolean }) {
   const site = useSite()
@@ -91,6 +131,8 @@ export function StudentShell({ children }: { children: ReactNode }) {
   const [wardrobeOpen, setWardrobeOpen] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
   const moreRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLElement>(null)
+  const headerHidden = useScrollHeaderVisible(open || moreOpen, headerRef)
   const moreActive = studentMoreNav.some((item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`))
 
   useEffect(() => {
@@ -131,10 +173,16 @@ export function StudentShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-gold/30 bg-cream/95 text-ink backdrop-blur-md">
+      <header
+        ref={headerRef}
+        className={cn(
+          'sticky top-0 z-30 border-b border-gold/30 bg-cream/95 text-ink backdrop-blur-md transition-transform duration-300 ease-out motion-reduce:transition-none',
+          headerHidden && '-translate-y-full',
+        )}
+      >
         <div aria-hidden="true" className="h-[3px] w-full bg-linear-to-r from-button via-navy to-crimson" />
         {/* ─── Main row: fixed height 64px ─── */}
-        <div className="mx-auto flex h-16 max-w-7xl items-center gap-2.5 px-4 sm:px-6 xl:gap-3.5">
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-3 sm:gap-2.5 sm:px-6 xl:gap-3.5">
 
           {/* Logo */}
           <Link to="/dashboard" className="flex shrink-0 cursor-pointer items-center rounded-full no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50">
@@ -206,12 +254,21 @@ export function StudentShell({ children }: { children: ReactNode }) {
           </nav>
 
           {/* Right side */}
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
 
             {/* Search – thu nhỏ mặc định, bấm để kéo giãn */}
             <HeaderSearch />
 
-            {site.backgroundMode === 'sky' ? null : <DarkModeSwitch checked={colorMode === 'dark'} onToggle={toggleColorMode} scale={0.44} />}
+            {site.backgroundMode === 'sky' ? null : (
+              <>
+                <span className="inline-flex sm:hidden">
+                  <DarkModeSwitch variant="icon" checked={colorMode === 'dark'} onToggle={toggleColorMode} />
+                </span>
+                <span className="hidden sm:inline-flex">
+                  <DarkModeSwitch variant="compact" checked={colorMode === 'dark'} onToggle={toggleColorMode} />
+                </span>
+              </>
+            )}
 
             <NotificationBell />
 
@@ -327,6 +384,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const [moreOpen, setMoreOpen] = useState(false)
   const [deskMoreOpen, setDeskMoreOpen] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
+  const headerRef = useRef<HTMLElement>(null)
+  const headerHidden = useScrollHeaderVisible(open || deskMoreOpen, headerRef)
   const roleLabel = user?.role === 'ADMIN' ? 'Quản trị viên' : 'Giáo viên'
   const bugs = useBugReportSummary(user?.role === 'ADMIN')
   const openCount = bugs.data?.openCount ?? 0
@@ -394,9 +453,15 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen overflow-x-clip text-ink">
-      <header className="sticky top-0 z-30 border-b border-gold/30 bg-cream/95 backdrop-blur-md">
+      <header
+        ref={headerRef}
+        className={cn(
+          'sticky top-0 z-30 border-b border-gold/30 bg-cream/95 backdrop-blur-md transition-transform duration-300 ease-out motion-reduce:transition-none',
+          headerHidden && '-translate-y-full',
+        )}
+      >
         <div aria-hidden="true" className="h-[3px] w-full bg-linear-to-r from-button via-navy to-crimson" />
-        <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-3 px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-2 px-3 sm:gap-3 sm:px-6">
           <Link to="/admin" className="flex min-w-0 shrink-0 cursor-pointer items-center rounded-full no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50">
             <BrandMark />
           </Link>
@@ -461,8 +526,17 @@ export function AdminShell({ children }: { children: ReactNode }) {
               </div>
             ) : null}
           </nav>
-          <div className="ml-auto flex shrink-0 items-center gap-2">
-            {site.backgroundMode === 'sky' ? null : <DarkModeSwitch checked={colorMode === 'dark'} onToggle={toggleColorMode} scale={0.44} />}
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+            {site.backgroundMode === 'sky' ? null : (
+              <>
+                <span className="inline-flex sm:hidden">
+                  <DarkModeSwitch variant="icon" checked={colorMode === 'dark'} onToggle={toggleColorMode} />
+                </span>
+                <span className="hidden sm:inline-flex">
+                  <DarkModeSwitch variant="compact" checked={colorMode === 'dark'} onToggle={toggleColorMode} />
+                </span>
+              </>
+            )}
             <UserMenu
               name={user?.fullName ?? ''}
               subtitle={roleLabel}

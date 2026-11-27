@@ -1,14 +1,18 @@
 import { useAuth } from '@/app/AuthContext'
 import { Button } from '@/components/ui/Button'
-import { CornerNotice, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
+import { CornerNotice, flashError, flashNotice, type CornerNoticeState } from '@/components/ui/CornerNotice'
+import { DarkModeSwitch } from '@/components/ui/DarkModeSwitch'
 import { ChangePasswordForm } from '@/features/auth/PasswordFields'
 import { Card, Input } from '@/components/ui/Primitives'
 import { useDashboard, useSetGoal } from '@/features/dashboard/dashboard.queries'
-import { useUpdateProfile } from '@/features/site/site.queries'
+import { ThemeBackdrop } from '@/features/site/ThemeBackdrop'
+import { useColorMode, useRawSite } from '@/features/site/SiteSettingsProvider'
+import { useSetStudentTheme, useUpdateProfile } from '@/features/site/site.queries'
 import { ApiError } from '@/lib/api'
 import { cn } from '@/lib/cn'
 import { useNotifyPrefs, type NotifyKind } from '@/lib/notify-prefs'
-import { GOAL_TRACK_BOUNDS, GOAL_TRACKS, formatGoal, remainingToGoal, type GoalDto, type GoalTrack } from '@toeic/shared'
+import { GOAL_TRACK_BOUNDS, GOAL_TRACKS, THEME_PRESETS, formatGoal, remainingToGoal, resolveThemePreset, type GoalDto, type GoalTrack, type ThemePresetId } from '@toeic/shared'
+import { Check, Lock, Palette, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { AvatarSettings } from './AvatarSettings'
@@ -55,11 +59,15 @@ function goalStatus(goal: GoalDto, latest: number | null) {
 
 export function SettingsPage() {
   const { hash } = useLocation()
-  const { user, changePassword, updateUser } = useAuth()
+  const { user, viewing, changePassword, updateUser } = useAuth()
+  const site = useRawSite()
+  const { colorMode, toggleColorMode } = useColorMode()
   const isStudent = user?.role === 'STUDENT'
+  const readOnlyPreview = Boolean(viewing)
   const dashboard = useDashboard(isStudent)
   const setGoal = useSetGoal()
   const saveProfile = useUpdateProfile()
+  const setStudentTheme = useSetStudentTheme()
   const savedGoal = user?.goal ?? null
   const [track, setTrack] = useState<GoalTrack | null>(savedGoal?.track ?? null)
   const [scores, setScores] = useState({ TWO_SKILL: scoreFor('TWO_SKILL', savedGoal), FOUR_SKILL: scoreFor('FOUR_SKILL', savedGoal) })
@@ -102,6 +110,18 @@ export function SettingsPage() {
     }
   }
 
+  async function pickStudentTheme(presetId: ThemePresetId | null) {
+    if (readOnlyPreview) return
+    try {
+      const res = await setStudentTheme.mutateAsync(presetId)
+      updateUser(res.user)
+      const label = presetId ? THEME_PRESETS.find((p) => p.id === presetId)?.label ?? presetId : 'Mặc định theo lớp học'
+      setNotice(flashNotice(`Đã đổi giao diện sang “${label}”.`))
+    } catch (err) {
+      setNotice(flashError(err instanceof ApiError ? err.message : 'Chủ đề này không còn được mở hoặc không lưu được.'))
+    }
+  }
+
   async function saveGoal() {
     try {
       const goal = clampedGoal()
@@ -134,6 +154,98 @@ export function SettingsPage() {
       </header>
 
       <AvatarSettings />
+      {isStudent ? (
+        <Card className="min-w-0 scroll-mt-24 p-4 sm:p-6">
+          <div id="theme" className="min-w-0 scroll-mt-24">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
+                  <Palette className="size-4 text-gold-deep" />
+                  Giao diện & Chủ đề
+                </h2>
+                <p className="mt-1 text-xs text-ink-soft">
+                  Chọn cảnh nền học tập bạn thích trong danh sách Quản trị viên đang mở cho lớp.
+                </p>
+              </div>
+              <div className="shrink-0 self-start sm:self-center">
+                <DarkModeSwitch variant="labeled" checked={colorMode === 'dark'} onToggle={toggleColorMode} />
+              </div>
+            </div>
+
+            {readOnlyPreview ? (
+              <p className="mt-3 rounded-xl bg-paper-2 px-3 py-2 text-xs text-ink-soft">
+                Đang ở chế độ xem thử (View-As) — không thể lưu thay đổi giao diện của học viên.
+              </p>
+            ) : null}
+
+            {site.studentAllowedThemes.length === 0 ? (
+              <div className="mt-4 flex items-center gap-2.5 rounded-2xl border border-gold/30 bg-paper px-4 py-3 text-xs text-ink-soft">
+                <Lock className="size-4 shrink-0 text-gold-deep" />
+                <span>
+                  Quản trị viên hiện đang dùng giao diện đồng bộ toàn lớp (<strong>{resolveThemePreset(site.themePreset).label}</strong>).
+                </span>
+              </div>
+            ) : (
+              <div className="mt-4 grid min-w-0 gap-2.5 sm:grid-cols-2">
+                <button
+                  type="button"
+                  disabled={readOnlyPreview || setStudentTheme.isPending}
+                  onClick={() => void pickStudentTheme(null)}
+                  className={cn(
+                    'flex w-full min-w-0 items-center gap-3 rounded-2xl border p-3 text-left transition disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
+                    !user?.themePreset
+                      ? 'border-button bg-button-soft ring-2 ring-button/35'
+                      : 'border-gold/35 bg-paper hover:border-gold-deep/60',
+                  )}
+                >
+                  <span className="flex h-11 w-14 shrink-0 items-center justify-center rounded-xl border border-gold/30 bg-cream text-gold-deep">
+                    <Sparkles className="size-5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-ink">Mặc định theo lớp học</span>
+                    <span className="block truncate text-[11px] text-ink-soft">
+                      {site.backgroundMode === 'sky'
+                        ? 'Bầu trời theo giờ VN'
+                        : site.backgroundMode === 'gradient'
+                          ? resolveThemePreset(site.themePreset).label
+                          : 'Nền đơn sắc chuẩn'}
+                    </span>
+                  </span>
+                  {!user?.themePreset ? <Check className="size-4 shrink-0 text-gold-deep" /> : null}
+                </button>
+
+                {THEME_PRESETS.filter((p) => site.studentAllowedThemes.includes(p.id)).map((preset) => {
+                  const selected = user?.themePreset === preset.id
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      disabled={readOnlyPreview || setStudentTheme.isPending}
+                      onClick={() => void pickStudentTheme(preset.id)}
+                      className={cn(
+                        'flex w-full min-w-0 items-center gap-3 rounded-2xl border p-3 text-left transition disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button/50',
+                        selected
+                          ? 'border-button bg-button-soft ring-2 ring-button/35'
+                          : 'border-gold/35 bg-paper hover:border-gold-deep/60',
+                      )}
+                    >
+                      <span className="relative h-11 w-14 shrink-0 overflow-hidden rounded-xl border border-ink/15 shadow-xs">
+                        <ThemeBackdrop embedded presetOverride={preset.id} />
+                        <span className="absolute right-1 bottom-0.5 text-xs drop-shadow">{preset.emoji}</span>
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold text-ink">{preset.label}</span>
+                        <span className="block truncate text-[11px] text-ink-soft">{preset.subtitle}</span>
+                      </span>
+                      {selected ? <Check className="size-4 shrink-0 text-gold-deep" /> : null}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </Card>
+      ) : null}
       <Card className="scroll-mt-24 p-6">
         <h2 className="text-base font-semibold">Thông tin cá nhân</h2>
         <p className="mt-1 text-xs text-ink-soft">Bạn có thể tự cập nhật họ tên, email và số điện thoại. Mã học viên do lớp cấp, không đổi được.</p>

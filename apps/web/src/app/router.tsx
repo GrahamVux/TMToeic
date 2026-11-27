@@ -175,16 +175,16 @@ for (const queryKey of avatarListKeys) {
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <SiteSettingsProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <SiteSettingsProvider>
           <BrowserRouter>
             <RouteErrorBoundary>
               <ThemeSurfaceSync />
               <AppRoutes />
             </RouteErrorBoundary>
           </BrowserRouter>
-        </AuthProvider>
-      </SiteSettingsProvider>
+        </SiteSettingsProvider>
+      </AuthProvider>
     </QueryClientProvider>
   )
 }
